@@ -1,0 +1,77 @@
+/* Import a modern font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* --- Global Styles --- */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Main app container */
+.stApp {
+    background-color: #0E1117; /* Dark background */
+}
+
+/* Sidebar styling */
+[data-testid="stSidebar"] {
+    background-color: #1a1e29;
+    border-right: 1px solid #2c313a;
+}
+
+/* --- Typography --- */
+h1, h2, h3 {
+    color: #FAFAFA; /* Bright white for headers */
+}
+
+.stMarkdown, .stChatFloatingInputContainer, .stMultiSelect {
+    color: #D1D5DB; /* Light gray for body text */
+}
+
+/* --- Custom Button Styles --- */
+.stButton > button {
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    color: #FAFAFA;
+    background-color: #3b82f6; /* A nice blue */
+    border: none;
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+}
+
+.stButton > button:hover {
+    background-color: #2563eb;
+    transform: scale(1.02);
+}
+
+.stButton > button:active {
+    transform: scale(0.98);
+}
+
+/* --- Chat Interface Styling --- */
+[data-testid="stChatMessage"] {
+    background-color: #262730;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid #30333d;
+}
+
+/* Chat Input Styling */
+[data-testid="stChatInput"] {
+    background-color: #1a1e29;
+    border-top: 1px solid #2c313a;
+}
+
+/* --- Specific Component Styling --- */
+.stMultiSelect > div > div {
+    background-color: #262730;
+}
+
+.stExpander {
+    border: 1px solid #2c313a !important;
+    border-radius: 0.5rem !important;
+}
+
+.stExpander header {
+    background-color: #1a1e29 !important;
+    color: #FAFAFA !important;
+}

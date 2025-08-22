@@ -1,0 +1,12 @@
+api:
+  base_url: "https://g1lnt5p9dd.execute-api.us-east-1.amazonaws.com/api"
+  key: "6hf4iZOp1X6mh8yC3nlpa6bWU6yd7xgd9q3eUyvN"
+
+model:
+  alias: "claude-v4-sonnet" 
+
+
+# ### NEW SECTION ###
+elasticsearch:
+  host: "localhost"
+  port: 9200
