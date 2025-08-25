@@ -11,9 +11,8 @@ torch>=2.0.0
 tqdm>=4.65.0 
 elasticsearch>=8.0.0
 streamlit-option-menu
-# pysqlite3-binary
+pysqlite3-binary
 google-cloud-storage
-pysqlite3-binary==0.5.3
 chromadb==0.5.0
 
 
