@@ -255,9 +255,26 @@ def display_paper_management():
                     st.success(f"Successfully added '{uploaded_file.name}' to the database.")
         st.rerun()
 
+# def main():
+#     st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant")
+#     local_css("style.css")
+#     initialize_session_state()
+
 def main():
     st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant")
-    local_css("style.css")
+
+    # --- THIS IS THE ROBUST FIX ---
+    # 1. Get the absolute path to the directory containing this script (main.py).
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # 2. Join that directory path with the filename 'style.css'.
+    # This creates a full, unambiguous path to your CSS file.
+    style_path = os.path.join(current_dir, "style.css")
+    
+    # 3. Pass the full path to the function.
+    local_css(style_path)
+    # --- END FIX ---
+
     initialize_session_state()
 
     with st.sidebar:
