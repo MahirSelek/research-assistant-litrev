@@ -1039,66 +1039,59 @@ class VectorDBManager:
         self.collection.add(documents=chunks, ids=chunk_ids, metadatas=[metadata] * len(chunks))
         self.es_manager.index_paper(paper_id=paper_id, metadata=metadata, content=content)
 
-    # <<< --- THIS IS THE KEY CHANGE FOR SIMULATED AND LOGIC --- >>>
-    def search_by_keywords(self, keywords: List[str], n_results: int = 10) -> List[Dict[str, Any]]:
+    # <<< --- THIS IS THE KEY CHANGE for RELEVANCE SCORING --- >>>
+    def search_by_keywords(self, keywords: List[str], n_results: int = 10, score_threshold: float = 0.5) -> List[Dict[str, Any]]:
         """
-        Performs a semantic search that finds documents related to ALL keywords
-        by finding the intersection of individual search results.
+        Performs a semantic search and filters the results by a similarity score threshold.
+        This ensures only highly relevant documents are returned.
         """
         if not keywords:
             return []
 
-        # If only one keyword, perform a normal search
-        if len(keywords) == 1:
-            try:
-                results = self.collection.query(
-                    query_texts=keywords, n_results=n_results, include=["documents", "metadatas", "distances"])
-                processed_results, seen_papers = [], set()
-                if results and results.get('ids') and results['ids'][0]:
-                    for i in range(len(results['ids'][0])):
-                        metadata = results['metadatas'][0][i]
-                        paper_id = metadata['paper_id']
-                        if paper_id in seen_papers: continue
-                        processed_results.append({
-                            'paper_id': paper_id,
-                            'content': results['documents'][0][i],
-                            'metadata': metadata,
-                            'score': 1 - (results['distances'][0][i] if results.get('distances') else 1.0)
-                        })
-                        seen_papers.add(paper_id)
-                return processed_results
-            except Exception as e:
-                logging.error(f"Error during single-keyword ChromaDB search: {e}")
-                return []
-
-        # For multiple keywords, find the intersection of results.
+        # We combine keywords for a single, powerful semantic query.
+        # The "AND" logic is better handled by filtering on the relevance score.
+        query = " ".join(keywords)
         try:
-            results_per_keyword = []
-            for keyword in keywords:
-                # Query for more results than needed to ensure we find overlaps
-                res = self.collection.query(query_texts=[keyword], n_results=n_results * 5, include=["metadatas"])
-                if res and res.get('ids') and res['ids'][0]:
-                    paper_ids = {meta['paper_id'] for meta in res['metadatas'][0]}
-                    results_per_keyword.append(paper_ids)
+            # Retrieve more candidates than needed so we have enough to filter.
+            results = self.collection.query(
+                query_texts=[query], 
+                n_results=n_results * 5, # Fetch more candidates
+                include=["documents", "metadatas", "distances"]
+            )
             
-            if not results_per_keyword:
-                return []
+            processed_results = []
+            seen_papers = set()
+            if results and results.get('ids') and results['ids'][0]:
+                for i in range(len(results['ids'][0])):
+                    metadata = results['metadatas'][0][i]
+                    paper_id = metadata['paper_id']
+                    
+                    # Convert distance to a similarity score (0 to 1)
+                    distance = results['distances'][0][i] if results.get('distances') else 1.0
+                    score = 1 - distance
 
-            # Find the common paper_ids across all keyword searches
-            intersecting_ids = set.intersection(*results_per_keyword)
-            
-            if not intersecting_ids:
-                return []
-            
-            # Retrieve the full documents for the intersecting IDs to return them.
-            # This is a simple retrieval; final ranking is done by RRF in main.py.
-            all_db_papers = self.get_all_papers()
-            final_results = [doc for doc in all_db_papers if doc['paper_id'] in intersecting_ids]
-            
-            return final_results[:n_results]
+                    # --- THE FILTERING STEP ---
+                    # If the score is below our threshold, ignore this result.
+                    if score < score_threshold:
+                        continue
+                    
+                    if paper_id in seen_papers:
+                        continue
+                    
+                    processed_results.append({
+                        'paper_id': paper_id,
+                        'content': results['documents'][0][i],
+                        'metadata': metadata,
+                        'score': score
+                    })
+                    seen_papers.add(paper_id)
+
+            # Sort the high-quality results by score and return the top N
+            processed_results.sort(key=lambda x: x['score'], reverse=True)
+            return processed_results[:n_results]
 
         except Exception as e:
-            logging.error(f"Error during multi-keyword ChromaDB (intersection) search: {e}")
+            logging.error(f"Error during ChromaDB search with score threshold: {e}")
             return []
 
     def get_all_papers(self) -> List[Dict[str, Any]]:

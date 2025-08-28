@@ -149,22 +149,21 @@ class ElasticsearchManager:
         except Exception as e: 
             logging.error(f"Failed to index paper {paper_id} in Elasticsearch: {e}")
 
-    # <<< --- THIS IS THE KEY CHANGE FOR AND LOGIC --- >>>
+    # <<< --- THIS IS THE KEY CHANGE for RELEVANCE SCORING --- >>>
     def search_papers(self, keywords: List[str], time_filter: Dict[str, Any] = None, size: int = 10) -> List[Dict[str, Any]]:
         """
-        Performs a keyword search where ALL keywords must be present (AND logic).
+        Performs a keyword search where ALL keywords must be present (AND logic)
+        AND the document must meet a minimum relevance score.
         """
         self._connect()
         if not keywords: 
             return []
 
-        # Build a list of "must" clauses, one for each keyword.
-        # This ensures that a document will only match if it contains ALL keywords.
         must_clauses = [
             {
                 "multi_match": {
                     "query": keyword,
-                    "fields": ["title^3", "abstract^2", "content", "authors", "journal"]
+                    "fields": ["title^3", "abstract^2", "content"] # Removed authors/journal from scoring to focus on content relevance
                 }
             } for keyword in keywords
         ]
@@ -173,7 +172,6 @@ class ElasticsearchManager:
         if time_filter:
             filter_clauses.append({"range": {"publication_date": time_filter}})
 
-        # The main query is now a "bool" query composed of our must clauses.
         query = {
             "bool": {
                 "must": must_clauses,
@@ -182,10 +180,14 @@ class ElasticsearchManager:
         }
 
         try:
+            # Add the min_score parameter to the search call.
+            # This will discard any documents that don't meet the threshold.
+            # 1.5 is a good starting point. Increase it for more strictness.
             response = self.client.search(
                 index=self.index_name,
                 query=query,
-                size=size
+                size=size,
+                min_score=1.5 
             )
             return [hit for hit in response['hits']['hits']]
         except Exception as e:
