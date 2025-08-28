@@ -1129,19 +1129,19 @@ Based *only* on the provided paper sources above, generate a detailed, multi-par
 **Part 1: Thematic Analysis**
 Generate the following sections. For "Key Methodological Advances," "Emerging Trends," and "Overall Summary," you MUST provide a detailed, extended analysis of at least two paragraphs or a comprehensive bulleted list. Go beyond a simple list; explain the significance and synthesize information across multiple sources.
 
-*   `### Diseases`: List the specific diseases, conditions, or traits studied.
-*   `### Sample Size & Genetic Ancestry`: Summarize sample sizes and genetic ancestries.
-*   `### Key Methodological Advances (Extended)`: Describe significant methods, pipelines, or statistical approaches. Explain *why* they are important advances.
-*   `### Emerging Trends (Extended)`: Identify future directions and new research areas. Synthesize repeated themes to explain what trends are emerging in the field.
-*   `### Overall Summary (Extended)`: Provide a comprehensive textual summary of the key findings and clinical implications.
+   ### Diseases: List the specific diseases, conditions, or traits studied.
+   ### Sample Size & Genetic Ancestry: Summarize sample sizes and genetic ancestries.
+   ### Key Methodological Advances: Describe significant methods, pipelines, or statistical approaches. Explain *why* they are important advances.
+   ### Emerging Trends: Identify future directions and new research areas. Synthesize repeated themes to explain what trends are emerging in the field.
+   ### Overall Summary: Provide a comprehensive textual summary of the key findings and clinical implications.
 
 **CRITICAL INSTRUCTION FOR PART 1:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].`
 
 **Part 2: Key Paper Summaries**
-Create a new section titled `### Key Paper Summaries`. Under this heading, identify the top 3 most relevant papers from the sources and provide a concise, one-paragraph summary for each. After each summary, you **MUST** include a direct link to the paper on a new line, formatted as: `[Source Link](the_actual_link)`.
+Create a new section titled ### Key Paper Summaries. Under this heading, identify the top 3 most relevant papers from the sources and provide a concise, one-paragraph summary for each. After each summary, you **MUST** include a direct link to the paper on a new line, formatted as: `[Source Link](the_actual_link)`.
 
 **Part 3: References**
-Create a final section titled `### References`. Under this heading, you **MUST** list all the paper sources provided above. The number for each reference must correspond to the citation markers used in Part 1. Format each entry as a numbered list item: `1. [Paper Title](Paper Link)`.
+Create a final section titled ### References. Under this heading, you **MUST** list all the paper sources provided above. The number for each reference must correspond to the citation markers used in Part 1. Format each entry as a numbered list item: `1. [Paper Title](Paper Link)`.
 """
 
         analysis = post_message_vertexai(prompt)
