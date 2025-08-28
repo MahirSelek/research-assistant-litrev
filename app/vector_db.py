@@ -968,15 +968,27 @@ class VectorDBManager:
     def __init__(self, es_manager: ElasticsearchManager, gcs_bucket_name: str):
         self.es_manager = es_manager
         self.gcs_bucket_name = gcs_bucket_name
-        self.persist_directory = "vector_db"
+
+        # --- THIS IS THE FIX ---
+        # Instead of writing to the root, create a temporary directory.
+        # This is more compatible with read-only filesystems like Streamlit Cloud's.
+        self.persist_directory = "/tmp/chroma_db"
+        # --- END FIX ---
         
+        # NOTE FOR PRODUCTION: In a scalable app, this rebuilding step would be a separate,
+        # offline process. For this Streamlit app, rebuilding on startup is acceptable.
         if os.path.exists(self.persist_directory):
             import shutil
             shutil.rmtree(self.persist_directory)
         
+        # Create the directory if it doesn't exist, with permissions.
+        os.makedirs(self.persist_directory, exist_ok=True)
+
         self.client = chromadb.PersistentClient(path=self.persist_directory)
         self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
         self.collection = self.client.get_or_create_collection(name="papers", embedding_function=self.embedding_function)
+
+        # Call the new function that reads from Google Cloud Storage
         self._initialize_with_papers_from_gcs()
 
     def _initialize_with_papers_from_gcs(self):
