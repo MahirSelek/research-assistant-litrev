@@ -2007,27 +2007,66 @@ def generate_conversation_title(conversation_history: str) -> str:
         return title.strip().replace('"', '')
     return "New Chat"
 
-# <<< --- MAJOR CHANGES TO THIS FUNCTION --- >>>
+# <<< --- THIS IS THE COMPLETELY REWRITTEN FUNCTION --- >>>
 def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None) -> list:
-    vector_results = st.session_state.vector_db.search_by_keywords(keywords, n_results=INITIAL_SEARCH_SIZE)
-    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=INITIAL_SEARCH_SIZE)
+    """
+    Performs a precise "Filter-then-Re-rank" hybrid search.
+    1. FILTER: Uses Elasticsearch with a strict AND query to get a precise candidate set.
+    2. RE-RANK: Uses semantic search results to re-rank the filtered candidates.
+    """
+    # STEP 1: Strict Filtering with Elasticsearch to get the high-precision candidate pool.
+    # Every paper in this list is guaranteed to contain ALL keywords.
+    es_results = st.session_state.es_manager.search_papers(
+        keywords, 
+        time_filter=time_filter_dict, 
+        size=INITIAL_SEARCH_SIZE
+    )
+    
+    # If the strict filter returns nothing, our search ends here.
+    if not es_results:
+        return []
+
+    # Create a dictionary of the pre-filtered papers for quick lookups.
+    # This is now our "universe" of possible results.
+    filtered_paper_ids = {hit['_id']: hit for hit in es_results}
+
+    # STEP 2: Semantic Search to get relevance scores for re-ranking.
+    # We use this list to understand the conceptual relevance, but we will NOT add any new papers from it.
+    vector_results = st.session_state.vector_db.search_by_keywords(
+        keywords, 
+        n_results=INITIAL_SEARCH_SIZE
+    )
+
     fused_scores = {}
-    k = 60
-    for i, doc in enumerate(vector_results):
-        rank = i + 1
-        paper_id = doc.get('paper_id')
-        if paper_id:
-            if paper_id not in fused_scores:
-                fused_scores[paper_id] = {'score': 0, 'doc': doc}
-            fused_scores[paper_id]['score'] += 1 / (k + rank)
+    k = 60  # RRF constant
+
+    # Process Elasticsearch results (our filtered set) for fusion
     for i, hit in enumerate(es_results):
         rank = i + 1
         paper_id = hit['_id']
-        if paper_id not in fused_scores:
-            doc_content = {'paper_id': paper_id, 'metadata': hit['_source'], 'content': hit['_source'].get('content', '')}
-            fused_scores[paper_id] = {'score': 0, 'doc': doc_content}
-        fused_scores[paper_id]['score'] += 1 / (k + rank)
+        doc_content = {'paper_id': paper_id, 'metadata': hit['_source'], 'content': hit['_source'].get('content', '')}
+        fused_scores[paper_id] = {'score': 1 / (k + rank), 'doc': doc_content}
+
+    # Process Vector search results ONLY if the paper already exists in our filtered set
+    for i, doc in enumerate(vector_results):
+        rank = i + 1
+        paper_id = doc.get('paper_id')
+        
+        # This is the crucial step: we only consider scores for papers
+        # that passed our strict keyword filter.
+        if paper_id in filtered_paper_ids:
+            # If the paper is already in our list, add the semantic score contribution.
+            if paper_id in fused_scores:
+                fused_scores[paper_id]['score'] += 1 / (k + rank)
+            # This case is unlikely but safe to handle: a paper passed ES filter but wasn't in the initial fused_scores dict.
+            else:
+                original_hit = filtered_paper_ids[paper_id]
+                doc_content = {'paper_id': paper_id, 'metadata': original_hit['_source'], 'content': original_hit['_source'].get('content', '')}
+                fused_scores[paper_id] = {'score': 1 / (k + rank), 'doc': doc_content}
+
+    # Sort the final, precisely-filtered, and semantically-ranked results.
     sorted_fused_results = sorted(fused_scores.values(), key=lambda x: x['score'], reverse=True)
+    
     return sorted_fused_results
 
 # <<< --- MAJOR CHANGES TO THIS FUNCTION --- >>>
@@ -2035,6 +2074,7 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, selecte
     if not keywords:
         st.error("Please select at least one keyword.")
         return None, []
+        
     with st.spinner("Searching for the most relevant papers..."):
         time_filter_dict = None
         now = datetime.datetime.now()
@@ -2049,12 +2089,14 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, selecte
             time_filter_dict = {"gte": (now - datetime.timedelta(days=31)).strftime('%Y-%m-%d')}
         
         search_results_with_scores = perform_hybrid_search(keywords, time_filter_dict=time_filter_dict)
+        
         if not search_results_with_scores:
-            st.error("No papers found for the selected keywords and time window.")
+            st.error("No papers found containing all the specified keywords for this time window.")
             return None, []
 
         top_score = search_results_with_scores[0]['score']
         score_threshold = top_score * SCORE_THRESHOLD_RATIO
+        
         precise_results = [
             result['doc'] for result in search_results_with_scores 
             if result['score'] >= score_threshold
@@ -2064,8 +2106,10 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, selecte
             st.warning(f"Found {len(precise_results)} highly relevant papers, which is more than the optimal maximum of {OPTIMAL_MAX_PAPERS} for a detailed report. "
                        "Please add more specific keywords or use the time filter to narrow your search.")
             return None, []
+            
         st.success(f"Found {len(precise_results)} highly relevant papers. Generating detailed report...")
 
+    # The rest of the function (spinner, context building, prompt) remains identical
     with st.spinner("Generating detailed, multi-part report..."):
         context = "You are a meticulous and expert research assistant. Analyze the following scientific paper excerpts.\n\n"
         for i, result in enumerate(precise_results):
