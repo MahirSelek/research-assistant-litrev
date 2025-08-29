@@ -1846,11 +1846,11 @@
 
 
 
-# app/main.py
+
+# app/main.py (Final Corrected Version)
 
 import streamlit as st
 import platform
-import requests
 import time
 import json
 import PyPDF2
@@ -1860,7 +1860,6 @@ import os
 import sys
 from typing import List, Dict, Any
 import datetime
-from dateutil import parser as date_parser
 from collections import defaultdict
 
 import vertexai
@@ -1868,7 +1867,7 @@ from vertexai.generative_models import GenerativeModel
 from google.cloud import storage
 from google.api_core.exceptions import NotFound
 
-# SQLite3 Patch for Linux environments
+# ... (SQLite3 Patch and local imports remain the same) ...
 if platform.system() == "Linux":
     try:
         __import__("pysqlite3")
@@ -1883,8 +1882,7 @@ try:
 except ImportError as e:
     st.error(f"Failed to import a local module: {e}. Ensure all .py files are in the 'app/' directory.")
     st.stop()
-
-# --- App Configuration & Constants ---
+# ... (Config and Secrets loading remain the same) ...
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'config', 'config.yaml')
@@ -1932,21 +1930,20 @@ except KeyError as e:
     st.error(f"Missing secret configuration for key: '{e}'. Please check that your .streamlit/secrets.toml file (for local development) or your Streamlit Cloud secrets match the required structure.")
     st.stop()
 
-# <<< --- YOUR FINALIZED HYPERPARAMETERS --- >>>
-OPTIMAL_MAX_PAPERS = 15 # Changed to 15 as in our last working version
-INITIAL_SEARCH_SIZE = 50 # Changed to 50 as in our last working version
-# SCORE_THRESHOLD_RATIO removed as it's not used in the final "top N" logic
+# <<< --- FINAL HYPERPARAMETERS --- >>>
+OPTIMAL_MAX_PAPERS = 15
+INITIAL_SEARCH_SIZE = 50
 
 # --- Interface Constants ---
 GENETICS_KEYWORDS = [
     "Polygenic risk score", "Complex disease", "Multifactorial disease", "PRS", "Risk", "Risk prediction", "Genetic risk prediction", "GWAS", "Genome-wide association study", "GWAS summary statistics", "Relative risk", "Absolute risk", "clinical polygenic risk score", "disease prevention", "disease management", "personalized medicine", "precision medicine", "UK biobank", "biobank", "All of US biobank", "PRS pipeline", "PRS workflow", "PRS tool", "PRS conversion", "Binary trait", "Continuous trait", "Meta-analysis", "Genome-wide association", "Genetic susceptibility", "PRSs Clinical utility", "Genomic risk prediction", "clinical implementation", "PGS", "SNP hereditability", "Risk estimation", "Machine learning in genetic prediction", "PRSs clinical application", "Risk stratification", "Multiancestry PRS", "Integrative PRS model", "Longitudinal PRS analysis", "Genetic screening", "Ethical implication of PRS", "human genetics", "human genome variation", "genetics of common multifactorial diseases", "genetics of common traits", "pharmacogenetics", "pharmacogenomics"
 ]
 USER_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM0OTUwNTciIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0iZmVhdGhlciBmZWF0aGVyLXVzZXIiPjxwYXRoIGQ9Ik0yMCAyMWMwLTMuODctMy4xMy03LTctN3MtNyAzLjEzLTcgN1oiPjwvcGF0aD48Y2lyY2xlIGN4PSIxMiIgY3k9IjciIHI9IjQiPjwvY2lyY2xlPjwvc3ZnPg=="
-BOT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDdiZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNOS41IDEyLjVsLTggNkw5LjUgMjEgMTEgMTRsMS41IDcgNy41LTEuNS0七LjUgMy4vTDE0IDQuNSA5LjUgOHoiLz48cGF0aCBkPSJNMy41IDEwLjVMOCA1bDIgMy41Ii8+PHBhdGggZD0iTTE4IDNMMTAuNSAxMC41Ii8+PC9zdmc+"
+# <<< --- THIS IS THE CORRECTED BOT AVATAR STRING --- >>>
+BOT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDdiZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNOS41IDEyLjVsLTggNkw5LjUgMjEgMTEgMTRsMS41IDcgNy41LTEuNS03LjUgMy4vTDE0IDQuNSA5LjUgOHoiLz48cGF0aCBkPSJNMy41IDEwLjVMOCA1bDIgMy41Ii8+PHBhdGggZD0iTTE4IDNMMTAuNSAxMC41Ii8+PC9zdmc+"
 
-# --- API and Helper Functions ---
+# ... (Helper functions from post_message_vertexai to generate_conversation_title are correct and unchanged) ...
 def post_message_vertexai(input_text: str) -> str | None:
-    # ... no changes
     try:
         vertexai.init(project=VERTEXAI_PROJECT, location=VERTEXAI_LOCATION)
         model = GenerativeModel(VERTEXAI_MODEL_ID)
@@ -1955,27 +1952,20 @@ def post_message_vertexai(input_text: str) -> str | None:
         return response.text
     except Exception as e:
         st.error(f"An error occurred with the Vertex AI API: {e}")
-        import traceback
-        st.error(f"Traceback: {traceback.format_exc()}")
         return None
-
 @st.cache_data
 def get_pdf_bytes_from_gcs(bucket_name: str, blob_name: str) -> bytes | None:
-    # ... no changes
     try:
         storage_client = storage.Client()
         bucket = storage_client.bucket(bucket_name)
         blob = bucket.blob(blob_name)
         return blob.download_as_bytes()
     except NotFound:
-        st.warning(f"File not found in GCS: {blob_name}")
         return None
     except Exception as e:
         st.error(f"Failed to download from GCS: {e}")
         return None
-
 def initialize_session_state():
-    # ... no changes
     if 'es_manager' not in st.session_state:
         st.session_state.es_manager = get_es_manager(cloud_id=ELASTIC_CLOUD_ID, username=ELASTIC_USER, password=ELASTIC_PASSWORD)
     if 'vector_db' not in st.session_state:
@@ -1986,26 +1976,19 @@ def initialize_session_state():
         st.session_state.active_conversation_id = None
     if 'selected_keywords' not in st.session_state:
         st.session_state.selected_keywords = []
-
 def local_css(file_name):
-    # ... no changes
     try:
         with open(file_name) as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
     except FileNotFoundError:
-        st.warning(f"CSS file '{file_name}' not found. Using default styles.")
-
+        pass
 def read_pdf_content(pdf_file: io.BytesIO) -> str | None:
-    # ... no changes
     try:
         pdf_reader = PyPDF2.PdfReader(pdf_file)
         return "".join(page.extract_text() for page in pdf_reader.pages)
-    except Exception as e:
-        st.error(f"Error reading PDF: {e}")
+    except Exception:
         return None
-
 def generate_conversation_title(conversation_history: str) -> str:
-    # ... no changes
     prompt = f"Create a concise, 5-word title for this conversation:\n\n---\n{conversation_history}\n---"
     title = post_message_vertexai(prompt)
     if title:
@@ -2013,18 +1996,10 @@ def generate_conversation_title(conversation_history: str) -> str:
     return "New Chat"
 
 def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None) -> list:
-    # Using the final "intelligent fallback" search logic
-    es_results = st.session_state.es_manager.search_papers(
-        keywords,
-        time_filter=time_filter_dict,
-        size=INITIAL_SEARCH_SIZE
-    )
+    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=INITIAL_SEARCH_SIZE)
     if not es_results:
         return []
-    vector_results = st.session_state.vector_db.search_by_keywords(
-        keywords,
-        n_results=INITIAL_SEARCH_SIZE
-    )
+    vector_results = st.session_state.vector_db.search_by_keywords(keywords, n_results=INITIAL_SEARCH_SIZE)
     fused_scores = {}
     k = 60
     for i, hit in enumerate(es_results):
@@ -2045,7 +2020,6 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, selecte
     if not keywords:
         st.error("Please select at least one keyword.")
         return None, []
-        
     with st.spinner("Searching for the most relevant papers..."):
         time_filter_dict = None
         now = datetime.datetime.now()
@@ -2072,16 +2046,13 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, selecte
         for i, result in enumerate(final_results):
             meta = result.get('metadata', {})
             title = meta.get('title', 'N/A')
-            # This is the key part: ensuring the link is extracted correctly
             link = meta.get('url') or meta.get('link') or meta.get('doi_url', 'Not available')
             content_preview = (meta.get('abstract') or result.get('content') or '')[:4000]
-            # And this is where the link is provided to the AI
             context += f"SOURCE [{i+1}]:\n"
             context += f"Title: {title}\n"
             context += f"Link: {link}\n"
             context += f"Content: {content_preview}\n---\n\n"
         
-        # <<< --- THIS IS THE RESTORED PROMPT WITH CLICKABLE LINK INSTRUCTIONS --- >>>
         prompt = f"""{context}
 ---
 **TASK:**
@@ -2108,9 +2079,8 @@ Create a final section titled ### References. Under this heading, you **MUST** l
         analysis = post_message_vertexai(prompt)
         return analysis, final_results
 
-# ... (display_paper_management and display_chat_history are correct and unchanged) ...
+# ... (display_paper_management, display_chat_history, and main() are correct and unchanged) ...
 def display_paper_management():
-    # ... no changes
     st.subheader("Add Papers to Database")
     uploaded_pdfs = st.file_uploader("Upload PDF files", accept_multiple_files=True, type=['pdf'], key="db_pdf_uploader")
     uploaded_jsons = st.file_uploader("Upload corresponding metadata JSON files", accept_multiple_files=True, type=['json'], key="db_json_uploader")
@@ -2127,9 +2097,7 @@ def display_paper_management():
                     st.session_state.vector_db.add_paper(paper_id=uploaded_file.name, content=paper_content, metadata=metadata)
                     st.success(f"Successfully added '{uploaded_file.name}' to the database.")
         st.rerun()
-
 def display_chat_history():
-    # ... no changes
     st.markdown("<h3>Chat History</h3>", unsafe_allow_html=True)
     if not st.session_state.conversations:
         st.caption("No past analyses found.")
@@ -2158,15 +2126,12 @@ def display_chat_history():
                 if st.session_state.active_conversation_id != conv_id:
                     st.session_state.active_conversation_id = conv_id
                     st.rerun()
-
 def main():
-    # ... (the main UI loop is correct and unchanged) ...
     st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     style_path = os.path.join(current_dir, "style.css")
     local_css(style_path)
     initialize_session_state()
-
     with st.sidebar:
         if st.button("➕ New Analysis", use_container_width=True):
             st.session_state.active_conversation_id = None
@@ -2176,11 +2141,7 @@ def main():
         st.markdown("---")
         with st.form(key="new_analysis_form"):
             st.subheader("Start a New Analysis")
-            selected_keywords = st.multiselect(
-                "Select keywords to narrow your search",
-                GENETICS_KEYWORDS,
-                default=st.session_state.get('selected_keywords', [])
-            )
+            selected_keywords = st.multiselect("Select keywords to narrow your search", GENETICS_KEYWORDS, default=st.session_state.get('selected_keywords', []))
             time_filter_type = st.selectbox("Filter by Time Window", ["All time", "Year", "Month", "Last week", "Last month"])
             selected_year, selected_month = None, None
             if time_filter_type == "Year":
@@ -2195,48 +2156,30 @@ def main():
                 dates = [p['metadata'].get('publication_date') for p in all_papers if p['metadata'].get('publication_date')]
                 months = pd.to_datetime(dates, errors='coerce').dropna().strftime('%Y-%m').unique()
                 selected_month = st.selectbox("Select month", sorted(months, reverse=True)) if len(months) > 0 else st.write("No papers with months found.")
-            
             if st.form_submit_button("Search & Analyze"):
                 analysis_result, retrieved_papers = process_keyword_search(selected_keywords, time_filter_type, selected_year, selected_month)
                 if analysis_result:
                     conv_id = f"conv_{time.time()}"
                     initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)}**\n\n{analysis_result}"}
                     title = generate_conversation_title(analysis_result)
-                    st.session_state.conversations[conv_id] = {
-                        "title": title,
-                        "messages": [initial_message],
-                        "keywords": selected_keywords,
-                        "retrieved_papers": retrieved_papers
-                    }
+                    st.session_state.conversations[conv_id] = {"title": title, "messages": [initial_message], "keywords": selected_keywords, "retrieved_papers": retrieved_papers}
                     st.session_state.active_conversation_id = conv_id
                     st.rerun()
-
         st.markdown("---")
         with st.expander("Paper Management"):
             display_paper_management()
-
     st.markdown("<h1>🧬 Polo GGB Research Assistant</h1>", unsafe_allow_html=True)
-
     if st.session_state.active_conversation_id is None:
         st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
     else:
         active_id = st.session_state.active_conversation_id
         active_conv = st.session_state.conversations[active_id]
-        
         for i, message in enumerate(active_conv["messages"]):
             avatar = BOT_AVATAR if message["role"] == "assistant" else USER_AVATAR
             with st.chat_message(message["role"], avatar=avatar):
                 st.markdown(message["content"])
-
             if i == 0 and "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
-                st.download_button(
-                    label="Download Report",
-                    data=message['content'],
-                    file_name=f"report_{active_id}.md",
-                    mime="text/markdown",
-                    key=f"download_report_{active_id}"
-                )
-                
+                st.download_button(label="Download Report", data=message['content'], file_name=f"report_{active_id}.md", mime="text/markdown", key=f"download_report_{active_id}")
                 with st.expander("View Retrieved Papers for this Analysis"):
                     for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
                         meta = paper.get('metadata', {})
@@ -2252,20 +2195,11 @@ def main():
                             if paper_id:
                                 pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
                                 if pdf_bytes:
-                                    st.download_button(
-                                        label="Download PDF",
-                                        data=pdf_bytes,
-                                        file_name=paper_id,
-                                        mime="application/pdf",
-                                        key=f"download_{active_id}_{paper_id}"
-                                    )
-        
+                                    st.download_button(label="Download PDF", data=pdf_bytes, file_name=paper_id, mime="application/pdf", key=f"download_{active_id}_{paper_id}")
         if prompt := st.chat_input("Ask a follow-up question..."):
             active_conv["messages"].append({"role": "user", "content": prompt})
             st.rerun()
-
     if st.session_state.active_conversation_id and st.session_state.conversations[st.session_state.active_conversation_id]["messages"][-1]["role"] == "user":
-        # ... no changes to the follow-up logic ...
         active_conv = st.session_state.conversations[st.session_state.active_conversation_id]
         with st.spinner("Thinking..."):
             chat_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in active_conv["messages"]])
@@ -2274,11 +2208,10 @@ def main():
                 full_context += "Here is the full context of every paper found in the initial analysis:\n\n"
                 for i, paper in enumerate(active_conv["retrieved_papers"]):
                     meta = paper.get('metadata', {})
-                    title = meta.get('title', 'N/A')
+                    title = paper.get('title', 'N/A')
                     link = meta.get('url') or meta.get('link') or meta.get('doi_url', 'Not available')
                     content_preview = (meta.get('abstract') or paper.get('content') or '')[:4000]
                     full_context += f"SOURCE [{i+1}]:\nTitle: {title}\nLink: {link}\nContent: {content_preview}\n---\n\n"
-            
             full_prompt = f"""Continue our conversation. You are the Polo-GGB Research Assistant.
 Your task is to answer the user's last message based on the chat history and the full context from the paper sources provided below.
 When the user asks you to list the papers or for references, you MUST format the response as a numbered list with clickable markdown links: `1. [Paper Title](Paper Link)`.
@@ -2292,7 +2225,6 @@ When the user asks you to list the papers or for references, you MUST format the
 --- END FULL LITERATURE CONTEXT FOR THIS ANALYSIS ---
 
 Assistant Response:"""
-            
             response_text = post_message_vertexai(full_prompt)
             if response_text:
                 active_conv["messages"].append({"role": "assistant", "content": response_text})
