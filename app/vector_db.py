@@ -698,6 +698,8 @@
 
 
 # vector_db.py (Full, Corrected, Cloud-Native Version)
+# This code piece part of only with inline clickable links
+
 
 import chromadb
 from chromadb.utils import embedding_functions
@@ -911,29 +913,6 @@ def get_vector_db(_es_manager: ElasticsearchManager) -> VectorDBManager:
     """Gets a cached instance of the VectorDBManager, configured to use GCS."""
     gcs_bucket_name = st.secrets["app_config"]["gcs_bucket_name"]
     return VectorDBManager(es_manager=_es_manager, gcs_bucket_name=gcs_bucket_name)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

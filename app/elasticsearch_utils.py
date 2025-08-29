@@ -1,4 +1,6 @@
 # app/elasticsearch_utils.py (Final Cloud-Aware Version)
+# This code piece part of only with inline clickable links
+
 
 from elasticsearch import Elasticsearch, ConnectionError as ESConnectionError
 import logging
