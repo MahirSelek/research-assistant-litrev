@@ -2326,7 +2326,6 @@
 
 
 
-
 # app/main.py
 
 import streamlit as st
@@ -2677,39 +2676,40 @@ def main():
         active_id = st.session_state.active_conversation_id
         active_conv = st.session_state.conversations[active_id]
         
-        for i, message in enumerate(active_conv["messages"]):
+        # <<< FIX: REVERTING TO THE ORIGINAL, WORKING DISPLAY LOGIC >>>
+        
+        # 1. First, loop through and display all chat messages.
+        for message in active_conv["messages"]:
             avatar = BOT_AVATAR if message["role"] == "assistant" else USER_AVATAR
             with st.chat_message(message["role"], avatar=avatar):
-                # <<< FIX: RESTORED st.markdown() TO ENABLE CLICKABLE LINKS >>>
-                # This ensures that any Markdown formatting, like [text](url), in the
-                # AI's response is rendered as a clickable link. Using st.write()
-                # or st.text() would show the raw text instead.
                 st.markdown(message["content"])
 
-            if i == 0 and "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
-                with st.expander("View Retrieved Papers for this Analysis"):
-                    for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
-                        meta = paper.get('metadata', {})
-                        title = meta.get('title', 'N/A')
-                        link = meta.get('url') or meta.get('link') or meta.get('doi_url', 'N/A')
-                        paper_id = paper.get('paper_id')
+        # 2. THEN, display the expander with retrieved papers.
+        # This simpler, sequential structure avoids rendering conflicts.
+        if "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
+            with st.expander("View Retrieved Papers for this Analysis"):
+                for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
+                    meta = paper.get('metadata', {})
+                    title = meta.get('title', 'N/A')
+                    link = meta.get('url') or meta.get('link') or meta.get('doi_url', 'N/A')
+                    paper_id = paper.get('paper_id')
 
-                        col1, col2 = st.columns([4, 1])
-                        with col1:
-                            st.markdown(f"**{paper_index+1}. {title}**")
-                            if link != 'N/A':
-                                st.markdown(f"   - Link: [{link}]({link})")
-                        with col2:
-                            if paper_id:
-                                pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
-                                if pdf_bytes:
-                                    st.download_button(
-                                        label="Download PDF",
-                                        data=pdf_bytes,
-                                        file_name=paper_id,
-                                        mime="application/pdf",
-                                        key=f"download_{active_id}_{paper_id}"
-                                    )
+                    col1, col2 = st.columns([4, 1])
+                    with col1:
+                        st.markdown(f"**{paper_index+1}. {title}**")
+                        if link != 'N/A':
+                            st.markdown(f"   - Link: [{link}]({link})")
+                    with col2:
+                        if paper_id:
+                            pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
+                            if pdf_bytes:
+                                st.download_button(
+                                    label="Download PDF",
+                                    data=pdf_bytes,
+                                    file_name=paper_id,
+                                    mime="application/pdf",
+                                    key=f"download_{active_id}_{paper_id}"
+                                )
 
         if prompt := st.chat_input("Ask a follow-up question..."):
             active_conv["messages"].append({"role": "user", "content": prompt})
@@ -2726,7 +2726,7 @@ def main():
                     meta = paper.get('metadata', {})
                     title = meta.get('title', 'N/A')
                     link = meta.get('url') or meta.get('link') or meta.get('doi_url', 'Not available')
-                    content_preview = (meta.get('abstract') or paper.get('content') or '')[:4000] # Use larger preview here too
+                    content_preview = (meta.get('abstract') or paper.get('content') or '')[:4000]
                     full_context += f"SOURCE [{i+1}]:\nTitle: {title}\nLink: {link}\nContent: {content_preview}\n---\n\n"
             
             full_prompt = f"""Continue our conversation. You are the Polo-GGB Research Assistant.
