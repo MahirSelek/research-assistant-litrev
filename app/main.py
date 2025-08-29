@@ -1729,35 +1729,38 @@ def main():
         active_id = st.session_state.active_conversation_id
         active_conv = st.session_state.conversations[active_id]
         
-        for message in active_conv["messages"]:
+        # <<< --- THIS IS THE MODIFIED SECTION --- >>>
+        for i, message in enumerate(active_conv["messages"]):
             avatar = BOT_AVATAR if message["role"] == "assistant" else USER_AVATAR
             with st.chat_message(message["role"], avatar=avatar):
                 st.markdown(message["content"])
 
-        if len(active_conv["messages"]) == 1 and "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
-            with st.expander("View Retrieved Papers for this Analysis"):
-                for i, paper in enumerate(active_conv["retrieved_papers"]):
-                    meta = paper.get('metadata', {})
-                    title = meta.get('title', 'N/A')
-                    link = meta.get('url') or meta.get('link') or meta.get('doi_url', 'N/A')
-                    paper_id = paper.get('paper_id')
+            # "Pin" the expander to the first message (index 0)
+            if i == 0 and "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
+                with st.expander("View Retrieved Papers for this Analysis"):
+                    for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
+                        meta = paper.get('metadata', {})
+                        title = meta.get('title', 'N/A')
+                        link = meta.get('url') or meta.get('link') or meta.get('doi_url', 'N/A')
+                        paper_id = paper.get('paper_id')
 
-                    col1, col2 = st.columns([4, 1])
-                    with col1:
-                        st.markdown(f"**{i+1}. {title}**")
-                        if link != 'N/A':
-                            st.markdown(f"   - Link: [{link}]({link})")
-                    with col2:
-                        if paper_id:
-                            pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
-                            if pdf_bytes:
-                                st.download_button(
-                                    label="Download PDF",
-                                    data=pdf_bytes,
-                                    file_name=paper_id,
-                                    mime="application/pdf",
-                                    key=f"download_{paper_id}_{i}"
-                                )
+                        col1, col2 = st.columns([4, 1])
+                        with col1:
+                            st.markdown(f"**{paper_index+1}. {title}**")
+                            if link != 'N/A':
+                                st.markdown(f"   - Link: [{link}]({link})")
+                        with col2:
+                            if paper_id:
+                                pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
+                                if pdf_bytes:
+                                    st.download_button(
+                                        label="Download PDF",
+                                        data=pdf_bytes,
+                                        file_name=paper_id,
+                                        mime="application/pdf",
+                                        # Use a more robust key combining conv_id and paper_id
+                                        key=f"download_{active_id}_{paper_id}"
+                                    )
 
         if prompt := st.chat_input("Ask a follow-up question..."):
             active_conv["messages"].append({"role": "user", "content": prompt})
