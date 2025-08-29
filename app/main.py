@@ -2726,7 +2726,7 @@ def main():
                     meta = paper.get('metadata', {})
                     title = meta.get('title', 'N/A')
                     link = meta.get('url') or meta.get('link') or meta.get('doi_url', 'Not available')
-                    content_preview = (meta.get('abstract') or paper.get('content') or '')[:4000]
+                    content_preview = (meta.get('abstract') or paper.get('content') or '')[:4000] # Use larger preview here too
                     full_context += f"SOURCE [{i+1}]:\nTitle: {title}\nLink: {link}\nContent: {content_preview}\n---\n\n"
             
             full_prompt = f"""Continue our conversation. You are the Polo-GGB Research Assistant.
