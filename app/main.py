@@ -1846,7 +1846,6 @@
 
 
 
-
 # app/main.py
 
 import streamlit as st
@@ -1933,20 +1932,21 @@ except KeyError as e:
     st.error(f"Missing secret configuration for key: '{e}'. Please check that your .streamlit/secrets.toml file (for local development) or your Streamlit Cloud secrets match the required structure.")
     st.stop()
 
-# <<< --- NEW CONSTANTS FOR DYNAMIC SEARCH --- >>>
-OPTIMAL_MAX_PAPERS = 16
-INITIAL_SEARCH_SIZE = 30
-SCORE_THRESHOLD_RATIO = 0.70
+# <<< --- YOUR FINALIZED HYPERPARAMETERS --- >>>
+OPTIMAL_MAX_PAPERS = 15 # Changed to 15 as in our last working version
+INITIAL_SEARCH_SIZE = 50 # Changed to 50 as in our last working version
+# SCORE_THRESHOLD_RATIO removed as it's not used in the final "top N" logic
 
 # --- Interface Constants ---
 GENETICS_KEYWORDS = [
     "Polygenic risk score", "Complex disease", "Multifactorial disease", "PRS", "Risk", "Risk prediction", "Genetic risk prediction", "GWAS", "Genome-wide association study", "GWAS summary statistics", "Relative risk", "Absolute risk", "clinical polygenic risk score", "disease prevention", "disease management", "personalized medicine", "precision medicine", "UK biobank", "biobank", "All of US biobank", "PRS pipeline", "PRS workflow", "PRS tool", "PRS conversion", "Binary trait", "Continuous trait", "Meta-analysis", "Genome-wide association", "Genetic susceptibility", "PRSs Clinical utility", "Genomic risk prediction", "clinical implementation", "PGS", "SNP hereditability", "Risk estimation", "Machine learning in genetic prediction", "PRSs clinical application", "Risk stratification", "Multiancestry PRS", "Integrative PRS model", "Longitudinal PRS analysis", "Genetic screening", "Ethical implication of PRS", "human genetics", "human genome variation", "genetics of common multifactorial diseases", "genetics of common traits", "pharmacogenetics", "pharmacogenomics"
 ]
 USER_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM0OTUwNTciIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0iZmVhdGhlciBmZWF0aGVyLXVzZXIiPjxwYXRoIGQ9Ik0yMCAyMWMwLTMuODctMy4xMy03LTctN3MtNyAzLjEzLTcgN1oiPjwvcGF0aD48Y2lyY2xlIGN4PSIxMiIgY3k9IjciIHI9IjQiPjwvY2lyY2xlPjwvc3ZnPg=="
-BOT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDdiZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNOS41IDEyLjVsLTggNkw5LjUgMjEgMTEgMTRsMS41IDcgNy41LTEuNS03LjUgMy4vTDE0IDQuNSA5LjUgOHoiLz48cGF0aCBkPSJNMy41IDEwLjVMOCA1bDIgMy41Ii8+PHBhdGggZD0iTTE4IDNMMTAuNSAxMC41Ii8+PC9zdmc+"
+BOT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDdiZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNOS41IDEyLjVsLTggNkw5LjUgMjEgMTEgMTRsMS41IDcgNy41LTEuNS0七LjUgMy4vTDE0IDQuNSA5LjUgOHoiLz48cGF0aCBkPSJNMy41IDEwLjVMOCA1bDIgMy41Ii8+PHBhdGggZD0iTTE4IDNMMTAuNSAxMC41Ii8+PC9zdmc+"
 
 # --- API and Helper Functions ---
 def post_message_vertexai(input_text: str) -> str | None:
+    # ... no changes
     try:
         vertexai.init(project=VERTEXAI_PROJECT, location=VERTEXAI_LOCATION)
         model = GenerativeModel(VERTEXAI_MODEL_ID)
@@ -1961,6 +1961,7 @@ def post_message_vertexai(input_text: str) -> str | None:
 
 @st.cache_data
 def get_pdf_bytes_from_gcs(bucket_name: str, blob_name: str) -> bytes | None:
+    # ... no changes
     try:
         storage_client = storage.Client()
         bucket = storage_client.bucket(bucket_name)
@@ -1974,6 +1975,7 @@ def get_pdf_bytes_from_gcs(bucket_name: str, blob_name: str) -> bytes | None:
         return None
 
 def initialize_session_state():
+    # ... no changes
     if 'es_manager' not in st.session_state:
         st.session_state.es_manager = get_es_manager(cloud_id=ELASTIC_CLOUD_ID, username=ELASTIC_USER, password=ELASTIC_PASSWORD)
     if 'vector_db' not in st.session_state:
@@ -1986,6 +1988,7 @@ def initialize_session_state():
         st.session_state.selected_keywords = []
 
 def local_css(file_name):
+    # ... no changes
     try:
         with open(file_name) as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
@@ -1993,6 +1996,7 @@ def local_css(file_name):
         st.warning(f"CSS file '{file_name}' not found. Using default styles.")
 
 def read_pdf_content(pdf_file: io.BytesIO) -> str | None:
+    # ... no changes
     try:
         pdf_reader = PyPDF2.PdfReader(pdf_file)
         return "".join(page.extract_text() for page in pdf_reader.pages)
@@ -2001,75 +2005,42 @@ def read_pdf_content(pdf_file: io.BytesIO) -> str | None:
         return None
 
 def generate_conversation_title(conversation_history: str) -> str:
+    # ... no changes
     prompt = f"Create a concise, 5-word title for this conversation:\n\n---\n{conversation_history}\n---"
     title = post_message_vertexai(prompt)
     if title:
         return title.strip().replace('"', '')
     return "New Chat"
 
-# <<< --- THIS IS THE COMPLETELY REWRITTEN FUNCTION --- >>>
 def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None) -> list:
-    """
-    Performs a precise "Filter-then-Re-rank" hybrid search.
-    1. FILTER: Uses Elasticsearch with a strict AND query to get a precise candidate set.
-    2. RE-RANK: Uses semantic search results to re-rank the filtered candidates.
-    """
-    # STEP 1: Strict Filtering with Elasticsearch to get the high-precision candidate pool.
-    # Every paper in this list is guaranteed to contain ALL keywords.
+    # Using the final "intelligent fallback" search logic
     es_results = st.session_state.es_manager.search_papers(
-        keywords, 
-        time_filter=time_filter_dict, 
+        keywords,
+        time_filter=time_filter_dict,
         size=INITIAL_SEARCH_SIZE
     )
-    
-    # If the strict filter returns nothing, our search ends here.
     if not es_results:
         return []
-
-    # Create a dictionary of the pre-filtered papers for quick lookups.
-    # This is now our "universe" of possible results.
-    filtered_paper_ids = {hit['_id']: hit for hit in es_results}
-
-    # STEP 2: Semantic Search to get relevance scores for re-ranking.
-    # We use this list to understand the conceptual relevance, but we will NOT add any new papers from it.
     vector_results = st.session_state.vector_db.search_by_keywords(
-        keywords, 
+        keywords,
         n_results=INITIAL_SEARCH_SIZE
     )
-
     fused_scores = {}
-    k = 60  # RRF constant
-
-    # Process Elasticsearch results (our filtered set) for fusion
+    k = 60
     for i, hit in enumerate(es_results):
         rank = i + 1
         paper_id = hit['_id']
         doc_content = {'paper_id': paper_id, 'metadata': hit['_source'], 'content': hit['_source'].get('content', '')}
         fused_scores[paper_id] = {'score': 1 / (k + rank), 'doc': doc_content}
-
-    # Process Vector search results ONLY if the paper already exists in our filtered set
+    es_paper_ids = {hit['_id'] for hit in es_results}
     for i, doc in enumerate(vector_results):
         rank = i + 1
         paper_id = doc.get('paper_id')
-        
-        # This is the crucial step: we only consider scores for papers
-        # that passed our strict keyword filter.
-        if paper_id in filtered_paper_ids:
-            # If the paper is already in our list, add the semantic score contribution.
-            if paper_id in fused_scores:
-                fused_scores[paper_id]['score'] += 1 / (k + rank)
-            # This case is unlikely but safe to handle: a paper passed ES filter but wasn't in the initial fused_scores dict.
-            else:
-                original_hit = filtered_paper_ids[paper_id]
-                doc_content = {'paper_id': paper_id, 'metadata': original_hit['_source'], 'content': original_hit['_source'].get('content', '')}
-                fused_scores[paper_id] = {'score': 1 / (k + rank), 'doc': doc_content}
-
-    # Sort the final, precisely-filtered, and semantically-ranked results.
+        if paper_id in es_paper_ids:
+            fused_scores[paper_id]['score'] += 1 / (k + rank)
     sorted_fused_results = sorted(fused_scores.values(), key=lambda x: x['score'], reverse=True)
-    
-    return sorted_fused_results
+    return [item['doc'] for item in sorted_fused_results]
 
-# <<< --- MAJOR CHANGES TO THIS FUNCTION --- >>>
 def process_keyword_search(keywords: list, time_filter_type: str | None, selected_year: int | None, selected_month: str | None) -> tuple[str | None, list]:
     if not keywords:
         st.error("Please select at least one keyword.")
@@ -2088,40 +2059,29 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, selecte
         elif time_filter_type == "Last month":
             time_filter_dict = {"gte": (now - datetime.timedelta(days=31)).strftime('%Y-%m-%d')}
         
-        search_results_with_scores = perform_hybrid_search(keywords, time_filter_dict=time_filter_dict)
-        
-        if not search_results_with_scores:
-            st.error("No papers found containing all the specified keywords for this time window.")
+        ranked_results = perform_hybrid_search(keywords, time_filter_dict=time_filter_dict)
+        if not ranked_results:
+            st.error("No relevant papers found for the specified keywords and time window.")
             return None, []
 
-        top_score = search_results_with_scores[0]['score']
-        score_threshold = top_score * SCORE_THRESHOLD_RATIO
-        
-        precise_results = [
-            result['doc'] for result in search_results_with_scores 
-            if result['score'] >= score_threshold
-        ]
+        final_results = ranked_results[:OPTIMAL_MAX_PAPERS]
+        st.success(f"Found {len(final_results)} most relevant papers. Generating detailed report...")
 
-        if len(precise_results) > OPTIMAL_MAX_PAPERS:
-            st.warning(f"Found {len(precise_results)} highly relevant papers, which is more than the optimal maximum of {OPTIMAL_MAX_PAPERS} for a detailed report. "
-                       "Please add more specific keywords or use the time filter to narrow your search.")
-            return None, []
-            
-        st.success(f"Found {len(precise_results)} highly relevant papers. Generating detailed report...")
-
-    # The rest of the function (spinner, context building, prompt) remains identical
     with st.spinner("Generating detailed, multi-part report..."):
         context = "You are a meticulous and expert research assistant. Analyze the following scientific paper excerpts.\n\n"
-        for i, result in enumerate(precise_results):
+        for i, result in enumerate(final_results):
             meta = result.get('metadata', {})
             title = meta.get('title', 'N/A')
+            # This is the key part: ensuring the link is extracted correctly
             link = meta.get('url') or meta.get('link') or meta.get('doi_url', 'Not available')
             content_preview = (meta.get('abstract') or result.get('content') or '')[:4000]
+            # And this is where the link is provided to the AI
             context += f"SOURCE [{i+1}]:\n"
             context += f"Title: {title}\n"
             context += f"Link: {link}\n"
             context += f"Content: {content_preview}\n---\n\n"
         
+        # <<< --- THIS IS THE RESTORED PROMPT WITH CLICKABLE LINK INSTRUCTIONS --- >>>
         prompt = f"""{context}
 ---
 **TASK:**
@@ -2146,9 +2106,11 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
 Create a final section titled ### References. Under this heading, you **MUST** list all the paper sources provided above. The number for each reference must correspond to the citation markers used in Part 1. Format each entry as a numbered list item: `1. [Paper Title](Paper Link)`.
 """
         analysis = post_message_vertexai(prompt)
-        return analysis, precise_results
+        return analysis, final_results
 
+# ... (display_paper_management and display_chat_history are correct and unchanged) ...
 def display_paper_management():
+    # ... no changes
     st.subheader("Add Papers to Database")
     uploaded_pdfs = st.file_uploader("Upload PDF files", accept_multiple_files=True, type=['pdf'], key="db_pdf_uploader")
     uploaded_jsons = st.file_uploader("Upload corresponding metadata JSON files", accept_multiple_files=True, type=['json'], key="db_json_uploader")
@@ -2167,6 +2129,7 @@ def display_paper_management():
         st.rerun()
 
 def display_chat_history():
+    # ... no changes
     st.markdown("<h3>Chat History</h3>", unsafe_allow_html=True)
     if not st.session_state.conversations:
         st.caption("No past analyses found.")
@@ -2197,6 +2160,7 @@ def display_chat_history():
                     st.rerun()
 
 def main():
+    # ... (the main UI loop is correct and unchanged) ...
     st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     style_path = os.path.join(current_dir, "style.css")
@@ -2212,7 +2176,6 @@ def main():
         st.markdown("---")
         with st.form(key="new_analysis_form"):
             st.subheader("Start a New Analysis")
-            # <<< --- CHANGE: REMOVED max_selections --- >>>
             selected_keywords = st.multiselect(
                 "Select keywords to narrow your search",
                 GENETICS_KEYWORDS,
@@ -2266,7 +2229,6 @@ def main():
                 st.markdown(message["content"])
 
             if i == 0 and "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
-                # <<< --- NEW FEATURE: DOWNLOAD REPORT BUTTON --- >>>
                 st.download_button(
                     label="Download Report",
                     data=message['content'],
@@ -2303,6 +2265,7 @@ def main():
             st.rerun()
 
     if st.session_state.active_conversation_id and st.session_state.conversations[st.session_state.active_conversation_id]["messages"][-1]["role"] == "user":
+        # ... no changes to the follow-up logic ...
         active_conv = st.session_state.conversations[st.session_state.active_conversation_id]
         with st.spinner("Thinking..."):
             chat_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in active_conv["messages"]])
