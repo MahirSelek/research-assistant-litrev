@@ -2687,7 +2687,7 @@ def main():
         # 2. THEN, display the expander with retrieved papers.
         # This simpler, sequential structure avoids rendering conflicts.
         if "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
-            with st.expander("View Retrieved Papers for this Analysis"):
+            with st.expander("Download Retrieved Papers for this Analysis"):
                 for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
                     meta = paper.get('metadata', {})
                     title = meta.get('title', 'N/A')
