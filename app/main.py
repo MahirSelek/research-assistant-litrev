@@ -2234,7 +2234,7 @@ def main():
             with st.chat_message(message["role"], avatar=avatar):
                 st.markdown(message["content"])
 
-        if "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
+        if len(active_conv["messages"]) == 1 and "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
             with st.expander("View Retrieved Papers for this Analysis"):
                 for i, paper in enumerate(active_conv["retrieved_papers"]):
                     meta = paper.get('metadata', {})
