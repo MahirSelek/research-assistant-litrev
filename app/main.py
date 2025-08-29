@@ -1874,7 +1874,6 @@ except Exception as e:
     st.stop()
 
 # --- Configuration from Streamlit Secrets ---
-# (This section remains the same)
 try:
     # --- Elastic Cloud Configuration ---
     ELASTIC_CLOUD_ID = st.secrets["elasticsearch"]["cloud_id"]
@@ -1882,6 +1881,7 @@ try:
     ELASTIC_PASSWORD = st.secrets["elasticsearch"]["password"]
 
     # --- Vertex AI Configurations ---
+    # Reading lowercase keys to match secrets.toml best practice
     VERTEXAI_PROJECT = st.secrets["vertex_ai"]["VERTEXAI_PROJECT"]
     VERTEXAI_LOCATION = st.secrets["vertex_ai"]["VERTEXAI_LOCATION"]
     VERTEXAI_MODEL_ID = "gemini-2.0-flash-001"
@@ -1890,10 +1890,18 @@ try:
     GCS_BUCKET_NAME = st.secrets["app_config"]["gcs_bucket_name"]
 
     # --- Google Service Account Credentials ---
+    # 1. Read the secret, which is a Streamlit AttrDict object.
     gcp_service_account_secret = st.secrets["gcp_service_account"]
+    
+    # 2. Convert the AttrDict to a standard Python dictionary.
+    #    THIS IS THE FIX for the "not JSON serializable" error.
     GOOGLE_CREDENTIALS_DICT = dict(gcp_service_account_secret)
+    
+    # 3. Write the standard dictionary to a temporary file.
     with open("gcp_credentials.json", "w") as f:
         json.dump(GOOGLE_CREDENTIALS_DICT, f)
+        
+    # 4. Set the environment variable for Google Cloud libraries to find the file.
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "gcp_credentials.json"
 
 except KeyError as e:
