@@ -1819,6 +1819,34 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # app/main.py
 
 import streamlit as st
@@ -1834,9 +1862,7 @@ import sys
 from typing import List, Dict, Any
 import datetime
 from dateutil import parser as date_parser
-# REMOVED: from streamlit_option_menu import option_menu 
-# The option_menu is being replaced with a custom history display.
-from collections import defaultdict # ADDED: For easier grouping of conversations
+from collections import defaultdict
 
 import vertexai
 from vertexai.generative_models import GenerativeModel
@@ -1872,6 +1898,7 @@ except FileNotFoundError:
 except Exception as e:
     st.error(f"Error loading config.yaml: {e}")
     st.stop()
+
 
 # --- Configuration from Streamlit Secrets ---
 try:
@@ -2007,7 +2034,7 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
     return [item['doc'] for item in sorted_fused_results[:n_results]]
 
 def process_keyword_search(keywords: list, time_filter_type: str | None, selected_year: int | None, selected_month: str | None) -> tuple[str | None, list]:
-    # ... (function is correct, no changes from your provided file)
+    # ... (function is correct, no changes)
     if not keywords:
         st.error("Please select at least one keyword.")
         return None, []
@@ -2085,19 +2112,13 @@ def display_paper_management():
                     st.success(f"Successfully added '{uploaded_file.name}' to the database.")
         st.rerun()
 
-# <<< --- NEW HELPER FUNCTION FOR CHAT HISTORY --- >>>
 def display_chat_history():
-    """
-    Groups conversations by month and displays them in the sidebar.
-    Replaces the previous flat list implementation with a more organized view.
-    """
+    # ... (function is correct, no changes)
     st.markdown("<h3>Chat History</h3>", unsafe_allow_html=True)
-
     if not st.session_state.conversations:
         st.caption("No past analyses found.")
         return
 
-    # Group conversations by month
     grouped_convs = defaultdict(list)
     sorted_conv_ids = sorted(st.session_state.conversations.keys(), reverse=True)
 
@@ -2110,15 +2131,11 @@ def display_chat_history():
             title = st.session_state.conversations[conv_id].get("title", "Chat...")
             grouped_convs[month_key].append((conv_id, title))
         except (IndexError, ValueError):
-            # Skip any conversation ID that doesn't match the expected format
             continue
     
-    # Display the grouped conversations
     now = datetime.datetime.now()
     current_month_key = now.strftime("%Y-%m")
     
-    # Using st.container and custom CSS might be needed for better styling
-    # but for now, st.button provides the core functionality.
     for month_key in sorted(grouped_convs.keys(), reverse=True):
         if month_key == current_month_key:
             st.markdown("<h5>Recent</h5>", unsafe_allow_html=True)
@@ -2127,8 +2144,6 @@ def display_chat_history():
             st.markdown(f"<h5>{display_date.strftime('%B %Y')}</h5>", unsafe_allow_html=True)
 
         for conv_id, title in grouped_convs[month_key]:
-            # Each button acts as a link to that conversation
-            # A unique key is crucial for Streamlit to manage button states
             if st.button(title, key=f"btn_{conv_id}", use_container_width=True):
                 if st.session_state.active_conversation_id != conv_id:
                     st.session_state.active_conversation_id = conv_id
@@ -2142,18 +2157,11 @@ def main():
     initialize_session_state()
 
     with st.sidebar:
-        # <<< --- MAJOR CHANGE: REPLACED option_menu WITH NEW LOGIC --- >>>
-        
-        # 1. New Analysis button is now separate and at the top
         if st.button("➕ New Analysis", use_container_width=True):
             st.session_state.active_conversation_id = None
             st.session_state.selected_keywords = []
             st.rerun()
-
-        # 2. Call the new function to display grouped chat history
         display_chat_history()
-
-        # The rest of the sidebar remains the same
         st.markdown("---")
         with st.form(key="new_analysis_form"):
             st.subheader("Start a New Analysis")
@@ -2194,42 +2202,46 @@ def main():
 
     st.markdown("<h1>🧬 Polo GGB Research Assistant</h1>", unsafe_allow_html=True)
 
-    # --- Main App Logic and UI (No changes needed below this line) ---
     if st.session_state.active_conversation_id is None:
         st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
     else:
         active_id = st.session_state.active_conversation_id
         active_conv = st.session_state.conversations[active_id]
         
-        for message in active_conv["messages"]:
+        # <<< --- THIS IS THE MODIFIED SECTION --- >>>
+        for i, message in enumerate(active_conv["messages"]):
             avatar = BOT_AVATAR if message["role"] == "assistant" else USER_AVATAR
             with st.chat_message(message["role"], avatar=avatar):
                 st.markdown(message["content"])
 
-        if "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
-            with st.expander("View Retrieved Papers for this Analysis"):
-                for i, paper in enumerate(active_conv["retrieved_papers"]):
-                    meta = paper.get('metadata', {})
-                    title = meta.get('title', 'N/A')
-                    link = meta.get('url') or meta.get('link') or meta.get('doi_url', 'N/A')
-                    paper_id = paper.get('paper_id')
+            # "Pin" the expander to the first message (index 0)
+            if i == 0 and "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
+                with st.expander("View Retrieved Papers for this Analysis"):
+                    for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
+                        meta = paper.get('metadata', {})
+                        title = meta.get('title', 'N/A')
+                        link = meta.get('url') or meta.get('link') or meta.get('doi_url', 'N/A')
+                        paper_id = paper.get('paper_id')
 
-                    col1, col2 = st.columns([4, 1])
-                    with col1:
-                        st.markdown(f"**{i+1}. {title}**")
-                        if link != 'N/A':
-                            st.markdown(f"   - Link: [{link}]({link})")
-                    with col2:
-                        if paper_id:
-                            pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
-                            if pdf_bytes:
-                                st.download_button(
-                                    label="Download PDF",
-                                    data=pdf_bytes,
-                                    file_name=paper_id,
-                                    mime="application/pdf",
-                                    key=f"download_{paper_id}_{i}"
-                                )
+                        col1, col2 = st.columns([4, 1])
+                        with col1:
+                            st.markdown(f"**{paper_index+1}. {title}**")
+                            if link != 'N/A':
+                                st.markdown(f"   - Link: [{link}]({link})")
+                        with col2:
+                            if paper_id:
+                                pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
+                                if pdf_bytes:
+                                    st.download_button(
+                                        label="Download PDF",
+                                        data=pdf_bytes,
+                                        file_name=paper_id,
+                                        mime="application/pdf",
+                                        # Use a more robust key combining conv_id and paper_id
+                                        key=f"download_{active_id}_{paper_id}"
+                                    )
+        
+        # <<< The old expander logic that was here has been removed >>>
 
         if prompt := st.chat_input("Ask a follow-up question..."):
             active_conv["messages"].append({"role": "user", "content": prompt})
