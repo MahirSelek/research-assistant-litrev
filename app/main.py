@@ -2520,41 +2520,107 @@ def get_paper_link(metadata: dict) -> str:
             return link
     return "Not available"
 
-def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 50, score_threshold: float = 0.005) -> list:
-    vector_results = st.session_state.vector_db.search_by_keywords(keywords, n_results=n_results)
-    # <<< MODIFIED: Pass 'operator="AND"' to enforce all keywords are present >>>
+# def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 50, score_threshold: float = 0.005) -> list:
+#     vector_results = st.session_state.vector_db.search_by_keywords(keywords, n_results=n_results)
+#     # <<< MODIFIED: Pass 'operator="AND"' to enforce all keywords are present >>>
+#     es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
+    
+#     fused_scores = defaultdict(lambda: {'score': 0, 'doc': None})
+#     k = 60 
+
+#     for i, doc in enumerate(vector_results):
+#         rank = i + 1
+#         paper_id = doc.get('paper_id')
+#         if paper_id:
+#             fused_scores[paper_id]['score'] += 1 / (k + rank)
+#             if fused_scores[paper_id]['doc'] is None:
+#                  fused_scores[paper_id]['doc'] = doc
+
+#     for i, hit in enumerate(es_results):
+#         rank = i + 1
+#         paper_id = hit['_id']
+#         fused_scores[paper_id]['score'] += 1 / (k + rank)
+#         if fused_scores[paper_id]['doc'] is None:
+#             doc_content = {'paper_id': paper_id, 'metadata': hit['_source'], 'content': hit['_source'].get('content', '')}
+#             fused_scores[paper_id]['doc'] = doc_content
+
+#     # Filter out any entries that didn't get a doc object assigned (unlikely but safe)
+#     valid_fused_results = [item for item in fused_scores.values() if item['doc'] is not None]
+
+#     sorted_fused_results = sorted(valid_fused_results, key=lambda x: x['score'], reverse=True)
+    
+#     filtered_results = [
+#         item['doc'] for item in sorted_fused_results 
+#         if item['score'] >= score_threshold
+#     ][:20]
+
+#     return filtered_results
+
+
+
+
+
+
+
+def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 50, score_threshold: float = 0.005, max_final_results: int = 20) -> list:
+    # <<< MODIFICATION: The Elasticsearch 'AND' search is now the first and most critical step. >>>
+    # This search acts as our definitive filter. Only papers found here are eligible for the final list.
     es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
+
+    # <<< MODIFICATION: Create a set of valid paper IDs from the strict 'AND' search. >>>
+    # This is extremely efficient for checking if a paper meets our mandatory criteria.
+    valid_paper_ids = {hit['_id'] for hit in es_results}
+
+    # <<< MODIFICATION: If the strict 'AND' search returns no results, we stop immediately. >>>
+    # This is more efficient and provides a clearer message to the user.
+    if not valid_paper_ids:
+        return []
+
+    # The vector search now primarily helps in re-ranking the already-validated papers.
+    vector_results = st.session_state.vector_db.search_by_keywords(keywords, n_results=n_results)
     
     fused_scores = defaultdict(lambda: {'score': 0, 'doc': None})
     k = 60 
 
+    # Process vector results, but only consider papers that are in our valid_paper_ids set.
     for i, doc in enumerate(vector_results):
         rank = i + 1
         paper_id = doc.get('paper_id')
-        if paper_id:
+        # <<< MODIFICATION: Crucial check to ensure the paper contains all keywords. >>>
+        if paper_id and paper_id in valid_paper_ids:
             fused_scores[paper_id]['score'] += 1 / (k + rank)
             if fused_scores[paper_id]['doc'] is None:
                  fused_scores[paper_id]['doc'] = doc
 
+    # Process Elasticsearch results (all of which are guaranteed to be valid).
     for i, hit in enumerate(es_results):
         rank = i + 1
         paper_id = hit['_id']
+        # The check 'paper_id in valid_paper_ids' is redundant here but safe.
         fused_scores[paper_id]['score'] += 1 / (k + rank)
         if fused_scores[paper_id]['doc'] is None:
             doc_content = {'paper_id': paper_id, 'metadata': hit['_source'], 'content': hit['_source'].get('content', '')}
             fused_scores[paper_id]['doc'] = doc_content
 
-    # Filter out any entries that didn't get a doc object assigned (unlikely but safe)
+    # Filter out any entries that didn't get a doc object assigned.
     valid_fused_results = [item for item in fused_scores.values() if item['doc'] is not None]
 
+    # Sort the combined results by the fused score.
     sorted_fused_results = sorted(valid_fused_results, key=lambda x: x['score'], reverse=True)
     
+    # <<< MODIFICATION: The final list is now filtered by the score threshold and limited by max_final_results. >>>
+    # This makes the '20' limit a configurable parameter and not a hardcoded value.
+    # The number of results will now correctly reflect how many papers matched ALL criteria.
     filtered_results = [
         item['doc'] for item in sorted_fused_results 
         if item['score'] >= score_threshold
-    ][:20]
+    ][:max_final_results]
 
     return filtered_results
+
+
+
+
 
 
 def process_keyword_search(keywords: list, time_filter_type: str | None, selected_year: int | None, selected_month: str | None) -> tuple[str | None, list]:
