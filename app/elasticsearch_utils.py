@@ -105,7 +105,8 @@ import streamlit as st
 from elasticsearch import Elasticsearch
 from typing import List, Dict, Any
 
-class ESManager:
+# <<< FIX: Renamed class from ESManager to ElasticsearchManager to match the import in your other files.
+class ElasticsearchManager:
     """
     Manages all interactions with the Elasticsearch cluster, including
     indexing documents and performing searches.
@@ -220,10 +221,11 @@ class ESManager:
             return []
 
 @st.cache_resource
-def get_es_manager(cloud_id: str, username: str, password: str) -> ESManager:
+# <<< FIX: Updated the return type hint to match the new class name.
+def get_es_manager(cloud_id: str, username: str, password: str) -> ElasticsearchManager:
     """
-    A cached factory function to get an instance of the ESManager.
+    A cached factory function to get an instance of the ElasticsearchManager.
     Using st.cache_resource ensures the connection is established only once.
     """
-    es_manager = ESManager(cloud_id=cloud_id, username=username, password=password)
+    es_manager = ElasticsearchManager(cloud_id=cloud_id, username=username, password=password)
     return es_manager
