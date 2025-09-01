@@ -697,7 +697,7 @@
 
 
 
-# vector_db.py (Full, Corrected, Cloud-Native Version)
+# vector_db.py (Full, Corrected, Cloud-Native Version) - MOST IMPORTANT
 # This code piece part of only with inline clickable links
 
 
