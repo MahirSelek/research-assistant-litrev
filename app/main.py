@@ -2938,7 +2938,7 @@ except KeyError as e:
 GENETICS_KEYWORDS = [
     "Polygenic risk score", "Complex disease", "Multifactorial disease", "PRS", "Risk", "Risk prediction", "Genetic risk prediction", "GWAS", "Genome-wide association study", "GWAS summary statistics", "Relative risk", "Absolute risk", "clinical polygenic risk score", "disease prevention", "disease management", "personalized medicine", "precision medicine", "UK biobank", "biobank", "All of US biobank", "PRS pipeline", "PRS workflow", "PRS tool", "PRS conversion", "Binary trait", "Continuous trait", "Meta-analysis", "Genome-wide association", "Genetic susceptibility", "PRSs Clinical utility", "Genomic risk prediction", "clinical implementation", "PGS", "SNP hereditability", "Risk estimation", "Machine learning in genetic prediction", "PRSs clinical application", "Risk stratification", "Multiancestry PRS", "Integrative PRS model", "Longitudinal PRS analysis", "Genetic screening", "Ethical implication of PRS", "human genetics", "human genome variation", "genetics of common multifactorial diseases", "genetics of common traits", "pharmacogenetics", "pharmacogenomics"
 ]
-USER_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM0OTUwNTciIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0iZmVhdGhlciBmZWF0aGVyLXVzZXIiPjxwYXRoIGQ9Ik0yMCAyMWMwLTMuODctMy4xMy03LTctN3MtNyAzLjEzLTcgN1oiPjwvcGF0aD48Y2lyY2xlIGN4PSIxMiIgY3k9IjciIHI9IjQiPjwvY2lyY2xlPjwvc3ZnPg=="
+USER_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM0OTUwNTciIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0iZmVhdGhlciBmZWF0aGVyLXVzZXIiPjxwYXRoIGQ9Ik0yMCAyMWMwLTMuODctMyLWMwLTMuODctMy4xMy03LTctN3MtNyAzLjEzLTcgN1oiPjwvcGF0aD48Y2lyY2xlIGN4PSIxMiIgY3k9IjciIHI9IjQiPjwvY2lyY2xlPjwvc3ZnPg=="
 BOT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDdiZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNOS41IDEyLjVsLTggNkw5LjUgMjEgMTEgMTRsMS41IDcgNy41LTEuNS03LjUgMy4vTDE0IDQuNSA5LjUgOHoiLz48cGF0aCBkPSJNMy41IDEwLjVMOCA1bDIgMy41Ii8+PHBhdGggZD0iTTE4IDNMMTAuNSAxMC41Ii8+PC9zdmc+"
 
 # --- API and Helper Functions ---
@@ -2955,43 +2955,39 @@ def post_message_vertexai(input_text: str) -> str | None:
         st.error(f"Traceback: {traceback.format_exc()}")
         return None
 
-# <<< NEW: Function to make citations clickable >>>
+# <<< FIX: Rewritten function for robustness >>>
 def make_citations_clickable(text: str) -> str:
     """
-    Post-processes the AI-generated text to make citations clickable anchor links.
+    Post-processes AI-generated text to make citations clickable and fixes formatting.
     """
-    # Split the text into the main body and the references section
-    parts = re.split(r'(### References)', text, flags=re.IGNORECASE)
+    # Split the text at the "References" header. Case-insensitive.
+    parts = re.split(r'(###\s*References)', text, flags=re.IGNORECASE)
     if len(parts) < 3:
-        return text  # No "References" section found, return original text
+        return text  # No "References" section found.
 
     main_body = parts[0]
     references_header = parts[1]
     references_list = parts[2]
 
-    # Add anchors to the reference list items
-    # Example: "1. [Title](link)" becomes "1. <a name="ref-1"></a>[Title](link)"
-    processed_references = []
-    for line in references_list.strip().split('\n'):
-        match = re.match(r'^\s*(\d+)\.\s*(.*)', line)
-        if match:
-            ref_num = match.group(1)
-            ref_content = match.group(2)
-            # Using a span with an id is more modern HTML than a named anchor
-            processed_line = f'{ref_num}. <span id="ref-{ref_num}"></span>{ref_content}'
-            processed_references.append(processed_line)
-        else:
-            processed_references.append(line)
+    # 1. Fix merged citations like [1][2] -> [1], [2] in the main body.
+    main_body = re.sub(r'\]\[', '], [', main_body)
     
-    references_final = '\n'.join(processed_references)
+    # 2. Convert all citations like [1] to clickable anchor links like [1](#ref-1).
+    main_body = re.sub(r'\[(\d+)\]', r'[\1](#ref-\1)', main_body)
 
-    # Replace citations in the main body with anchor links
-    # Example: "[1]" becomes "[1](#ref-1)"
-    # This regex ensures we don't accidentally link parts of URLs like ".../page[1].html"
-    # It looks for brackets with numbers, not preceded by a letter or slash.
-    main_body_final = re.sub(r'(?<![/a-zA-Z])\[(\d+)\]', r'[\1](#ref-\1)', main_body)
-
-    return f"{main_body_final}{references_header}{references_final}"
+    # 3. Add HTML anchor targets to the reference list items.
+    # This regex is more robust: it finds a line starting with a number and a dot,
+    # and correctly inserts the span tag without breaking the formatting.
+    # Using re.MULTILINE allows `^` to match the start of each line.
+    references_list = re.sub(
+        r'^\s*(\d+)\.',
+        r'<span id="ref-\1"></span>\1.',
+        references_list.strip(),
+        flags=re.MULTILINE
+    )
+    
+    # Reassemble the full text with proper spacing.
+    return f"{main_body.strip()}\n\n{references_header.strip()}\n{references_list.strip()}"
 
 
 @st.cache_data
@@ -3043,10 +3039,6 @@ def generate_conversation_title(conversation_history: str) -> str:
     return "New Chat"
 
 def get_paper_link(metadata: dict) -> str:
-    """
-    This is our defensive function to handle inconsistent link fields in source data.
-    It checks multiple common keys for a valid URL, ensuring the most robust link retrieval possible.
-    """
     if not isinstance(metadata, dict):
         return "Not available"
     for key in ['url', 'link', 'doi_url']:
@@ -3087,7 +3079,6 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
     ][:20]
 
     return filtered_results
-
 
 def process_keyword_search(keywords: list, time_filter_type: str | None, selected_year: int | None, selected_month: str | None) -> tuple[str | None, list]:
     if not keywords:
@@ -3148,7 +3139,6 @@ Create a final section titled ### References. Under this heading, you **MUST** l
 """
         analysis = post_message_vertexai(prompt)
         
-        # <<< MODIFIED: Post-process the analysis to make citations clickable >>>
         if analysis:
             analysis = make_citations_clickable(analysis)
 
@@ -3271,7 +3261,8 @@ def main():
         for message in active_conv["messages"]:
             avatar = BOT_AVATAR if message["role"] == "assistant" else USER_AVATAR
             with st.chat_message(message["role"], avatar=avatar):
-                st.markdown(message["content"])
+                # <<< CRITICAL FIX: Allow unsafe_html to render the anchor links >>>
+                st.markdown(message["content"], unsafe_allow_html=True)
 
         if "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
             with st.expander("Download Retrieved Papers for this Analysis"):
@@ -3333,7 +3324,6 @@ Assistant Response:"""
             
             response_text = post_message_vertexai(full_prompt)
             if response_text:
-                # We can also make citations clickable in follow-up answers
                 response_text = make_citations_clickable(response_text)
                 active_conv["messages"].append({"role": "assistant", "content": response_text})
                 st.rerun()
