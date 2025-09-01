@@ -2383,6 +2383,16 @@ if platform.system() == "Linux":
         # This part remains the same, for when the package isn't installed
         st.warning("pysqlite3-binary not found. ChromaDB may fail on this environment.")
 
+
+# # SQLite3 Patch for Linux environments
+# if platform.system() == "Linux":
+#     try:
+#         __import__("pysqlite3")
+#         import sys
+#         sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
+#     except ImportError:
+#         st.warning("pysqlite3-binary not found. ChromaDB may fail on this environment.")
+
 try:
     from elasticsearch_utils import get_es_manager
     from vector_db import get_vector_db
