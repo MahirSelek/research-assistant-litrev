@@ -176,7 +176,8 @@ class ElasticsearchManager:
 
     def search_papers(self, keywords: List[str], time_filter: Dict = None, size: int = 10, operator: str = "OR") -> List[Dict[str, Any]]:
         """
-        Searches for papers using keywords with support for AND/OR logic.
+        Searches for papers using keywords with support for AND/OR logic
+        across multiple fields (title and content).
 
         Args:
             keywords (List[str]): A list of keywords to search for.
@@ -190,14 +191,16 @@ class ElasticsearchManager:
         if not keywords:
             return []
 
-        # This is the key change: 'must' enforces AND logic, 'should' enforces OR logic.
         bool_operator = "must" if operator.upper() == "AND" else "should"
 
         query = {
             "query": {
                 "bool": {
+                    # <<< THIS IS THE CRITICAL FIX >>>
+                    # We now use 'multi_match' to search across both 'title' and 'content' fields.
+                    # The 'must' clause still ensures that a document must match ALL keyword queries to be returned.
                     bool_operator: [
-                        {"match": {"content": keyword}} for keyword in keywords
+                        {"multi_match": {"query": keyword, "fields": ["title", "content"]}} for keyword in keywords
                     ],
                     "filter": []
                 }
