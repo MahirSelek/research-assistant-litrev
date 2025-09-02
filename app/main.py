@@ -3183,6 +3183,29 @@ def make_citations_clickable(analysis_text: str, papers: list) -> str:
     # Add brackets to single numbers that don't already have brackets
     analysis_text = re.sub(r'(?<!\()(\d+)(?!\))', add_brackets_to_single_numbers, analysis_text)
     
+    # Deduplicate citations and remove [0] citations
+    def deduplicate_citations(match):
+        citation_sequence = match.group(0)
+        # Extract all citation numbers from the sequence
+        citation_numbers = re.findall(r'\[(\d+)\]', citation_sequence)
+        
+        # Filter out [0] and deduplicate while preserving order
+        seen = set()
+        unique_citations = []
+        for num in citation_numbers:
+            if num != '0' and num not in seen:
+                unique_citations.append(num)
+                seen.add(num)
+        
+        # Reconstruct the citation sequence with unique numbers
+        if unique_citations:
+            return ''.join([f'[{num}]' for num in unique_citations])
+        else:
+            return ''  # Remove empty citation sequences
+    
+    # Apply deduplication to sequences of citations
+    analysis_text = re.sub(r'(\[\d+\])+', deduplicate_citations, analysis_text)
+    
     # Now replace citations with clickable markdown links
     for citation_num, link in citation_links.items():
         # Replace [citation_num] with clickable link
