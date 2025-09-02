@@ -3258,7 +3258,19 @@ def make_citations_clickable(analysis_text: str, papers: list) -> str:
     
     # Find citations at the end of sentences and add brackets
     # This will match numbers at the end of sentences (before periods, commas, etc.)
-    analysis_text = re.sub(r'(\d+)(?=\s*[.,;]|\s*$)', add_brackets_to_end_citations, analysis_text)
+    # But exclude list numbers and other non-citation numbers
+    def add_brackets_to_end_citations_smart(match):
+        citation_num = match.group(1)
+        # Don't add brackets to list numbers (1., 2., 3., etc.)
+        if re.search(r'^\d+\.$', citation_num):
+            return citation_num
+        # Don't add brackets to numbers that are part of titles or other text
+        if len(citation_num) > 2:  # Likely not a citation if more than 2 digits
+            return citation_num
+        return f'[{citation_num}]'
+    
+    # Find citations at the end of sentences and add brackets
+    analysis_text = re.sub(r'(\d+)(?=\s*[.,;]|\s*$)', add_brackets_to_end_citations_smart, analysis_text)
     
     # Limit citations to maximum 2 per sentence
     def limit_citations_per_sentence(match):
@@ -3419,7 +3431,7 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
 
 **IMPORTANT:** Do NOT create a "References" section. Focus only on the thematic analysis and key paper summaries.
 
-**CRITICAL INSTRUCTION FOR CITATIONS:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].` **IMPORTANT:** Always separate multiple citations with individual brackets, like `[2][3][4]` NOT `[234]`.
+**CRITICAL INSTRUCTION FOR CITATIONS:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].` **IMPORTANT:** Always separate multiple citations with individual brackets, like `[2][3][4]` NOT `[234]`. **CRUCIAL:** In the Key Paper Summaries section, do NOT add citation numbers to the paper titles - only add citations at the end of the summary paragraphs.
 """
         analysis = post_message_vertexai(prompt)
         
@@ -3596,10 +3608,7 @@ def main():
 
         if "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
             with st.expander("View and Download Retrieved Papers for this Analysis"):
-                # <<< MODIFICATION: Display the more informative message to the user >>>
-                total_found = active_conv.get("total_papers_found", len(active_conv['retrieved_papers']))
-                num_displayed = len(active_conv['retrieved_papers'])
-                st.info(f"Found **{total_found}** papers containing all keywords. Displaying the top **{num_displayed}** most relevant for analysis and download.")
+                # Display papers without the count message
                 
                 for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
                     meta = paper.get('metadata', {})
