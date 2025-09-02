@@ -3072,21 +3072,46 @@ def generate_conversation_title(conversation_history: str) -> str:
 
 def get_paper_link(metadata: dict) -> str:
     """
-    Directly retrieves the paper link from the 'link' key in the metadata.
-    This is simplified for consistency with your specific data format.
+    Retrieves the paper link from various possible keys in the metadata.
+    Checks multiple common link field names and validates the URL.
     """
     if not isinstance(metadata, dict):
         return "Not available"
     
-    # Directly access the 'link' key.
-    link = metadata.get('link')
+    # Check multiple possible link field names
+    link_fields = ['link', 'url', 'doi_url', 'doi', 'paper_url', 'pdf_url']
     
-    # Perform safety checks: the link must exist, be a string, and be a valid URL.
-    if link and isinstance(link, str) and link.startswith('http'):
-        return link
-        
-    # If the 'link' key is missing, empty, or invalid, return "Not available".
+    for field in link_fields:
+        link = metadata.get(field)
+        if link and isinstance(link, str):
+            # Clean the link and validate it
+            link = link.strip()
+            if link.startswith('http'):
+                return link
+            elif link.startswith('doi.org/') or link.startswith('10.'):
+                # Handle DOI links
+                if not link.startswith('http'):
+                    link = f"https://{link}"
+                return link
+    
     return "Not available"
+
+def test_link_extraction(metadata: dict) -> dict:
+    """
+    Test function to debug link extraction from metadata.
+    Returns a dictionary with all link-related fields and the final extracted link.
+    """
+    if not isinstance(metadata, dict):
+        return {"error": "Metadata is not a dictionary"}
+    
+    link_fields = ['link', 'url', 'doi_url', 'doi', 'paper_url', 'pdf_url']
+    result = {}
+    
+    for field in link_fields:
+        result[field] = metadata.get(field, "Not found")
+    
+    result['final_link'] = get_paper_link(metadata)
+    return result
 
 
 
@@ -3212,10 +3237,10 @@ For the sections "Key Methodological Advances," "Emerging Trends," and "Overall 
 **CRITICAL INSTRUCTION FOR PART 1:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].`
 
 **Part 2: Key Paper Summaries**
-Create a new section titled ### Key Paper Summaries. Under this heading, identify the top 3-5 most impactful papers from the sources and provide a detailed, one-paragraph summary for each. After each summary, you **MUST** include a direct link to the paper on a new line, formatted as: `[Source Link](the_actual_link)`.
+Create a new section titled ### Key Paper Summaries. Under this heading, identify the top 3-5 most impactful papers from the sources and provide a detailed, one-paragraph summary for each. After each summary, you **MUST** include a direct link to the paper on a new line, formatted as: `🔗 **Paper Link:** [Source Link](the_actual_link)`.
 
 **Part 3: References**
-Create a final section titled ### References. Under this heading, you **MUST** list all the paper sources provided above. The number for each reference must correspond to the citation markers used in Part 1. Format each entry as a numbered list item: `1. [Paper Title](Paper Link)`.
+Create a final section titled ### References. Under this heading, you **MUST** list all the paper sources provided above. The number for each reference must correspond to the citation markers used in Part 1. Format each entry as a numbered list item: `1. [Paper Title](Paper Link)`. **IMPORTANT:** Make sure all links are properly formatted as clickable markdown links and use the 🔗 emoji to make them more visible.
 """
         analysis = post_message_vertexai(prompt)
         # <<< MODIFICATION: Return all three pieces of information >>>
@@ -3312,6 +3337,32 @@ def main():
         st.session_state.debug_mode = st.checkbox("Enable Debug Mode", key="debug_mode_checkbox")
         if st.session_state.debug_mode:
             st.warning("Debug mode is enabled. Metadata will be shown.")
+            
+            # Add a test section for link extraction
+            with st.expander("🔗 Test Link Extraction"):
+                st.markdown("**Test link extraction from sample metadata:**")
+                sample_metadata = {
+                    "title": "Sample Paper",
+                    "link": "https://example.com/paper",
+                    "url": "https://example.com/alt",
+                    "doi": "10.1234/example"
+                }
+                test_result = test_link_extraction(sample_metadata)
+                st.json(test_result)
+                
+                # Test with actual papers from the database
+                st.markdown("**Test with actual papers from database:**")
+                if st.button("Check Paper Metadata"):
+                    all_papers = st.session_state.vector_db.get_all_papers()
+                    if all_papers:
+                        st.markdown(f"Found {len(all_papers)} papers in database")
+                        for i, paper in enumerate(all_papers[:3]):  # Show first 3 papers
+                            meta = paper.get('metadata', {})
+                            st.markdown(f"**Paper {i+1}:** {meta.get('title', 'No title')}")
+                            link_test = test_link_extraction(meta)
+                            st.json(link_test)
+                    else:
+                        st.warning("No papers found in database")
 
 
         st.markdown("---")
@@ -3384,7 +3435,10 @@ def main():
                     with col1:
                         st.markdown(f"**{paper_index+1}. {title}**")
                         if link != 'Not available':
-                            st.markdown(f"   - Link: [{link}]({link})")
+                            # Make the link more prominent and clickable
+                            st.markdown(f"🔗 **Paper Link:** [{link}]({link})")
+                        else:
+                            st.markdown("🔗 **Paper Link:** Not available")
                     with col2:
                         if paper_id:
                             pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
@@ -3401,6 +3455,13 @@ def main():
                     if st.session_state.get("debug_mode", False):
                         with st.expander(f"Debug: View Metadata for '{title[:30]}...'"):
                             st.json(meta)
+                            # Also show the link extraction process
+                            st.markdown("**Link extraction debug:**")
+                            link_fields = ['link', 'url', 'doi_url', 'doi', 'paper_url', 'pdf_url']
+                            for field in link_fields:
+                                value = meta.get(field, "Not found")
+                                st.markdown(f"- {field}: {value}")
+                            st.markdown(f"- Final link: {link}")
 
 
         if prompt := st.chat_input("Ask a follow-up question..."):
@@ -3424,6 +3485,8 @@ def main():
             full_prompt = f"""Continue our conversation. You are the Polo-GGB Research Assistant.
 Your task is to answer the user's last message based on the chat history and the full context from the paper sources provided below.
 When the user asks you to list the papers or for references, you MUST format the response as a numbered list with clickable markdown links: `1. [Paper Title](Paper Link)`.
+
+**IMPORTANT:** Always ensure that any links you provide are properly formatted as clickable markdown links. If a paper has a link available, use it in the format `🔗 [Paper Title](actual_link_url)` to make them more visible.
 
 --- CHAT HISTORY ---
 {chat_history}
