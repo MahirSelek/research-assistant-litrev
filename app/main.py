@@ -3258,19 +3258,7 @@ def make_citations_clickable(analysis_text: str, papers: list) -> str:
     
     # Find citations at the end of sentences and add brackets
     # This will match numbers at the end of sentences (before periods, commas, etc.)
-    # But exclude list numbers and other non-citation numbers
-    def add_brackets_to_end_citations_smart(match):
-        citation_num = match.group(1)
-        # Don't add brackets to list numbers (1., 2., 3., etc.)
-        if re.search(r'^\d+\.$', citation_num):
-            return citation_num
-        # Don't add brackets to numbers that are part of titles or other text
-        if len(citation_num) > 2:  # Likely not a citation if more than 2 digits
-            return citation_num
-        return f'[{citation_num}]'
-    
-    # Find citations at the end of sentences and add brackets
-    analysis_text = re.sub(r'(\d+)(?=\s*[.,;]|\s*$)', add_brackets_to_end_citations_smart, analysis_text)
+    analysis_text = re.sub(r'(\d+)(?=\s*[.,;]|\s*$)', add_brackets_to_end_citations, analysis_text)
     
     # Limit citations to maximum 2 per sentence
     def limit_citations_per_sentence(match):
