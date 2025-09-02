@@ -3096,93 +3096,80 @@ def get_paper_link(metadata: dict) -> str:
     
     return "Not available"
 
+def reload_paper_metadata(papers: list) -> list:
+    """
+    Reloads metadata from .metadata.json files to get the actual links.
+    """
+    if not papers:
+        return papers
+    
+    try:
+        from google.cloud import storage
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(GCS_BUCKET_NAME)
+        
+        updated_papers = []
+        for paper in papers:
+            paper_id = paper.get('paper_id')
+            if paper_id:
+                # Try to find corresponding .metadata.json file
+                json_filename = paper_id.rsplit('.', 1)[0] + '.metadata.json'
+                json_blob = bucket.blob(json_filename)
+                
+                if json_blob.exists():
+                    try:
+                        json_content = json_blob.download_as_string()
+                        json_metadata = json.loads(json_content)
+                        
+                        # Update the paper metadata with the JSON content
+                        updated_metadata = paper.get('metadata', {}).copy()
+                        updated_metadata.update(json_metadata)
+                        updated_metadata['paper_id'] = paper_id
+                        
+                        # Create updated paper object
+                        updated_paper = paper.copy()
+                        updated_paper['metadata'] = updated_metadata
+                        updated_papers.append(updated_paper)
+                    except Exception as e:
+                        # If JSON loading fails, keep original paper
+                        updated_papers.append(paper)
+                else:
+                    # If no JSON file found, keep original paper
+                    updated_papers.append(paper)
+            else:
+                updated_papers.append(paper)
+        
+        return updated_papers
+    except Exception as e:
+        # If any error occurs, return original papers
+        return papers
+
 def make_citations_clickable(analysis_text: str, papers: list) -> str:
     """
-    Makes inline citations [1][2][3] etc. clickable by creating a direct mapping to papers.
+    Makes inline citations [1][2][3] etc. clickable by replacing them with actual paper links.
     """
     if not papers:
         return analysis_text
     
-    # Create a mapping of citation numbers to paper information
-    citation_mapping = {}
+    # Create a mapping of citation numbers to paper links
+    citation_links = {}
     for i, paper in enumerate(papers):
         meta = paper.get('metadata', {})
-        title = meta.get('title', f'Paper {i+1}')
-        paper_id = paper.get('paper_id', '')
-        
-        # Create a unique identifier for this paper
-        citation_mapping[i + 1] = {
-            'title': title,
-            'paper_id': paper_id,
-            'index': i
-        }
+        link = get_paper_link(meta)
+        if link != "Not available":
+            citation_links[i + 1] = link
     
-    # Replace citations with clickable links that open paper details
+    # Replace citations with clickable markdown links
     import re
-    
-    def replace_citation(match):
-        citation_num = int(match.group(1))
-        if citation_num in citation_mapping:
-            paper_info = citation_mapping[citation_num]
-            # Create a unique key for this citation
-            citation_key = f"citation_{citation_num}_{paper_info['index']}"
-            # Return a clickable link that will trigger a callback
-            return f'<span class="citation-link" data-paper-id="{paper_info["paper_id"]}" data-paper-index="{paper_info["index"]}" onclick="showPaperDetails({paper_info["index"]})">[{citation_num}]</span>'
-        return match.group(0)
-    
-    # Replace all citations with clickable spans
-    analysis_text = re.sub(r'\[(\d+)\]', replace_citation, analysis_text)
+    for citation_num, link in citation_links.items():
+        # Replace [citation_num] with clickable link
+        pattern = rf'\[{citation_num}\]'
+        replacement = f'[{citation_num}]({link})'
+        analysis_text = re.sub(pattern, replacement, analysis_text)
     
     return analysis_text
 
-def display_analysis_with_clickable_citations(analysis_text: str, papers: list):
-    """
-    Displays analysis text with clickable citations using Streamlit components.
-    """
-    if not papers:
-        st.markdown(analysis_text)
-        return
-    
-    # Create a mapping of citation numbers to paper information
-    citation_mapping = {}
-    for i, paper in enumerate(papers):
-        meta = paper.get('metadata', {})
-        title = meta.get('title', f'Paper {i+1}')
-        citation_mapping[i + 1] = {
-            'title': title,
-            'index': i
-        }
-    
-    # Display the analysis text
-    st.markdown(analysis_text)
-    
-    # Display citation legend below
-    st.markdown("---")
-    st.markdown("**📚 Citation Legend:**")
-    
-    for citation_num in sorted(citation_mapping.keys()):
-        paper_info = citation_mapping[citation_num]
-        if st.button(f"📄 [{citation_num}] {paper_info['title'][:50]}...", 
-                    key=f"citation_legend_{citation_num}", 
-                    help=f"Click to view details for paper {citation_num}"):
-            # Show paper details
-            with st.expander(f"📄 Paper {citation_num} Details", expanded=True):
-                st.markdown(f"**Title:** {paper_info['title']}")
-                st.markdown(f"**Paper Index:** {paper_info['index']}")
-                # Add download button if available
-                if paper_info['index'] < len(papers):
-                    paper = papers[paper_info['index']]
-                    paper_id = paper.get('paper_id')
-                    if paper_id:
-                        pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
-                        if pdf_bytes:
-                            st.download_button(
-                                label="Download PDF",
-                                data=pdf_bytes,
-                                file_name=paper_id,
-                                mime="application/pdf",
-                                key=f"download_citation_{citation_num}"
-                            )
+
 
 
 
@@ -3320,6 +3307,8 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
         
         # Make citations clickable
         if analysis:
+            # First, reload metadata from .metadata.json files to get the links
+            top_papers = reload_paper_metadata(top_papers)
             analysis = make_citations_clickable(analysis, top_papers)
         
         # <<< MODIFICATION: Return all three pieces of information >>>
@@ -3485,11 +3474,7 @@ def main():
         for message in active_conv["messages"]:
             avatar = BOT_AVATAR if message["role"] == "assistant" else USER_AVATAR
             with st.chat_message(message["role"], avatar=avatar):
-                if message["role"] == "assistant" and "retrieved_papers" in active_conv:
-                    # Use the new function for assistant messages with papers
-                    display_analysis_with_clickable_citations(message["content"], active_conv["retrieved_papers"])
-                else:
-                    st.markdown(message["content"])
+                st.markdown(message["content"])
 
         if "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
             with st.expander("View and Download Retrieved Papers for this Analysis"):
