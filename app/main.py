@@ -3147,6 +3147,7 @@ def reload_paper_metadata(papers: list) -> list:
 def make_citations_clickable(analysis_text: str, papers: list) -> str:
     """
     Makes inline citations [1][2][3] etc. clickable by replacing them with actual paper links.
+    Also separates grouped citations like 781113 into individual brackets [7][8][11][13].
     """
     if not papers:
         return analysis_text
@@ -3159,8 +3160,30 @@ def make_citations_clickable(analysis_text: str, papers: list) -> str:
         if link != "Not available":
             citation_links[i + 1] = link
     
-    # Replace citations with clickable markdown links
+    # First, separate grouped citations and add brackets
     import re
+    
+    # Find and separate grouped citations like "781113" into "[7][8][11][13]"
+    def separate_grouped_citations(match):
+        grouped_numbers = match.group(1)
+        # Split the grouped numbers into individual digits
+        individual_numbers = list(grouped_numbers)
+        # Create individual brackets for each number
+        separated_citations = ''.join([f'[{num}]' for num in individual_numbers])
+        return separated_citations
+    
+    # Replace grouped citations with separated ones
+    analysis_text = re.sub(r'(\d{2,})', separate_grouped_citations, analysis_text)
+    
+    # Also handle single numbers without brackets
+    def add_brackets_to_single_numbers(match):
+        number = match.group(1)
+        return f'[{number}]'
+    
+    # Add brackets to single numbers that don't already have brackets
+    analysis_text = re.sub(r'(?<!\()(\d+)(?!\))', add_brackets_to_single_numbers, analysis_text)
+    
+    # Now replace citations with clickable markdown links
     for citation_num, link in citation_links.items():
         # Replace [citation_num] with clickable link
         pattern = rf'\[{citation_num}\]'
