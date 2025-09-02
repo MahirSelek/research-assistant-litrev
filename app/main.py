@@ -3223,21 +3223,39 @@ Create a final section titled ### References. Under this heading, you **MUST** l
 
 def display_paper_management():
     st.subheader("Add Papers to Database")
+    st.info("Ensure every uploaded PDF has a corresponding JSON file with the exact same name (before the extension), even if they are in different subfolders.")
+
     uploaded_pdfs = st.file_uploader("Upload PDF files", accept_multiple_files=True, type=['pdf'], key="db_pdf_uploader")
     uploaded_jsons = st.file_uploader("Upload corresponding metadata JSON files", accept_multiple_files=True, type=['json'], key="db_json_uploader")
-    json_map = {os.path.splitext(json_file.name)[0]: json.load(io.BytesIO(json_file.getvalue())) for json_file in uploaded_jsons or []}
+    
     if uploaded_pdfs and st.button("Add to Database"):
+        # Create a dictionary of available JSON metadata, keyed by their base filename (without path)
+        json_map = {os.path.splitext(os.path.basename(json_file.name))[0]: json.load(io.BytesIO(json_file.getvalue())) for json_file in uploaded_jsons or []}
+        
         with st.spinner("Adding papers to databases..."):
             for uploaded_file in uploaded_pdfs:
-                base_name = os.path.splitext(uploaded_file.name)[0]
-                metadata = json_map.get(base_name, {'title': base_name})
-                metadata['paper_id'] = uploaded_file.name
-                pdf_content_bytes = io.BytesIO(uploaded_file.getvalue())
-                paper_content = read_pdf_content(pdf_content_bytes)
-                if paper_content:
-                    st.session_state.vector_db.add_paper(paper_id=uploaded_file.name, content=paper_content, metadata=metadata)
-                    st.success(f"Successfully added '{uploaded_file.name}' to the database.")
+                # <<< FIX: Get the base name WITHOUT the directory path to ensure a match >>>
+                # Example: "pdf-metadata/paper1.pdf" -> "paper1"
+                pdf_base_name = os.path.splitext(os.path.basename(uploaded_file.name))[0]
+                
+                # Use the clean base name to look up the metadata
+                metadata = json_map.get(pdf_base_name)
+
+                if metadata:
+                    # If metadata is found, proceed with adding the paper
+                    metadata['paper_id'] = uploaded_file.name
+                    pdf_content_bytes = io.BytesIO(uploaded_file.getvalue())
+                    paper_content = read_pdf_content(pdf_content_bytes)
+                    if paper_content:
+                        st.session_state.vector_db.add_paper(paper_id=uploaded_file.name, content=paper_content, metadata=metadata)
+                        st.success(f"✅ Successfully added '{uploaded_file.name}' with full metadata.")
+                    else:
+                        st.error(f"❌ Could not read content from '{uploaded_file.name}'.")
+                else:
+                    # If no matching JSON is found, skip this PDF and warn the user
+                    st.warning(f"⚠️ Skipped '{uploaded_file.name}' because a matching JSON metadata file was not found.")
         st.rerun()
+
 
 def display_chat_history():
     st.markdown("<h3>Chat History</h3>", unsafe_allow_html=True)
