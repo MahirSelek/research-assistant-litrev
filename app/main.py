@@ -3301,7 +3301,7 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
 
 **IMPORTANT:** Do NOT create a "References" section. Focus only on the thematic analysis and key paper summaries.
 
-**CRITICAL INSTRUCTION FOR CITATIONS:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].`
+**CRITICAL INSTRUCTION FOR CITATIONS:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].` **IMPORTANT:** Always separate multiple citations with individual brackets, like `[2][3][4]` NOT `[234]`.
 """
         analysis = post_message_vertexai(prompt)
         
