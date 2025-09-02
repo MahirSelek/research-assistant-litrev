@@ -3070,48 +3070,7 @@ def generate_conversation_title(conversation_history: str) -> str:
 #     return "Not available"
 #Put print here to see the links that retrieved from metadata
 
-def get_paper_link(metadata: dict) -> str:
-    """
-    Retrieves the paper link from various possible keys in the metadata.
-    Checks multiple common link field names and validates the URL.
-    """
-    if not isinstance(metadata, dict):
-        return "Not available"
-    
-    # Check multiple possible link field names
-    link_fields = ['link', 'url', 'doi_url', 'doi', 'paper_url', 'pdf_url']
-    
-    for field in link_fields:
-        link = metadata.get(field)
-        if link and isinstance(link, str):
-            # Clean the link and validate it
-            link = link.strip()
-            if link.startswith('http'):
-                return link
-            elif link.startswith('doi.org/') or link.startswith('10.'):
-                # Handle DOI links
-                if not link.startswith('http'):
-                    link = f"https://{link}"
-                return link
-    
-    return "Not available"
 
-def test_link_extraction(metadata: dict) -> dict:
-    """
-    Test function to debug link extraction from metadata.
-    Returns a dictionary with all link-related fields and the final extracted link.
-    """
-    if not isinstance(metadata, dict):
-        return {"error": "Metadata is not a dictionary"}
-    
-    link_fields = ['link', 'url', 'doi_url', 'doi', 'paper_url', 'pdf_url']
-    result = {}
-    
-    for field in link_fields:
-        result[field] = metadata.get(field, "Not found")
-    
-    result['final_link'] = get_paper_link(metadata)
-    return result
 
 
 
@@ -3212,11 +3171,9 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, selecte
         for i, result in enumerate(top_papers):
             meta = result.get('metadata', {})
             title = meta.get('title', 'N/A')
-            link = get_paper_link(meta)
             content_preview = (meta.get('abstract') or result.get('content') or '')[:4000]
             context += f"SOURCE [{i+1}]:\n"
             context += f"Title: {title}\n"
-            context += f"Link: {link}\n"
             context += f"Content: {content_preview}\n---\n\n"
         
         prompt = f"""{context}
@@ -3237,10 +3194,9 @@ For the sections "Key Methodological Advances," "Emerging Trends," and "Overall 
 **CRITICAL INSTRUCTION FOR PART 1:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].`
 
 **Part 2: Key Paper Summaries**
-Create a new section titled ### Key Paper Summaries. Under this heading, identify the top 3-5 most impactful papers from the sources and provide a detailed, one-paragraph summary for each. After each summary, you **MUST** include a direct link to the paper on a new line, formatted as: `🔗 **Paper Link:** [Source Link](the_actual_link)`.
+Create a new section titled ### Key Paper Summaries. Under this heading, identify the top 3-5 most impactful papers from the sources and provide a detailed, one-paragraph summary for each.
 
-**Part 3: References**
-Create a final section titled ### References. Under this heading, you **MUST** list all the paper sources provided above. The number for each reference must correspond to the citation markers used in Part 1. Format each entry as a numbered list item: `1. [Paper Title](Paper Link)`. **IMPORTANT:** Make sure all links are properly formatted as clickable markdown links and use the 🔗 emoji to make them more visible.
+**IMPORTANT:** Do NOT create a "References" section. Focus only on the thematic analysis and key paper summaries.
 """
         analysis = post_message_vertexai(prompt)
         # <<< MODIFICATION: Return all three pieces of information >>>
@@ -3338,129 +3294,7 @@ def main():
         if st.session_state.debug_mode:
             st.warning("Debug mode is enabled. Metadata will be shown.")
             
-            # Add a test section for link extraction
-            with st.expander("🔗 Test Link Extraction"):
-                st.markdown("**Test link extraction from sample metadata:**")
-                sample_metadata = {
-                    "title": "Sample Paper",
-                    "link": "https://example.com/paper",
-                    "url": "https://example.com/alt",
-                    "doi": "10.1234/example"
-                }
-                test_result = test_link_extraction(sample_metadata)
-                st.json(test_result)
-                
-                            # Test with actual papers from the database
-            st.markdown("**Test with actual papers from database:**")
-            if st.button("Check Paper Metadata"):
-                all_papers = st.session_state.vector_db.get_all_papers()
-                if all_papers:
-                    st.markdown(f"Found {len(all_papers)} papers in database")
-                    for i, paper in enumerate(all_papers[:3]):  # Show first 3 papers
-                        meta = paper.get('metadata', {})
-                        st.markdown(f"**Paper {i+1}:** {meta.get('title', 'No title')}")
-                        link_test = test_link_extraction(meta)
-                        st.json(link_test)
-                else:
-                    st.warning("No papers found in database")
             
-            # Add a function to reload metadata from JSON files
-            st.markdown("**Reload Metadata from JSON Files:**")
-            if st.button("Reload Metadata"):
-                with st.spinner("Reloading metadata from JSON files..."):
-                    try:
-                        # Get the vector database instance
-                        vector_db = st.session_state.vector_db
-                        
-                        # Access the GCS bucket
-                        from google.cloud import storage
-                        storage_client = storage.Client()
-                        bucket = storage_client.bucket(vector_db.gcs_bucket_name)
-                        
-                        # Get all papers from the database
-                        all_papers = vector_db.get_all_papers()
-                        st.markdown(f"Found {len(all_papers)} papers in database")
-                        
-                        # For each paper, try to reload metadata from JSON
-                        updated_count = 0
-                        for paper in all_papers[:50]:  # Process first 50 papers to test
-                            paper_id = paper.get('paper_id')
-                            if paper_id:
-                                # Try to find corresponding .metadata.json file
-                                json_filename = paper_id.rsplit('.', 1)[0] + '.metadata.json'
-                                json_blob = bucket.blob(json_filename)
-                                
-                                if json_blob.exists():
-                                    try:
-                                        json_content = json_blob.download_as_string()
-                                        json_metadata = json.loads(json_content)
-                                        
-                                        # Ensure paper_id is set
-                                        json_metadata['paper_id'] = paper_id
-                                        
-                                        # Update the metadata in the database
-                                        vector_db.update_paper_metadata(paper_id, json_metadata)
-                                        st.markdown(f"✅ Updated metadata for {paper_id}: {list(json_metadata.keys())}")
-                                        updated_count += 1
-                                    except Exception as e:
-                                        st.error(f"Error loading JSON for {paper_id}: {e}")
-                                else:
-                                    st.markdown(f"❌ No .metadata.json found for {paper_id}")
-                        
-                        st.success(f"Metadata reload completed. Updated {updated_count} papers.")
-                        st.info("Now run a new search to see the updated links!")
-                        
-                        # Test the first few papers to verify links are working
-                        st.markdown("**Testing updated papers:**")
-                        test_papers = vector_db.get_all_papers()[:3]
-                        for i, paper in enumerate(test_papers):
-                            meta = paper.get('metadata', {})
-                            link = get_paper_link(meta)
-                            st.markdown(f"Paper {i+1}: {meta.get('title', 'No title')}")
-                            st.markdown(f"Link: {link}")
-                        
-                    except Exception as e:
-                        st.error(f"Error reloading metadata: {e}")
-            
-            # Add a function to list available JSON files
-            st.markdown("**List Available JSON Files:**")
-            if st.button("List JSON Files"):
-                with st.spinner("Listing JSON files from GCS..."):
-                    try:
-                        from google.cloud import storage
-                        storage_client = storage.Client()
-                        bucket = storage_client.bucket(st.secrets["app_config"]["gcs_bucket_name"])
-                        
-                        # List all JSON files
-                        blobs = list(bucket.list_blobs())
-                        json_files = [blob.name for blob in blobs if blob.name.lower().endswith('.json')]
-                        metadata_json_files = [blob.name for blob in blobs if blob.name.lower().endswith('.metadata.json')]
-                        
-                        st.markdown(f"Found {len(json_files)} JSON files:")
-                        st.markdown(f"- Regular .json files: {len([f for f in json_files if not f.endswith('.metadata.json')])}")
-                        st.markdown(f"- .metadata.json files: {len(metadata_json_files)}")
-                        
-                        st.markdown("**Sample .metadata.json files:**")
-                        for json_file in metadata_json_files[:5]:  # Show first 5
-                            st.markdown(f"- {json_file}")
-                        
-                        if len(metadata_json_files) > 5:
-                            st.markdown(f"... and {len(metadata_json_files) - 5} more .metadata.json files")
-                        
-                        # Allow user to inspect a specific JSON file
-                        if metadata_json_files:
-                            selected_file = st.selectbox("Select a .metadata.json file to inspect:", metadata_json_files[:20])
-                            if selected_file and st.button("Inspect JSON"):
-                                try:
-                                    blob = bucket.blob(selected_file)
-                                    content = blob.download_as_string()
-                                    json_data = json.loads(content)
-                                    st.json(json_data)
-                                except Exception as e:
-                                    st.error(f"Error reading JSON file: {e}")
-                            
-                    except Exception as e:
-                        st.error(f"Error listing JSON files: {e}")
 
 
         st.markdown("---")
@@ -3526,17 +3360,11 @@ def main():
                 for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
                     meta = paper.get('metadata', {})
                     title = meta.get('title', 'N/A')
-                    link = get_paper_link(meta)
                     paper_id = paper.get('paper_id')
 
                     col1, col2 = st.columns([4, 1])
                     with col1:
                         st.markdown(f"**{paper_index+1}. {title}**")
-                        if link != 'Not available':
-                            # Make the link more prominent and clickable
-                            st.markdown(f"🔗 **Paper Link:** [{link}]({link})")
-                        else:
-                            st.markdown("🔗 **Paper Link:** Not available")
                     with col2:
                         if paper_id:
                             pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
@@ -3553,13 +3381,6 @@ def main():
                     if st.session_state.get("debug_mode", False):
                         with st.expander(f"Debug: View Metadata for '{title[:30]}...'"):
                             st.json(meta)
-                            # Also show the link extraction process
-                            st.markdown("**Link extraction debug:**")
-                            link_fields = ['link', 'url', 'doi_url', 'doi', 'paper_url', 'pdf_url']
-                            for field in link_fields:
-                                value = meta.get(field, "Not found")
-                                st.markdown(f"- {field}: {value}")
-                            st.markdown(f"- Final link: {link}")
 
 
         if prompt := st.chat_input("Ask a follow-up question..."):
@@ -3576,15 +3397,11 @@ def main():
                 for i, paper in enumerate(active_conv["retrieved_papers"]):
                     meta = paper.get('metadata', {})
                     title = meta.get('title', 'N/A')
-                    link = get_paper_link(meta)
                     content_preview = (meta.get('abstract') or paper.get('content') or '')[:4000]
-                    full_context += f"SOURCE [{i+1}]:\nTitle: {title}\nLink: {link}\nContent: {content_preview}\n---\n\n"
+                    full_context += f"SOURCE [{i+1}]:\nTitle: {title}\nContent: {content_preview}\n---\n\n"
             
             full_prompt = f"""Continue our conversation. You are the Polo-GGB Research Assistant.
 Your task is to answer the user's last message based on the chat history and the full context from the paper sources provided below.
-When the user asks you to list the papers or for references, you MUST format the response as a numbered list with clickable markdown links: `1. [Paper Title](Paper Link)`.
-
-**IMPORTANT:** Always ensure that any links you provide are properly formatted as clickable markdown links. If a paper has a link available, use it in the format `🔗 [Paper Title](actual_link_url)` to make them more visible.
 
 --- CHAT HISTORY ---
 {chat_history}
