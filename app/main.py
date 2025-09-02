@@ -3578,7 +3578,8 @@ def generate_conversation_title(conversation_history: str) -> str:
 def get_paper_link(metadata: dict) -> str:
     if not isinstance(metadata, dict):
         return "Not available"
-    for key in ['url', 'link', 'doi_url']:
+    
+    for key in ['link']:
         link = metadata.get(key)
         if link and isinstance(link, str) and link.startswith('http'):
             return link
