@@ -783,8 +783,10 @@ class VectorDBManager:
                     if meta_blob.exists():
                         meta_content = meta_blob.download_as_string()
                         metadata = json.loads(meta_content)
+                        logging.info(f"Loaded metadata for {filename}: {list(metadata.keys())}")
                     else:
                         metadata = {'title': filename.replace('.pdf', '')}
+                        logging.warning(f"No metadata JSON found for {filename}")
                     
                     metadata['paper_id'] = filename
                     
@@ -906,6 +908,32 @@ class VectorDBManager:
             return {"status": "Active", "collection_name": self.collection.name, "total_documents_chunks": self.collection.count()}
         except Exception as e:
             return {"status": "Error", "message": str(e)}
+    
+    def update_paper_metadata(self, paper_id: str, new_metadata: Dict[str, Any]):
+        """
+        Updates the metadata for a specific paper in both ChromaDB and Elasticsearch.
+        """
+        try:
+            # Update in ChromaDB
+            results = self.collection.get(where={"paper_id": paper_id})
+            if results and results['ids']:
+                # Update all chunks for this paper
+                for i, chunk_id in enumerate(results['ids']):
+                    updated_metadata = new_metadata.copy()
+                    updated_metadata['paper_id'] = paper_id
+                    self.collection.update(
+                        ids=[chunk_id],
+                        metadatas=[updated_metadata]
+                    )
+                logging.info(f"Updated metadata for {paper_id} in ChromaDB")
+            
+            # Update in Elasticsearch
+            self.es_manager.index_paper(paper_id=paper_id, metadata=new_metadata, content="")
+            logging.info(f"Updated metadata for {paper_id} in Elasticsearch")
+            
+        except Exception as e:
+            logging.error(f"Error updating metadata for {paper_id}: {e}")
+            raise
 
 # The factory function that connects everything together from secrets
 @st.cache_resource

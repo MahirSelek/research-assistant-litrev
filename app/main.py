@@ -3350,19 +3350,100 @@ def main():
                 test_result = test_link_extraction(sample_metadata)
                 st.json(test_result)
                 
-                # Test with actual papers from the database
-                st.markdown("**Test with actual papers from database:**")
-                if st.button("Check Paper Metadata"):
-                    all_papers = st.session_state.vector_db.get_all_papers()
-                    if all_papers:
+                            # Test with actual papers from the database
+            st.markdown("**Test with actual papers from database:**")
+            if st.button("Check Paper Metadata"):
+                all_papers = st.session_state.vector_db.get_all_papers()
+                if all_papers:
+                    st.markdown(f"Found {len(all_papers)} papers in database")
+                    for i, paper in enumerate(all_papers[:3]):  # Show first 3 papers
+                        meta = paper.get('metadata', {})
+                        st.markdown(f"**Paper {i+1}:** {meta.get('title', 'No title')}")
+                        link_test = test_link_extraction(meta)
+                        st.json(link_test)
+                else:
+                    st.warning("No papers found in database")
+            
+            # Add a function to reload metadata from JSON files
+            st.markdown("**Reload Metadata from JSON Files:**")
+            if st.button("Reload Metadata"):
+                with st.spinner("Reloading metadata from JSON files..."):
+                    try:
+                        # Get the vector database instance
+                        vector_db = st.session_state.vector_db
+                        
+                        # Access the GCS bucket
+                        from google.cloud import storage
+                        storage_client = storage.Client()
+                        bucket = storage_client.bucket(vector_db.gcs_bucket_name)
+                        
+                        # Get all papers from the database
+                        all_papers = vector_db.get_all_papers()
                         st.markdown(f"Found {len(all_papers)} papers in database")
-                        for i, paper in enumerate(all_papers[:3]):  # Show first 3 papers
-                            meta = paper.get('metadata', {})
-                            st.markdown(f"**Paper {i+1}:** {meta.get('title', 'No title')}")
-                            link_test = test_link_extraction(meta)
-                            st.json(link_test)
-                    else:
-                        st.warning("No papers found in database")
+                        
+                        # For each paper, try to reload metadata from JSON
+                        updated_count = 0
+                        for paper in all_papers:
+                            paper_id = paper.get('paper_id')
+                            if paper_id:
+                                # Try to find corresponding JSON file
+                                json_filename = paper_id.rsplit('.', 1)[0] + '.json'
+                                json_blob = bucket.blob(json_filename)
+                                
+                                if json_blob.exists():
+                                    try:
+                                        json_content = json_blob.download_as_string()
+                                        json_metadata = json.loads(json_content)
+                                        
+                                        # Update the metadata in the database
+                                        json_metadata['paper_id'] = paper_id
+                                        vector_db.update_paper_metadata(paper_id, json_metadata)
+                                        st.markdown(f"✅ Updated metadata for {paper_id}: {list(json_metadata.keys())}")
+                                        updated_count += 1
+                                    except Exception as e:
+                                        st.error(f"Error loading JSON for {paper_id}: {e}")
+                                else:
+                                    st.markdown(f"❌ No JSON found for {paper_id}")
+                        
+                        st.success(f"Metadata reload completed. Updated {updated_count} papers.")
+                        
+                    except Exception as e:
+                        st.error(f"Error reloading metadata: {e}")
+            
+            # Add a function to list available JSON files
+            st.markdown("**List Available JSON Files:**")
+            if st.button("List JSON Files"):
+                with st.spinner("Listing JSON files from GCS..."):
+                    try:
+                        from google.cloud import storage
+                        storage_client = storage.Client()
+                        bucket = storage_client.bucket(st.secrets["app_config"]["gcs_bucket_name"])
+                        
+                        # List all JSON files
+                        blobs = list(bucket.list_blobs())
+                        json_files = [blob.name for blob in blobs if blob.name.lower().endswith('.json')]
+                        
+                        st.markdown(f"Found {len(json_files)} JSON files:")
+                        for json_file in json_files[:10]:  # Show first 10
+                            st.markdown(f"- {json_file}")
+                        
+                        if len(json_files) > 10:
+                            st.markdown(f"... and {len(json_files) - 10} more files")
+                        
+                        # Allow user to inspect a specific JSON file
+                        if json_files:
+                            selected_file = st.selectbox("Select a JSON file to inspect:", json_files[:20])
+                            if selected_file and st.button("Inspect JSON"):
+                                try:
+                                    blob = bucket.blob(selected_file)
+                                    content = blob.download_as_string()
+                                    json_data = json.loads(content)
+                                    st.json(json_data)
+                                except Exception as e:
+                                    st.error(f"Error reading JSON file: {e}")
+                            
+                    except Exception as e:
+                        st.error(f"Error listing JSON files: {e}")
 
 
         st.markdown("---")
