@@ -174,7 +174,7 @@ class ElasticsearchManager:
         except Exception as e:
             st.error(f"Failed to index paper {paper_id}: {e}")
 
-    def search_papers(self, keywords: List[str], time_filter: Dict = None, size: int = 10, operator: str = "OR") -> List[Dict[str, Any]]:
+    def search_papers(self, keywords: List[str], time_filter: Dict = None, size: int = 10) -> List[Dict[str, Any]]:
         """
         Searches for papers using keywords with support for AND/OR logic
         across multiple fields (title and content).
@@ -191,14 +191,12 @@ class ElasticsearchManager:
         if not keywords:
             return []
 
-        bool_operator = "must" if operator.upper() == "AND" else "should"
+        bool_operator = "must" 
 
         query = {
             "query": {
                 "bool": {
-                    # <<< THIS IS THE CRITICAL FIX >>>
-                    # We now use 'multi_match' to search across both 'title' and 'content' fields.
-                    # The 'must' clause still ensures that a document must match ALL keyword queries to be returned.
+                   
                     bool_operator: [
                         {"multi_match": {"query": keyword, "fields": ["title", "content"]}} for keyword in keywords
                     ],
