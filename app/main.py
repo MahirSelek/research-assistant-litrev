@@ -3163,25 +3163,33 @@ def make_citations_clickable(analysis_text: str, papers: list) -> str:
     # First, separate grouped citations and add brackets
     import re
     
-    # Find and separate grouped citations like "781113" into "[7][8][11][13]"
-    def separate_grouped_citations(match):
-        grouped_numbers = match.group(1)
-        # Split the grouped numbers into individual digits
-        individual_numbers = list(grouped_numbers)
-        # Create individual brackets for each number
-        separated_citations = ''.join([f'[{num}]' for num in individual_numbers])
-        return separated_citations
+    # Only process citations that are already in brackets or at the end of sentences
+    # Don't convert regular numbers in text to citations
     
-    # Replace grouped citations with separated ones
-    analysis_text = re.sub(r'(\d{2,})', separate_grouped_citations, analysis_text)
+    # First, find citations that are already in brackets but might be grouped
+    def separate_grouped_bracketed_citations(match):
+        citation_text = match.group(1)
+        # Only process if it looks like a grouped citation (multiple digits)
+        if len(citation_text) > 1 and citation_text.isdigit():
+            # Split into individual digits
+            individual_numbers = list(citation_text)
+            # Create individual brackets for each number
+            separated_citations = ''.join([f'[{num}]' for num in individual_numbers])
+            return separated_citations
+        else:
+            # Keep as is if it's a single number or not a citation
+            return f'[{citation_text}]'
     
-    # Also handle single numbers without brackets
-    def add_brackets_to_single_numbers(match):
+    # Replace grouped citations that are already in brackets
+    analysis_text = re.sub(r'\[(\d{2,})\]', separate_grouped_bracketed_citations, analysis_text)
+    
+    # Handle single numbers in brackets that might be missing brackets
+    def add_brackets_to_single_bracketed_numbers(match):
         number = match.group(1)
         return f'[{number}]'
     
-    # Add brackets to single numbers that don't already have brackets
-    analysis_text = re.sub(r'(?<!\()(\d+)(?!\))', add_brackets_to_single_numbers, analysis_text)
+    # Add brackets to single numbers that are already partially bracketed
+    analysis_text = re.sub(r'\[(\d+)\]', add_brackets_to_single_bracketed_numbers, analysis_text)
     
     # Deduplicate citations and remove [0] citations
     def deduplicate_citations(match):
@@ -3205,6 +3213,43 @@ def make_citations_clickable(analysis_text: str, papers: list) -> str:
     
     # Apply deduplication to sequences of citations
     analysis_text = re.sub(r'(\[\d+\])+', deduplicate_citations, analysis_text)
+    
+    # Fix multi-digit citations that were incorrectly split
+    # Convert [1][2] back to [12] if 12 is a valid citation number
+    def fix_multi_digit_citations(match):
+        citation_sequence = match.group(0)
+        # Extract all citation numbers from the sequence
+        citation_numbers = re.findall(r'\[(\d+)\]', citation_sequence)
+        
+        # Check if we have consecutive single digits that could form multi-digit citations
+        fixed_citations = []
+        i = 0
+        while i < len(citation_numbers):
+            if i < len(citation_numbers) - 1:
+                # Try to combine consecutive single digits
+                current = citation_numbers[i]
+                next_num = citation_numbers[i + 1]
+                combined = current + next_num
+                
+                # Check if the combined number is a valid citation (exists in our papers)
+                if combined in citation_links and len(current) == 1 and len(next_num) == 1:
+                    fixed_citations.append(combined)
+                    i += 2  # Skip the next number since we combined it
+                else:
+                    fixed_citations.append(current)
+                    i += 1
+            else:
+                fixed_citations.append(citation_numbers[i])
+                i += 1
+        
+        # Reconstruct the citation sequence
+        if fixed_citations:
+            return ''.join([f'[{num}]' for num in fixed_citations])
+        else:
+            return citation_sequence
+    
+    # Apply multi-digit citation fixing
+    analysis_text = re.sub(r'(\[\d+\])+', fix_multi_digit_citations, analysis_text)
     
     # Now replace citations with clickable markdown links
     for citation_num, link in citation_links.items():
