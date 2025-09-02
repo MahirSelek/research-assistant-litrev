@@ -174,7 +174,7 @@ class ElasticsearchManager:
         except Exception as e:
             st.error(f"Failed to index paper {paper_id}: {e}")
 
-    def search_papers(self, keywords: List[str], time_filter: Dict = None, size: int = 10) -> List[Dict[str, Any]]:
+    def search_papers(self, keywords: List[str], time_filter: Dict = None, size: int = 10, operator: str = "AND") -> List[Dict[str, Any]]:
         """
         Searches for papers using keywords with support for AND/OR logic
         across multiple fields (title and content).
@@ -191,7 +191,7 @@ class ElasticsearchManager:
         if not keywords:
             return []
 
-        bool_operator = "must" 
+        bool_operator = "must" if operator.upper() == "AND" else "should"
 
         query = {
             "query": {
