@@ -3383,34 +3383,41 @@ def main():
                         
                         # For each paper, try to reload metadata from JSON
                         updated_count = 0
-                        for paper in all_papers:
+                        for paper in all_papers[:50]:  # Process first 50 papers to test
                             paper_id = paper.get('paper_id')
                             if paper_id:
-                                # Try to find corresponding JSON file (try both .json and .metadata.json)
-                                json_filename = paper_id.rsplit('.', 1)[0] + '.json'
+                                # Try to find corresponding .metadata.json file
+                                json_filename = paper_id.rsplit('.', 1)[0] + '.metadata.json'
                                 json_blob = bucket.blob(json_filename)
-                                
-                                # If .json doesn't exist, try .metadata.json
-                                if not json_blob.exists():
-                                    json_filename = paper_id.rsplit('.', 1)[0] + '.metadata.json'
-                                    json_blob = bucket.blob(json_filename)
                                 
                                 if json_blob.exists():
                                     try:
                                         json_content = json_blob.download_as_string()
                                         json_metadata = json.loads(json_content)
                                         
-                                        # Update the metadata in the database
+                                        # Ensure paper_id is set
                                         json_metadata['paper_id'] = paper_id
+                                        
+                                        # Update the metadata in the database
                                         vector_db.update_paper_metadata(paper_id, json_metadata)
                                         st.markdown(f"✅ Updated metadata for {paper_id}: {list(json_metadata.keys())}")
                                         updated_count += 1
                                     except Exception as e:
                                         st.error(f"Error loading JSON for {paper_id}: {e}")
                                 else:
-                                    st.markdown(f"❌ No JSON found for {paper_id}")
+                                    st.markdown(f"❌ No .metadata.json found for {paper_id}")
                         
                         st.success(f"Metadata reload completed. Updated {updated_count} papers.")
+                        st.info("Now run a new search to see the updated links!")
+                        
+                        # Test the first few papers to verify links are working
+                        st.markdown("**Testing updated papers:**")
+                        test_papers = vector_db.get_all_papers()[:3]
+                        for i, paper in enumerate(test_papers):
+                            meta = paper.get('metadata', {})
+                            link = get_paper_link(meta)
+                            st.markdown(f"Paper {i+1}: {meta.get('title', 'No title')}")
+                            st.markdown(f"Link: {link}")
                         
                     except Exception as e:
                         st.error(f"Error reloading metadata: {e}")
