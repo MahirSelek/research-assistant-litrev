@@ -777,8 +777,14 @@ class VectorDBManager:
                     if not content.strip():
                         logging.warning(f"No text content extracted from '{filename}'.")
 
+                    # Try both .json and .metadata.json extensions
                     meta_blob_name = filename.rsplit('.', 1)[0] + '.json'
                     meta_blob = bucket.blob(meta_blob_name)
+                    
+                    # If .json doesn't exist, try .metadata.json
+                    if not meta_blob.exists():
+                        meta_blob_name = filename.rsplit('.', 1)[0] + '.metadata.json'
+                        meta_blob = bucket.blob(meta_blob_name)
                     metadata = {}
                     if meta_blob.exists():
                         meta_content = meta_blob.download_as_string()

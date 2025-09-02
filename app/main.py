@@ -3386,9 +3386,14 @@ def main():
                         for paper in all_papers:
                             paper_id = paper.get('paper_id')
                             if paper_id:
-                                # Try to find corresponding JSON file
+                                # Try to find corresponding JSON file (try both .json and .metadata.json)
                                 json_filename = paper_id.rsplit('.', 1)[0] + '.json'
                                 json_blob = bucket.blob(json_filename)
+                                
+                                # If .json doesn't exist, try .metadata.json
+                                if not json_blob.exists():
+                                    json_filename = paper_id.rsplit('.', 1)[0] + '.metadata.json'
+                                    json_blob = bucket.blob(json_filename)
                                 
                                 if json_blob.exists():
                                     try:
@@ -3422,17 +3427,22 @@ def main():
                         # List all JSON files
                         blobs = list(bucket.list_blobs())
                         json_files = [blob.name for blob in blobs if blob.name.lower().endswith('.json')]
+                        metadata_json_files = [blob.name for blob in blobs if blob.name.lower().endswith('.metadata.json')]
                         
                         st.markdown(f"Found {len(json_files)} JSON files:")
-                        for json_file in json_files[:10]:  # Show first 10
+                        st.markdown(f"- Regular .json files: {len([f for f in json_files if not f.endswith('.metadata.json')])}")
+                        st.markdown(f"- .metadata.json files: {len(metadata_json_files)}")
+                        
+                        st.markdown("**Sample .metadata.json files:**")
+                        for json_file in metadata_json_files[:5]:  # Show first 5
                             st.markdown(f"- {json_file}")
                         
-                        if len(json_files) > 10:
-                            st.markdown(f"... and {len(json_files) - 10} more files")
+                        if len(metadata_json_files) > 5:
+                            st.markdown(f"... and {len(metadata_json_files) - 5} more .metadata.json files")
                         
                         # Allow user to inspect a specific JSON file
-                        if json_files:
-                            selected_file = st.selectbox("Select a JSON file to inspect:", json_files[:20])
+                        if metadata_json_files:
+                            selected_file = st.selectbox("Select a .metadata.json file to inspect:", metadata_json_files[:20])
                             if selected_file and st.button("Inspect JSON"):
                                 try:
                                     blob = bucket.blob(selected_file)
