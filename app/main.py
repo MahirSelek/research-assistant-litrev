@@ -3251,6 +3251,33 @@ def make_citations_clickable(analysis_text: str, papers: list) -> str:
     # Apply multi-digit citation fixing
     analysis_text = re.sub(r'(\[\d+\])+', fix_multi_digit_citations, analysis_text)
     
+    # Add brackets to citations at the end of sentences (max 2 per sentence)
+    def add_brackets_to_end_citations(match):
+        citation_num = match.group(1)
+        return f'[{citation_num}]'
+    
+    # Find citations at the end of sentences and add brackets
+    # This will match numbers at the end of sentences (before periods, commas, etc.)
+    analysis_text = re.sub(r'(\d+)(?=\s*[.,;]|\s*$)', add_brackets_to_end_citations, analysis_text)
+    
+    # Limit citations to maximum 2 per sentence
+    def limit_citations_per_sentence(match):
+        sentence = match.group(0)
+        # Find all citations in this sentence
+        citations = re.findall(r'\[\d+\]', sentence)
+        
+        # If more than 2 citations, keep only the first 2
+        if len(citations) > 2:
+            # Replace all citations with just the first 2
+            for i, citation in enumerate(citations):
+                if i >= 2:
+                    sentence = sentence.replace(citation, '', 1)
+        
+        return sentence
+    
+    # Apply the limit to each sentence
+    analysis_text = re.sub(r'[^.!?]+[.!?]', limit_citations_per_sentence, analysis_text)
+    
     # Now replace citations with clickable markdown links
     for citation_num, link in citation_links.items():
         # Replace [citation_num] with clickable link
