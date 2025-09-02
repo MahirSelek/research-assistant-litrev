@@ -3070,6 +3070,57 @@ def generate_conversation_title(conversation_history: str) -> str:
 #     return "Not available"
 #Put print here to see the links that retrieved from metadata
 
+def get_paper_link(metadata: dict) -> str:
+    """
+    Retrieves the paper link from various possible keys in the metadata.
+    Checks multiple common link field names and validates the URL.
+    """
+    if not isinstance(metadata, dict):
+        return "Not available"
+    
+    # Check multiple possible link field names
+    link_fields = ['link', 'url', 'doi_url', 'doi', 'paper_url', 'pdf_url']
+    
+    for field in link_fields:
+        link = metadata.get(field)
+        if link and isinstance(link, str):
+            # Clean the link and validate it
+            link = link.strip()
+            if link.startswith('http'):
+                return link
+            elif link.startswith('doi.org/') or link.startswith('10.'):
+                # Handle DOI links
+                if not link.startswith('http'):
+                    link = f"https://{link}"
+                return link
+    
+    return "Not available"
+
+def make_citations_clickable(analysis_text: str, papers: list) -> str:
+    """
+    Makes inline citations [1][2][3] etc. clickable by replacing them with markdown links.
+    """
+    if not papers:
+        return analysis_text
+    
+    # Create a mapping of citation numbers to paper links
+    citation_links = {}
+    for i, paper in enumerate(papers):
+        meta = paper.get('metadata', {})
+        link = get_paper_link(meta)
+        if link != "Not available":
+            citation_links[i + 1] = link
+    
+    # Replace citations with clickable links
+    import re
+    for citation_num, link in citation_links.items():
+        # Replace [citation_num] with clickable link
+        pattern = rf'\[{citation_num}\]'
+        replacement = f'[{citation_num}]({link})'
+        analysis_text = re.sub(pattern, replacement, analysis_text)
+    
+    return analysis_text
+
 
 
 
@@ -3171,9 +3222,11 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, selecte
         for i, result in enumerate(top_papers):
             meta = result.get('metadata', {})
             title = meta.get('title', 'N/A')
+            link = get_paper_link(meta)
             content_preview = (meta.get('abstract') or result.get('content') or '')[:4000]
             context += f"SOURCE [{i+1}]:\n"
             context += f"Title: {title}\n"
+            context += f"Link: {link}\n"
             context += f"Content: {content_preview}\n---\n\n"
         
         prompt = f"""{context}
@@ -3197,8 +3250,15 @@ For the sections "Key Methodological Advances," "Emerging Trends," and "Overall 
 Create a new section titled ### Key Paper Summaries. Under this heading, identify the top 3-5 most impactful papers from the sources and provide a detailed, one-paragraph summary for each.
 
 **IMPORTANT:** Do NOT create a "References" section. Focus only on the thematic analysis and key paper summaries.
+
+**CRITICAL INSTRUCTION FOR CITATIONS:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].`
 """
         analysis = post_message_vertexai(prompt)
+        
+        # Make citations clickable
+        if analysis:
+            analysis = make_citations_clickable(analysis, top_papers)
+        
         # <<< MODIFICATION: Return all three pieces of information >>>
         return analysis, top_papers, total_found
 
@@ -3388,8 +3448,9 @@ def main():
                 for i, paper in enumerate(active_conv["retrieved_papers"]):
                     meta = paper.get('metadata', {})
                     title = meta.get('title', 'N/A')
+                    link = get_paper_link(meta)
                     content_preview = (meta.get('abstract') or paper.get('content') or '')[:4000]
-                    full_context += f"SOURCE [{i+1}]:\nTitle: {title}\nContent: {content_preview}\n---\n\n"
+                    full_context += f"SOURCE [{i+1}]:\nTitle: {title}\nLink: {link}\nContent: {content_preview}\n---\n\n"
             
             full_prompt = f"""Continue our conversation. You are the Polo-GGB Research Assistant.
 Your task is to answer the user's last message based on the chat history and the full context from the paper sources provided below.
@@ -3406,6 +3467,8 @@ Assistant Response:"""
             
             response_text = post_message_vertexai(full_prompt)
             if response_text:
+                # Make citations clickable in follow-up responses
+                response_text = make_citations_clickable(response_text, active_conv.get("retrieved_papers", []))
                 active_conv["messages"].append({"role": "assistant", "content": response_text})
                 st.rerun()
 
