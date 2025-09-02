@@ -99,55 +99,187 @@
 
 # 01/09 Deneme:
 
+# # app/elasticsearch_utils.py
+
+# import streamlit as st
+# from elasticsearch import Elasticsearch
+# from typing import List, Dict, Any
+
+# # <<< FIX: Renamed class from ESManager to ElasticsearchManager to match the import in your other files.
+# class ElasticsearchManager:
+#     """
+#     Manages all interactions with the Elasticsearch cluster, including
+#     indexing documents and performing searches.
+#     """
+#     def __init__(self, cloud_id: str, username: str, password: str):
+#         """
+#         Initializes the Elasticsearch client.
+
+#         Args:
+#             cloud_id (str): The Cloud ID for the Elasticsearch deployment.
+#             username (str): The username for authentication.
+#             password (str): The password for authentication.
+#         """
+#         try:
+#             self.es_client = Elasticsearch(
+#                 cloud_id=cloud_id,
+#                 basic_auth=(username, password),
+#                 request_timeout=30
+#             )
+#             # Verify the connection is alive
+#             if not self.es_client.ping():
+#                 raise ConnectionError("Failed to connect to Elasticsearch.")
+            
+#             # Ensure the 'papers' index exists with the correct mapping
+#             self.create_index_if_not_exists("papers")
+
+#         except Exception as e:
+#             st.error(f"Could not connect to Elasticsearch: {e}")
+#             st.stop()
+
+#     def create_index_if_not_exists(self, index_name: str):
+#         """
+#         Creates an index with a specific mapping if it doesn't already exist.
+#         This ensures fields like dates are correctly interpreted.
+#         """
+#         if not self.es_client.indices.exists(index=index_name):
+#             mapping = {
+#                 "properties": {
+#                     "title": {"type": "text"},
+#                     "content": {"type": "text"},
+#                     "publication_date": {"type": "date", "format": "yyyy-MM-dd||epoch_millis"},
+#                     "url": {"type": "keyword"},
+#                     "doi_url": {"type": "keyword"},
+#                     "link": {"type": "keyword"}
+#                 }
+#             }
+#             try:
+#                 self.es_client.indices.create(index=index_name, mappings=mapping)
+#                 print(f"Index '{index_name}' created successfully.")
+#             except Exception as e:
+#                 st.error(f"Failed to create index '{index_name}': {e}")
+
+
+#     def index_paper(self, paper_id: str, document: Dict[str, Any], index_name: str = "papers"):
+#         """
+#         Indexes a single paper document.
+
+#         Args:
+#             paper_id (str): The unique ID for the paper.
+#             document (Dict[str, Any]): The paper data to be indexed.
+#             index_name (str): The name of the index to add the paper to.
+#         """
+#         try:
+#             self.es_client.index(index=index_name, id=paper_id, document=document)
+#         except Exception as e:
+#             st.error(f"Failed to index paper {paper_id}: {e}")
+
+#     def search_papers(self, keywords: List[str], time_filter: Dict = None, size: int = 10, operator: str = "AND") -> List[Dict[str, Any]]:
+#         """
+#         Searches for papers using keywords with support for AND/OR logic
+#         across multiple fields (title and content).
+
+#         Args:
+#             keywords (List[str]): A list of keywords to search for.
+#             time_filter (Dict, optional): A dictionary for date range filtering. Defaults to None.
+#             size (int, optional): The number of results to return. Defaults to 10.
+#             operator (str, optional): The boolean logic to use ('AND' or 'OR'). Defaults to "OR".
+
+#         Returns:
+#             List[Dict[str, Any]]: A list of search result hits.
+#         """
+#         if not keywords:
+#             return []
+
+#         bool_operator = "must" if operator.upper() == "AND" else "should"
+
+#         query = {
+#             "query": {
+#                 "bool": {
+                   
+#                     bool_operator: [
+#                         {"multi_match": {"query": keyword, "fields": ["title", "content"]}} for keyword in keywords
+#                     ],
+#                     "filter": []
+#                 }
+#             },
+#             "size": size
+#         }
+
+#         # Add the time filter if it's provided
+#         if time_filter:
+#             query["query"]["bool"]["filter"].append({
+#                 "range": {
+#                     "publication_date": time_filter
+#                 }
+#             })
+
+#         try:
+#             response = self.es_client.search(index="papers", body=query)
+#             return response.get('hits', {}).get('hits', [])
+#         except Exception as e:
+#             st.error(f"An error occurred during Elasticsearch search: {e}")
+#             return []
+
+# @st.cache_resource
+# # <<< FIX: Updated the return type hint to match the new class name.
+# def get_es_manager(cloud_id: str, username: str, password: str) -> ElasticsearchManager:
+#     """
+#     A cached factory function to get an instance of the ElasticsearchManager.
+#     Using st.cache_resource ensures the connection is established only once.
+#     """
+#     es_manager = ElasticsearchManager(cloud_id=cloud_id, username=username, password=password)
+#     return es_manager
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # app/elasticsearch_utils.py
 
 import streamlit as st
 from elasticsearch import Elasticsearch
 from typing import List, Dict, Any
 
-# <<< FIX: Renamed class from ESManager to ElasticsearchManager to match the import in your other files.
 class ElasticsearchManager:
     """
     Manages all interactions with the Elasticsearch cluster, including
     indexing documents and performing searches.
     """
     def __init__(self, cloud_id: str, username: str, password: str):
-        """
-        Initializes the Elasticsearch client.
-
-        Args:
-            cloud_id (str): The Cloud ID for the Elasticsearch deployment.
-            username (str): The username for authentication.
-            password (str): The password for authentication.
-        """
         try:
             self.es_client = Elasticsearch(
                 cloud_id=cloud_id,
                 basic_auth=(username, password),
                 request_timeout=30
             )
-            # Verify the connection is alive
             if not self.es_client.ping():
                 raise ConnectionError("Failed to connect to Elasticsearch.")
-            
-            # Ensure the 'papers' index exists with the correct mapping
             self.create_index_if_not_exists("papers")
-
         except Exception as e:
             st.error(f"Could not connect to Elasticsearch: {e}")
             st.stop()
 
     def create_index_if_not_exists(self, index_name: str):
-        """
-        Creates an index with a specific mapping if it doesn't already exist.
-        This ensures fields like dates are correctly interpreted.
-        """
         if not self.es_client.indices.exists(index=index_name):
             mapping = {
                 "properties": {
-                    "title": {"type": "text"},
-                    "content": {"type": "text"},
-                    "publication_date": {"type": "date", "format": "yyyy-MM-dd||epoch_millis"},
+                    "title": {"type": "text", "analyzer": "english"},
+                    "abstract": {"type": "text", "analyzer": "english"},
+                    "content": {"type": "text", "analyzer": "english"},
+                    "publication_date": {"type": "date", "format": "yyyy-MM-dd||dd MMM yyyy||epoch_millis"},
                     "url": {"type": "keyword"},
                     "doi_url": {"type": "keyword"},
                     "link": {"type": "keyword"}
@@ -159,61 +291,50 @@ class ElasticsearchManager:
             except Exception as e:
                 st.error(f"Failed to create index '{index_name}': {e}")
 
-
-    def index_paper(self, paper_id: str, document: Dict[str, Any], index_name: str = "papers"):
+    # <<< FIX: The function signature and logic are corrected here >>>
+    def index_paper(self, paper_id: str, metadata: Dict[str, Any], content: str, index_name: str = "papers"):
         """
-        Indexes a single paper document.
+        Indexes a single paper document by combining its metadata and content.
 
         Args:
             paper_id (str): The unique ID for the paper.
-            document (Dict[str, Any]): The paper data to be indexed.
+            metadata (Dict[str, Any]): The paper's metadata (from the JSON file).
+            content (str): The full text content of the paper (from the PDF).
             index_name (str): The name of the index to add the paper to.
         """
         try:
+            # Create a single document to be indexed by starting with the metadata
+            # and adding the full text content.
+            document = metadata.copy()
+            document['content'] = content
+            
+            # Now index the complete document.
             self.es_client.index(index=index_name, id=paper_id, document=document)
         except Exception as e:
             st.error(f"Failed to index paper {paper_id}: {e}")
 
     def search_papers(self, keywords: List[str], time_filter: Dict = None, size: int = 10, operator: str = "AND") -> List[Dict[str, Any]]:
-        """
-        Searches for papers using keywords with support for AND/OR logic
-        across multiple fields (title and content).
-
-        Args:
-            keywords (List[str]): A list of keywords to search for.
-            time_filter (Dict, optional): A dictionary for date range filtering. Defaults to None.
-            size (int, optional): The number of results to return. Defaults to 10.
-            operator (str, optional): The boolean logic to use ('AND' or 'OR'). Defaults to "OR".
-
-        Returns:
-            List[Dict[str, Any]]: A list of search result hits.
-        """
         if not keywords:
             return []
-
         bool_operator = "must" if operator.upper() == "AND" else "should"
-
         query = {
             "query": {
                 "bool": {
-                   
                     bool_operator: [
-                        {"multi_match": {"query": keyword, "fields": ["title", "content"]}} for keyword in keywords
+                        # Search across title, abstract, and content for better results
+                        {"multi_match": {"query": keyword, "fields": ["title", "abstract", "content"]}} for keyword in keywords
                     ],
                     "filter": []
                 }
             },
             "size": size
         }
-
-        # Add the time filter if it's provided
         if time_filter:
             query["query"]["bool"]["filter"].append({
                 "range": {
                     "publication_date": time_filter
                 }
             })
-
         try:
             response = self.es_client.search(index="papers", body=query)
             return response.get('hits', {}).get('hits', [])
@@ -222,11 +343,9 @@ class ElasticsearchManager:
             return []
 
 @st.cache_resource
-# <<< FIX: Updated the return type hint to match the new class name.
 def get_es_manager(cloud_id: str, username: str, password: str) -> ElasticsearchManager:
     """
     A cached factory function to get an instance of the ElasticsearchManager.
-    Using st.cache_resource ensures the connection is established only once.
     """
     es_manager = ElasticsearchManager(cloud_id=cloud_id, username=username, password=password)
     return es_manager
