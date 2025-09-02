@@ -291,24 +291,18 @@ class ElasticsearchManager:
             except Exception as e:
                 st.error(f"Failed to create index '{index_name}': {e}")
 
-    # <<< FIX: The function signature and logic are corrected here >>>
+    # <<< FIX: The function signature and logic are corrected here to accept metadata and content >>>
     def index_paper(self, paper_id: str, metadata: Dict[str, Any], content: str, index_name: str = "papers"):
         """
         Indexes a single paper document by combining its metadata and content.
-
-        Args:
-            paper_id (str): The unique ID for the paper.
-            metadata (Dict[str, Any]): The paper's metadata (from the JSON file).
-            content (str): The full text content of the paper (from the PDF).
-            index_name (str): The name of the index to add the paper to.
         """
         try:
-            # Create a single document to be indexed by starting with the metadata
-            # and adding the full text content.
+            # Create a single document for indexing. Start with the full metadata...
             document = metadata.copy()
+            # ...and add the full text content to it.
             document['content'] = content
             
-            # Now index the complete document.
+            # Now, index the complete document.
             self.es_client.index(index=index_name, id=paper_id, document=document)
         except Exception as e:
             st.error(f"Failed to index paper {paper_id}: {e}")
@@ -321,7 +315,7 @@ class ElasticsearchManager:
             "query": {
                 "bool": {
                     bool_operator: [
-                        # Search across title, abstract, and content for better results
+                        # Search across title, abstract, and content for better results.
                         {"multi_match": {"query": keyword, "fields": ["title", "abstract", "content"]}} for keyword in keywords
                     ],
                     "filter": []
