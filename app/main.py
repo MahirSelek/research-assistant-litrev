@@ -3060,15 +3060,33 @@ def generate_conversation_title(conversation_history: str) -> str:
         return title.strip().replace('"', '')
     return "New Chat"
 
+# def get_paper_link(metadata: dict) -> str:
+#     if not isinstance(metadata, dict):
+#         return "Not available"
+#     for key in ['url', 'link', 'doi_url']:
+#         link = metadata.get(key)
+#         if link and isinstance(link, str) and link.startswith('http'):
+#             return link
+#     return "Not available"
+#Put print here to see the links that retrieved from metadata
+
 def get_paper_link(metadata: dict) -> str:
+    """
+    Directly retrieves the paper link from the 'link' key in the metadata.
+    This is simplified for consistency with your specific data format.
+    """
     if not isinstance(metadata, dict):
         return "Not available"
-    for key in ['url', 'link', 'doi_url']:
-        link = metadata.get(key)
-        if link and isinstance(link, str) and link.startswith('http'):
-            return link
+    
+    # Directly access the 'link' key.
+    link = metadata.get('link')
+    
+    # Perform safety checks: the link must exist, be a string, and be a valid URL.
+    if link and isinstance(link, str) and link.startswith('http'):
+        return link
+        
+    # If the 'link' key is missing, empty, or invalid, return "Not available".
     return "Not available"
-#Put print here to see the links that retrieved from metadata
 
 
 
@@ -3271,6 +3289,13 @@ def main():
 
         display_chat_history()
 
+        # <<< MODIFICATION: Added Debug Mode checkbox to the sidebar >>>
+        st.markdown("---")
+        st.session_state.debug_mode = st.checkbox("Enable Debug Mode", key="debug_mode_checkbox")
+        if st.session_state.debug_mode:
+            st.warning("Debug mode is enabled. Metadata will be shown.")
+
+
         st.markdown("---")
         with st.form(key="new_analysis_form"):
             st.subheader("Start a New Analysis")
@@ -3353,6 +3378,12 @@ def main():
                                     mime="application/pdf",
                                     key=f"download_{active_id}_{paper_id}"
                                 )
+
+                    # <<< MODIFICATION: Display metadata if debug mode is on >>>
+                    if st.session_state.get("debug_mode", False):
+                        with st.expander(f"Debug: View Metadata for '{title[:30]}...'"):
+                            st.json(meta)
+
 
         if prompt := st.chat_input("Ask a follow-up question..."):
             active_conv["messages"].append({"role": "user", "content": prompt})
