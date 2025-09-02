@@ -3288,13 +3288,7 @@ def main():
 
         display_chat_history()
 
-        # <<< MODIFICATION: Added Debug Mode checkbox to the sidebar >>>
-        st.markdown("---")
-        st.session_state.debug_mode = st.checkbox("Enable Debug Mode", key="debug_mode_checkbox")
-        if st.session_state.debug_mode:
-            st.warning("Debug mode is enabled. Metadata will be shown.")
-            
-            
+
 
 
         st.markdown("---")
@@ -3377,10 +3371,7 @@ def main():
                                     key=f"download_{active_id}_{paper_id}"
                                 )
 
-                    # <<< MODIFICATION: Display metadata if debug mode is on >>>
-                    if st.session_state.get("debug_mode", False):
-                        with st.expander(f"Debug: View Metadata for '{title[:30]}...'"):
-                            st.json(meta)
+
 
 
         if prompt := st.chat_input("Ask a follow-up question..."):
