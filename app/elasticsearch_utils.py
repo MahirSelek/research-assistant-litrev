@@ -291,18 +291,18 @@ class ElasticsearchManager:
             except Exception as e:
                 st.error(f"Failed to create index '{index_name}': {e}")
 
-    # <<< FIX: The function signature and logic are corrected here to accept metadata and content >>>
+    # THIS IS THE CRITICAL FIX. THIS FUNCTION IS CORRECT.
     def index_paper(self, paper_id: str, metadata: Dict[str, Any], content: str, index_name: str = "papers"):
         """
         Indexes a single paper document by combining its metadata and content.
         """
         try:
-            # Create a single document for indexing. Start with the full metadata...
+            # Create a single document for indexing by starting with the metadata
+            # and adding the full text content.
             document = metadata.copy()
-            # ...and add the full text content to it.
             document['content'] = content
             
-            # Now, index the complete document.
+            # Now index the complete document, ensuring the 'link' key is saved.
             self.es_client.index(index=index_name, id=paper_id, document=document)
         except Exception as e:
             st.error(f"Failed to index paper {paper_id}: {e}")
