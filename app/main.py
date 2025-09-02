@@ -3251,60 +3251,6 @@ def make_citations_clickable(analysis_text: str, papers: list) -> str:
     # Apply multi-digit citation fixing
     analysis_text = re.sub(r'(\[\d+\])+', fix_multi_digit_citations, analysis_text)
     
-    # Add brackets to citations that are at the end of sentences but missing brackets
-    def add_brackets_to_end_citations(match):
-        citation_num = match.group(1)
-        
-        # Check if this is a grouped citation that needs to be split
-        if len(citation_num) > 1:
-            # Try to find valid citation combinations
-            valid_citations = []
-            i = 0
-            while i < len(citation_num):
-                # Try different combinations starting from this position
-                best_combination = None
-                best_length = 0
-                
-                # Try single digit
-                if citation_num[i] in citation_links:
-                    best_combination = [citation_num[i]]
-                    best_length = 1
-                
-                # Try two digits
-                if i + 1 < len(citation_num):
-                    two_digits = citation_num[i:i+2]
-                    if two_digits in citation_links:
-                        best_combination = [two_digits]
-                        best_length = 2
-                
-                # Try three digits
-                if i + 2 < len(citation_num):
-                    three_digits = citation_num[i:i+3]
-                    if three_digits in citation_links:
-                        best_combination = [three_digits]
-                        best_length = 3
-                
-                # Use the best combination found
-                if best_combination:
-                    valid_citations.extend(best_combination)
-                    i += best_length
-                else:
-                    # If no valid combination found, use single digit
-                    valid_citations.append(citation_num[i])
-                    i += 1
-            
-            # Create the citation string
-            if valid_citations:
-                return ''.join([f'[{num}]' for num in valid_citations])
-            else:
-                return f'[{citation_num}]'
-        else:
-            # Single digit citation
-            return f'[{citation_num}]'
-    
-    # Find citations at the end of sentences (before periods, commas, etc.) and add brackets
-    analysis_text = re.sub(r'(\d+)(?=\s*[.,;]|\s*$)', add_brackets_to_end_citations, analysis_text)
-    
     # Now replace citations with clickable markdown links
     for citation_num, link in citation_links.items():
         # Replace [citation_num] with clickable link
