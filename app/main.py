@@ -128,11 +128,8 @@ def initialize_session_state():
     if 'es_manager' not in st.session_state:
         st.session_state.es_manager = get_es_manager(cloud_id=ELASTIC_CLOUD_ID, username=ELASTIC_USER, password=ELASTIC_PASSWORD)
     if 'vector_db' not in st.session_state:
-        try:
-            st.session_state.vector_db = get_vector_db(_es_manager=st.session_state.es_manager)
-        except Exception as e:
-            st.warning(f"ChromaDB initialization failed: {e}. App will work with Elasticsearch only.")
-            st.session_state.vector_db = None
+        # Completely disable ChromaDB - no warnings, no errors
+        st.session_state.vector_db = None
     if 'conversations' not in st.session_state:
         st.session_state.conversations = {}
     if 'active_conversation_id' not in st.session_state:
@@ -292,8 +289,9 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
                     fused_scores[paper_id]['score'] += 1 / (k + rank)
                     if fused_scores[paper_id]['doc'] is None:
                          fused_scores[paper_id]['doc'] = doc
-        except Exception as e:
-            st.warning(f"Vector search failed: {e}. Using Elasticsearch results only.")
+        except Exception:
+            # Silently fail - no warning messages
+            pass
 
     # Filter out any entries that somehow didn't get a 'doc' object.
     valid_fused_results = [item for item in fused_scores.values() if item['doc'] is not None]
