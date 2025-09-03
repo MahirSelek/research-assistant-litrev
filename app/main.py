@@ -413,9 +413,266 @@ def make_citations_clickable(analysis_text: str, papers: list) -> str:
     return analysis_text
 
 
+def make_citations_clickable_new(analysis_text: str, papers: list) -> str:
+    """
+    SIMPLIFIED VERSION: Makes inline citations [1][2][3] etc. clickable by replacing them with actual paper links.
+    This version focuses on the core issue: converting unbracketed citation numbers to properly bracketed citations.
+    """
+    if not papers:
+        return analysis_text
+    
+    # Create a mapping of citation numbers to paper links
+    citation_links = {}
+    for i, paper in enumerate(papers):
+        meta = paper.get('metadata', {})
+        link = get_paper_link(meta)
+        if link != "Not available":
+            citation_links[i + 1] = link
+    
+    import re
+    
+    # Step 1: Protect list numbers and other non-citation numbers
+    # Replace list numbers like "1.", "2.", "3." with placeholders
+    list_number_placeholders = {}
+    counter = 0
+    
+    def protect_list_numbers(match):
+        nonlocal counter
+        placeholder = f"__LIST_NUMBER_{counter}__"
+        list_number_placeholders[placeholder] = match.group(0)
+        counter += 1
+        return placeholder
+    
+    # Protect list numbers (1., 2., 3., etc.)
+    analysis_text = re.sub(r'\b(\d+)\.(?=\s)', protect_list_numbers, analysis_text)
+    
+    # Protect years and other common numbers that shouldn't be citations
+    def protect_years_and_numbers(match):
+        nonlocal counter
+        number = match.group(1)
+        # Don't protect single digits that might be citations
+        if len(number) == 1:
+            return match.group(0)
+        # Protect years (4 digits starting with 19 or 20)
+        if len(number) == 4 and (number.startswith('19') or number.startswith('20')):
+            placeholder = f"__YEAR_{counter}__"
+            list_number_placeholders[placeholder] = match.group(0)
+            counter += 1
+            return placeholder
+        # Protect percentages and other common numbers
+        if re.search(r'\d+%|\d+\.\d+', match.group(0)):
+            placeholder = f"__NUMBER_{counter}__"
+            list_number_placeholders[placeholder] = match.group(0)
+            counter += 1
+            return placeholder
+        return match.group(0)
+    
+    # Protect years and percentages
+    analysis_text = re.sub(r'\b(\d{4})\b', protect_years_and_numbers, analysis_text)
+    analysis_text = re.sub(r'\b(\d+%)\b', protect_years_and_numbers, analysis_text)
+    
+    # Step 2: Find and properly format actual citations
+    # Look for numbers that are likely citations (at end of sentences, after key findings)
+    
+    # First, handle citations that are already in brackets but might be grouped
+    def separate_grouped_bracketed_citations(match):
+        citation_text = match.group(1)
+        # Only process if it looks like a grouped citation (multiple digits)
+        if len(citation_text) > 1 and citation_text.isdigit():
+            # Split into individual digits
+            individual_numbers = list(citation_text)
+            # Create individual brackets for each number
+            separated_citations = ''.join([f'[{num}]' for num in individual_numbers])
+            return separated_citations
+        else:
+            # Keep as is if it's a single number or not a citation
+            return f'[{citation_text}]'
+    
+    # Replace grouped citations that are already in brackets
+    analysis_text = re.sub(r'\[(\d{2,})\]', separate_grouped_bracketed_citations, analysis_text)
+    
+    # Handle single numbers in brackets that might be missing brackets
+    def add_brackets_to_single_bracketed_numbers(match):
+        number = match.group(1)
+        return f'[{number}]'
+    
+    # Add brackets to single numbers that are already partially bracketed
+    analysis_text = re.sub(r'\[(\d+)\]', add_brackets_to_single_bracketed_numbers, analysis_text)
+    
+    # Step 3: Find unbracketed citations throughout the text and add brackets
+    # This will match numbers that are likely citations (not protected numbers)
+    def add_brackets_to_unbracketed_citations(match):
+        citation_num = match.group(1)
+        # Only add brackets if this is a valid citation number
+        if int(citation_num) in citation_links:
+            return f'[{citation_num}]'
+        return match.group(0)
+    
+    # Find unbracketed citations throughout the text and add brackets
+    # Look for numbers that are not already in brackets and are valid citations
+    analysis_text = re.sub(r'(?<!\[)\b(\d+)\b(?!\])', add_brackets_to_unbracketed_citations, analysis_text)
+    
+    # Step 4: Fix multi-digit citations that were incorrectly split
+    # Convert [1][2] back to [12] if 12 is a valid citation number
+    def fix_multi_digit_citations(match):
+        citation_sequence = match.group(0)
+        # Extract all citation numbers from the sequence
+        citation_numbers = re.findall(r'\[(\d+)\]', citation_sequence)
+        
+        # Check if we have consecutive single digits that could form multi-digit citations
+        fixed_citations = []
+        i = 0
+        while i < len(citation_numbers):
+            if i < len(citation_numbers) - 1:
+                # Try to combine consecutive single digits
+                current = citation_numbers[i]
+                next_num = citation_numbers[i + 1]
+                combined = current + next_num
+                
+                # Check if the combined number is a valid citation (exists in our papers)
+                if int(combined) in citation_links and len(current) == 1 and len(next_num) == 1:
+                    fixed_citations.append(combined)
+                    i += 2  # Skip the next number since we combined it
+                else:
+                    fixed_citations.append(current)
+                    i += 1
+            else:
+                fixed_citations.append(citation_numbers[i])
+                i += 1
+        
+        # Reconstruct the citation sequence
+        if fixed_citations:
+            return ''.join([f'[{num}]' for num in fixed_citations])
+        else:
+            return citation_sequence
+    
+    # Apply multi-digit citation fixing
+    analysis_text = re.sub(r'(\[\d+\])+', fix_multi_digit_citations, analysis_text)
+    
+    # Step 5: Deduplicate citations and remove invalid citations
+    def deduplicate_citations(match):
+        citation_sequence = match.group(0)
+        # Extract all citation numbers from the sequence
+        citation_numbers = re.findall(r'\[(\d+)\]', citation_sequence)
+        
+        # Filter out invalid citations and deduplicate while preserving order
+        seen = set()
+        unique_citations = []
+        for num in citation_numbers:
+            # Only include valid citation numbers
+            if int(num) in citation_links and num not in seen:
+                unique_citations.append(num)
+                seen.add(num)
+        
+        # Reconstruct the citation sequence with unique numbers
+        if unique_citations:
+            return ''.join([f'[{num}]' for num in unique_citations])
+        else:
+            return ''  # Remove empty citation sequences
+    
+    # Apply deduplication to sequences of citations
+    analysis_text = re.sub(r'(\[\d+\])+', deduplicate_citations, analysis_text)
+    
+    # Step 6: Limit citations to maximum 2 per sentence
+    def limit_citations_per_sentence(match):
+        sentence = match.group(0)
+        # Find all citations in this sentence
+        citations = re.findall(r'\[\d+\]', sentence)
+        
+        # If more than 2 citations, keep only the first 2
+        if len(citations) > 2:
+            # Replace all citations with just the first 2
+            for i, citation in enumerate(citations):
+                if i >= 2:
+                    sentence = sentence.replace(citation, '', 1)
+        
+        return sentence
+    
+    # Apply the limit to each sentence
+    analysis_text = re.sub(r'[^.!?]+[.!?]', limit_citations_per_sentence, analysis_text)
+    
+    # Step 7: Now replace citations with clickable markdown links
+    for citation_num, link in citation_links.items():
+        # Replace [citation_num] with clickable link
+        pattern = rf'\[{citation_num}\]'
+        replacement = f'[{citation_num}]({link})'
+        analysis_text = re.sub(pattern, replacement, analysis_text)
+    
+    # Step 8: Restore protected numbers
+    for placeholder, original in list_number_placeholders.items():
+        analysis_text = analysis_text.replace(placeholder, original)
+    
+    return analysis_text
 
 
-
+def make_citations_clickable_simple(analysis_text: str, papers: list) -> str:
+    """
+    ULTRA SIMPLIFIED VERSION: Makes inline citations [1][2][3] etc. clickable.
+    This version is much simpler and focuses on the core issue.
+    """
+    if not papers:
+        return analysis_text
+    
+    # Create a mapping of citation numbers to paper links
+    citation_links = {}
+    for i, paper in enumerate(papers):
+        meta = paper.get('metadata', {})
+        link = get_paper_link(meta)
+        if link != "Not available":
+            citation_links[i + 1] = link
+    
+    import re
+    
+    # Step 1: Simple protection for list numbers (protect "1.", "2.", etc.)
+    list_numbers = {}
+    counter = 0
+    
+    def protect_list_nums(match):
+        nonlocal counter
+        placeholder = f"__LIST_{counter}__"
+        list_numbers[placeholder] = match.group(0)
+        counter += 1
+        return placeholder
+    
+    analysis_text = re.sub(r'\b(\d+)\.(?=\s)', protect_list_nums, analysis_text)
+    
+    # Step 2: Simple protection for years
+    def protect_years(match):
+        nonlocal counter
+        number = match.group(1)
+        if len(number) == 4 and (number.startswith('19') or number.startswith('20')):
+            placeholder = f"__YEAR_{counter}__"
+            list_numbers[placeholder] = match.group(0)
+            counter += 1
+            return placeholder
+        return match.group(0)
+    
+    analysis_text = re.sub(r'\b(\d{4})\b', protect_years, analysis_text)
+    
+    # Step 3: Find unbracketed numbers that match our citation range and add brackets
+    def add_brackets(match):
+        citation_num = match.group(1)
+        try:
+            if int(citation_num) in citation_links:
+                return f'[{citation_num}]'
+        except:
+            pass
+        return match.group(0)
+    
+    # Find unbracketed numbers and add brackets if they're valid citations
+    analysis_text = re.sub(r'(?<!\[)\b(\d{1,2})\b(?!\])', add_brackets, analysis_text)
+    
+    # Step 4: Replace bracketed citations with clickable links
+    for citation_num, link in citation_links.items():
+        pattern = rf'\[{citation_num}\]'
+        replacement = f'[{citation_num}]({link})'
+        analysis_text = re.sub(pattern, replacement, analysis_text)
+    
+    # Step 5: Restore protected numbers
+    for placeholder, original in list_numbers.items():
+        analysis_text = analysis_text.replace(placeholder, original)
+    
+    return analysis_text
 
 
 # <<< MODIFICATION: The entire search function is redesigned for accuracy >>>
@@ -552,7 +809,7 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
         if analysis:
             # First, reload metadata from .metadata.json files to get the links
             top_papers = reload_paper_metadata(top_papers)
-            analysis = make_citations_clickable(analysis, top_papers)
+            analysis = make_citations_clickable_simple(analysis, top_papers)
         
         # <<< MODIFICATION: Return all three pieces of information >>>
         return analysis, top_papers, total_found
@@ -780,7 +1037,7 @@ Assistant Response:"""
             response_text = post_message_vertexai(full_prompt)
             if response_text:
                 # Make citations clickable in follow-up responses
-                response_text = make_citations_clickable(response_text, active_conv.get("retrieved_papers", []))
+                response_text = make_citations_clickable_simple(response_text, active_conv.get("retrieved_papers", []))
                 active_conv["messages"].append({"role": "assistant", "content": response_text})
                 st.rerun()
 
