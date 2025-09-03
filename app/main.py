@@ -229,7 +229,7 @@ def display_citations_separately(analysis_text: str, papers: list) -> str:
         return analysis_text
     
     # Create a simple citations section
-    citations_section = "\n\n---\n\n### 📚 References\n\n"
+    citations_section = "\n\n---\n\n### References\n\n"
     
     for i, paper in enumerate(papers):
         meta = paper.get('metadata', {})
