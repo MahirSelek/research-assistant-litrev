@@ -32,9 +32,6 @@ if platform.system() == "Linux":
         # This part remains the same, for when the package isn't installed
         st.warning("pysqlite3-binary not found. ChromaDB may fail on this environment.")
 
-# --- CRITICAL: Set up Python path BEFORE any local imports ---
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 try:
     from elasticsearch_utils import get_es_manager
     from vector_db import get_vector_db
@@ -42,6 +39,8 @@ except ImportError as e:
     st.error(f"Failed to import a local module: {e}. Ensure all .py files are in the 'app/' directory.")
     st.stop()
 
+# --- App Configuration & Constants ---
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'config', 'config.yaml')
     with open(config_path, 'r') as file:
