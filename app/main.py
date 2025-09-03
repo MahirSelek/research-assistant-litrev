@@ -1,8 +1,3 @@
-# 02/09 Gece Denendi Deneme - Bu surum cok iyi durumda en azindan citationlar tiklanabilir link halindeler ve dogru citationlar var.
-# Tek yapilmasi gereken citationlarin bracket [] icine alinmasi lazim ve numaralarla citation ayrimi bu
-
-
-
 # app/main.py
 
 import streamlit as st
