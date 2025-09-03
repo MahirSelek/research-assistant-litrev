@@ -301,7 +301,7 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
 
 
 # <<< MODIFICATION: Updated this function to handle the new return values from perform_hybrid_search >>>
-def process_keyword_search(keywords: list, time_filter_type: str | None, selected_year: int | None, selected_month: str | None, start_date=None, end_date=None) -> tuple[str | None, list, int]:
+def process_keyword_search(keywords: list, time_filter_type: str | None, selected_year: int | None, selected_month: str | None) -> tuple[str | None, list, int]:
     if not keywords:
         st.error("Please select at least one keyword.")
         return None, [], 0
@@ -309,26 +309,15 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, selecte
     with st.spinner("Searching for highly relevant papers and generating a comprehensive, in-depth report..."):
         time_filter_dict = None
         now = datetime.datetime.now()
-        
         if time_filter_type == "Year" and selected_year:
-            # For year, use current date as end if it's the current year, otherwise use end of year
-            if selected_year == now.year:
-                time_filter_dict = {"gte": f"{selected_year}-01-01", "lte": now.strftime('%Y-%m-%d')}
-            else:
-                time_filter_dict = {"gte": f"{selected_year}-01-01", "lte": f"{selected_year}-12-31"}
+            time_filter_dict = {"gte": f"{selected_year}-01-01", "lte": f"{selected_year}-12-31"}
         elif time_filter_type == "Month" and selected_month:
             year, month = map(int, selected_month.split('-'))
             time_filter_dict = {"gte": f"{year}-{month:02d}-01", "lt": f"{year}-{(month % 12) + 1:02d}-01" if month < 12 else f"{year+1}-01-01"}
-        elif time_filter_type == "Custom Interval" and start_date and end_date:
-            time_filter_dict = {"gte": start_date.strftime('%Y-%m-%d'), "lte": end_date.strftime('%Y-%m-%d')}
         elif time_filter_type == "Last week":
             time_filter_dict = {"gte": (now - datetime.timedelta(days=7)).strftime('%Y-%m-%d')}
         elif time_filter_type == "Last month":
             time_filter_dict = {"gte": (now - datetime.timedelta(days=31)).strftime('%Y-%m-%d')}
-        elif time_filter_type == "Last 3 months":
-            time_filter_dict = {"gte": (now - datetime.timedelta(days=90)).strftime('%Y-%m-%d')}
-        elif time_filter_type == "Last 6 months":
-            time_filter_dict = {"gte": (now - datetime.timedelta(days=180)).strftime('%Y-%m-%d')}
         
         # We explicitly ask for a max of 15 papers for the final list.
         top_papers, total_found = perform_hybrid_search(
@@ -339,10 +328,7 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, selecte
         ) 
         
         if not top_papers:
-            if time_filter_dict:
-                st.error(f"No papers found that contain ALL of the selected keywords within the specified time window ({time_filter_type}). Please try a different combination of keywords or time window.")
-            else:
-                st.error("No papers found that contain ALL of the selected keywords. Please try a different combination of keywords.")
+            st.error("No papers found that contain ALL of the selected keywords within the specified time window. Please try a different combination of keywords.")
             return None, [], 0
 
         context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
@@ -383,7 +369,7 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
 """
         analysis = post_message_vertexai(prompt)
         
-        # Add citations separately
+        # Make citations clickable
         if analysis:
             # First, reload metadata from .metadata.json files to get the links
             top_papers = reload_paper_metadata(top_papers)
@@ -485,10 +471,8 @@ def main():
         with st.form(key="new_analysis_form"):
             st.subheader("Start a New Analysis")
             selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=st.session_state.get('selected_keywords', []))
-            time_filter_type = st.selectbox("Filter by Time Window", ["All time", "Year", "Month", "Custom Interval", "Last week", "Last month", "Last 3 months", "Last 6 months"])
+            time_filter_type = st.selectbox("Filter by Time Window", ["All time", "Year", "Month", "Last week", "Last month"])
             selected_year, selected_month = None, None
-            start_date, end_date = None, None
-            
             if time_filter_type == "Year":
                 import pandas as pd
                 all_papers = st.session_state.vector_db.get_all_papers()
@@ -501,16 +485,10 @@ def main():
                 dates = [p['metadata'].get('publication_date') for p in all_papers if p['metadata'].get('publication_date')]
                 months = sorted(pd.to_datetime(dates, errors='coerce').dropna().strftime('%Y-%m').unique(), reverse=True)
                 selected_month = st.selectbox("Select month", months) if months else st.write("No papers with months found.")
-            elif time_filter_type == "Custom Interval":
-                col1, col2 = st.columns(2)
-                with col1:
-                    start_date = st.date_input("Start Date", value=datetime.date(2020, 1, 1))
-                with col2:
-                    end_date = st.date_input("End Date", value=datetime.date.today())
             
             if st.form_submit_button("Search & Analyze"):
                 # <<< MODIFICATION: Handle the new three-part return from the processing function >>>
-                analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type, selected_year, selected_month, start_date, end_date)
+                analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type, selected_year, selected_month)
                 if analysis_result:
                     conv_id = f"conv_{time.time()}"
                     initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)}**\n\n{analysis_result}"}
