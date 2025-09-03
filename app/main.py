@@ -3060,40 +3060,16 @@ def generate_conversation_title(conversation_history: str) -> str:
         return title.strip().replace('"', '')
     return "New Chat"
 
-# def get_paper_link(metadata: dict) -> str:
-#     if not isinstance(metadata, dict):
-#         return "Not available"
-#     for key in ['url', 'link', 'doi_url']:
-#         link = metadata.get(key)
-#         if link and isinstance(link, str) and link.startswith('http'):
-#             return link
-#     return "Not available"
-#Put print here to see the links that retrieved from metadata
-
+# <<< NEW: Robust link retrieval helper function >>>
 def get_paper_link(metadata: dict) -> str:
-    """
-    Retrieves the paper link from various possible keys in the metadata.
-    Checks multiple common link field names and validates the URL.
-    """
+    """Safely retrieves a link from paper metadata, checking multiple keys."""
     if not isinstance(metadata, dict):
         return "Not available"
-    
-    # Check multiple possible link field names
-    link_fields = ['link', 'url', 'doi_url', 'doi', 'paper_url', 'pdf_url']
-    
-    for field in link_fields:
-        link = metadata.get(field)
-        if link and isinstance(link, str):
-            # Clean the link and validate it
-            link = link.strip()
-            if link.startswith('http'):
-                return link
-            elif link.startswith('doi.org/') or link.startswith('10.'):
-                # Handle DOI links
-                if not link.startswith('http'):
-                    link = f"https://{link}"
-                return link
-    
+    # Prioritize specific link fields
+    for key in ['url', 'link', 'doi_url']:
+        link = metadata.get(key)
+        if link and isinstance(link, str) and link.startswith('http'):
+            return link
     return "Not available"
 
 def reload_paper_metadata(papers: list) -> list:
@@ -3147,7 +3123,7 @@ def reload_paper_metadata(papers: list) -> list:
 def make_citations_clickable(analysis_text: str, papers: list) -> str:
     """
     Makes inline citations [1][2][3] etc. clickable by replacing them with actual paper links.
-    Also separates grouped citations like 781113 into individual brackets [7][8][11][13].
+    Properly formats citations with brackets and excludes list numbers and other non-citation numbers.
     """
     if not papers:
         return analysis_text
@@ -3160,13 +3136,52 @@ def make_citations_clickable(analysis_text: str, papers: list) -> str:
         if link != "Not available":
             citation_links[i + 1] = link
     
-    # First, separate grouped citations and add brackets
     import re
     
-    # Only process citations that are already in brackets or at the end of sentences
-    # Don't convert regular numbers in text to citations
+    # Step 1: Protect list numbers and other non-citation numbers
+    # Replace list numbers like "1.", "2.", "3." with placeholders
+    list_number_placeholders = {}
+    counter = 0
     
-    # First, find citations that are already in brackets but might be grouped
+    def protect_list_numbers(match):
+        nonlocal counter
+        placeholder = f"__LIST_NUMBER_{counter}__"
+        list_number_placeholders[placeholder] = match.group(0)
+        counter += 1
+        return placeholder
+    
+    # Protect list numbers (1., 2., 3., etc.)
+    analysis_text = re.sub(r'\b(\d+)\.(?=\s)', protect_list_numbers, analysis_text)
+    
+    # Protect years and other common numbers that shouldn't be citations
+    def protect_years_and_numbers(match):
+        nonlocal counter
+        number = match.group(1)
+        # Don't protect single digits that might be citations
+        if len(number) == 1:
+            return match.group(0)
+        # Protect years (4 digits starting with 19 or 20)
+        if len(number) == 4 and (number.startswith('19') or number.startswith('20')):
+            placeholder = f"__YEAR_{counter}__"
+            list_number_placeholders[placeholder] = match.group(0)
+            counter += 1
+            return placeholder
+        # Protect percentages and other common numbers
+        if re.search(r'\d+%|\d+\.\d+', match.group(0)):
+            placeholder = f"__NUMBER_{counter}__"
+            list_number_placeholders[placeholder] = match.group(0)
+            counter += 1
+            return placeholder
+        return match.group(0)
+    
+    # Protect years and percentages
+    analysis_text = re.sub(r'\b(\d{4})\b', protect_years_and_numbers, analysis_text)
+    analysis_text = re.sub(r'\b(\d+%)\b', protect_years_and_numbers, analysis_text)
+    
+    # Step 2: Find and properly format actual citations
+    # Look for numbers that are likely citations (at end of sentences, after key findings)
+    
+    # First, handle citations that are already in brackets but might be grouped
     def separate_grouped_bracketed_citations(match):
         citation_text = match.group(1)
         # Only process if it looks like a grouped citation (multiple digits)
@@ -3191,30 +3206,20 @@ def make_citations_clickable(analysis_text: str, papers: list) -> str:
     # Add brackets to single numbers that are already partially bracketed
     analysis_text = re.sub(r'\[(\d+)\]', add_brackets_to_single_bracketed_numbers, analysis_text)
     
-    # Deduplicate citations and remove [0] citations
-    def deduplicate_citations(match):
-        citation_sequence = match.group(0)
-        # Extract all citation numbers from the sequence
-        citation_numbers = re.findall(r'\[(\d+)\]', citation_sequence)
-        
-        # Filter out [0] and deduplicate while preserving order
-        seen = set()
-        unique_citations = []
-        for num in citation_numbers:
-            if num != '0' and num not in seen:
-                unique_citations.append(num)
-                seen.add(num)
-        
-        # Reconstruct the citation sequence with unique numbers
-        if unique_citations:
-            return ''.join([f'[{num}]' for num in unique_citations])
-        else:
-            return ''  # Remove empty citation sequences
+    # Step 3: Find citations at the end of sentences and add brackets
+    # This will match numbers at the end of sentences (before periods, commas, etc.)
+    # but only if they are valid citation numbers
+    def add_brackets_to_end_citations(match):
+        citation_num = match.group(1)
+        # Only add brackets if this is a valid citation number
+        if int(citation_num) in citation_links:
+            return f'[{citation_num}]'
+        return match.group(0)
     
-    # Apply deduplication to sequences of citations
-    analysis_text = re.sub(r'(\[\d+\])+', deduplicate_citations, analysis_text)
+    # Find citations at the end of sentences and add brackets
+    analysis_text = re.sub(r'(\d+)(?=\s*[.,;]|\s*$)', add_brackets_to_end_citations, analysis_text)
     
-    # Fix multi-digit citations that were incorrectly split
+    # Step 4: Fix multi-digit citations that were incorrectly split
     # Convert [1][2] back to [12] if 12 is a valid citation number
     def fix_multi_digit_citations(match):
         citation_sequence = match.group(0)
@@ -3232,7 +3237,7 @@ def make_citations_clickable(analysis_text: str, papers: list) -> str:
                 combined = current + next_num
                 
                 # Check if the combined number is a valid citation (exists in our papers)
-                if combined in citation_links and len(current) == 1 and len(next_num) == 1:
+                if int(combined) in citation_links and len(current) == 1 and len(next_num) == 1:
                     fixed_citations.append(combined)
                     i += 2  # Skip the next number since we combined it
                 else:
@@ -3251,16 +3256,31 @@ def make_citations_clickable(analysis_text: str, papers: list) -> str:
     # Apply multi-digit citation fixing
     analysis_text = re.sub(r'(\[\d+\])+', fix_multi_digit_citations, analysis_text)
     
-    # Add brackets to citations at the end of sentences (max 2 per sentence)
-    def add_brackets_to_end_citations(match):
-        citation_num = match.group(1)
-        return f'[{citation_num}]'
+    # Step 5: Deduplicate citations and remove invalid citations
+    def deduplicate_citations(match):
+        citation_sequence = match.group(0)
+        # Extract all citation numbers from the sequence
+        citation_numbers = re.findall(r'\[(\d+)\]', citation_sequence)
+        
+        # Filter out invalid citations and deduplicate while preserving order
+        seen = set()
+        unique_citations = []
+        for num in citation_numbers:
+            # Only include valid citation numbers
+            if int(num) in citation_links and num not in seen:
+                unique_citations.append(num)
+                seen.add(num)
+        
+        # Reconstruct the citation sequence with unique numbers
+        if unique_citations:
+            return ''.join([f'[{num}]' for num in unique_citations])
+        else:
+            return ''  # Remove empty citation sequences
     
-    # Find citations at the end of sentences and add brackets
-    # This will match numbers at the end of sentences (before periods, commas, etc.)
-    analysis_text = re.sub(r'(\d+)(?=\s*[.,;]|\s*$)', add_brackets_to_end_citations, analysis_text)
+    # Apply deduplication to sequences of citations
+    analysis_text = re.sub(r'(\[\d+\])+', deduplicate_citations, analysis_text)
     
-    # Limit citations to maximum 2 per sentence
+    # Step 6: Limit citations to maximum 2 per sentence
     def limit_citations_per_sentence(match):
         sentence = match.group(0)
         # Find all citations in this sentence
@@ -3278,12 +3298,16 @@ def make_citations_clickable(analysis_text: str, papers: list) -> str:
     # Apply the limit to each sentence
     analysis_text = re.sub(r'[^.!?]+[.!?]', limit_citations_per_sentence, analysis_text)
     
-    # Now replace citations with clickable markdown links
+    # Step 7: Now replace citations with clickable markdown links
     for citation_num, link in citation_links.items():
         # Replace [citation_num] with clickable link
         pattern = rf'\[{citation_num}\]'
         replacement = f'[{citation_num}]({link})'
         analysis_text = re.sub(pattern, replacement, analysis_text)
+    
+    # Step 8: Restore protected numbers
+    for placeholder, original in list_number_placeholders.items():
+        analysis_text = analysis_text.replace(placeholder, original)
     
     return analysis_text
 
@@ -3419,7 +3443,7 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
 
 **IMPORTANT:** Do NOT create a "References" section. Focus only on the thematic analysis and key paper summaries.
 
-**CRITICAL INSTRUCTION FOR CITATIONS:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].` **IMPORTANT:** Always separate multiple citations with individual brackets, like `[2][3][4]` NOT `[234]`. **CRUCIAL:** In the Key Paper Summaries section, do NOT add citation numbers to the paper titles - only add citations at the end of the summary paragraphs.
+**CRITICAL INSTRUCTION FOR CITATIONS:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].` **IMPORTANT:** Always separate multiple citations with individual brackets, like `[2][3][4]` NOT `[234]`. **CRUCIAL:** In the Key Paper Summaries section, do NOT add citation numbers to the paper titles - only add citations at the end of the summary paragraphs. **FORMATTING RULE:** All citations MUST be in square brackets [1], [2], [3], etc. - never use unbracketed numbers for citations.
 """
         analysis = post_message_vertexai(prompt)
         
@@ -3661,31 +3685,3 @@ Assistant Response:"""
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
