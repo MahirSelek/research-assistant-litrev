@@ -128,7 +128,11 @@ def initialize_session_state():
     if 'es_manager' not in st.session_state:
         st.session_state.es_manager = get_es_manager(cloud_id=ELASTIC_CLOUD_ID, username=ELASTIC_USER, password=ELASTIC_PASSWORD)
     if 'vector_db' not in st.session_state:
-        st.session_state.vector_db = get_vector_db(_es_manager=st.session_state.es_manager)
+        try:
+            st.session_state.vector_db = get_vector_db(_es_manager=st.session_state.es_manager)
+        except Exception as e:
+            st.warning(f"ChromaDB initialization failed: {e}. App will work with Elasticsearch only.")
+            st.session_state.vector_db = None
     if 'conversations' not in st.session_state:
         st.session_state.conversations = {}
     if 'active_conversation_id' not in st.session_state:
@@ -263,29 +267,33 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
 
     # Stage 2: Re-ranking via Vector Search and Reciprocal Rank Fusion (RRF).
     # The vector search helps us find the most semantically relevant papers within our "universe" of valid results.
-    vector_results = st.session_state.vector_db.search_by_keywords(keywords, n_results=n_results)
-    
     fused_scores = defaultdict(lambda: {'score': 0, 'doc': None})
     k = 60 # RRF constant
-
-    # Process vector search results, but ONLY include papers that passed our Stage 1 hard filter.
-    for i, doc in enumerate(vector_results):
-        rank = i + 1
-        paper_id = doc.get('paper_id')
-        # Crucial check: Is this paper in our set of valid papers?
-        if paper_id and paper_id in valid_paper_ids:
-            fused_scores[paper_id]['score'] += 1 / (k + rank)
-            if fused_scores[paper_id]['doc'] is None:
-                 fused_scores[paper_id]['doc'] = doc
 
     # Process Elasticsearch results (all of these are guaranteed to be valid).
     for i, hit in enumerate(es_results):
         rank = i + 1
         paper_id = hit['_id']
         fused_scores[paper_id]['score'] += 1 / (k + rank)
-        if fused_scores[paper_id]['doc'] is None:
-            doc_content = {'paper_id': paper_id, 'metadata': hit['_source'], 'content': hit['_source'].get('content', '')}
-            fused_scores[paper_id]['doc'] = doc_content
+        doc_content = {'paper_id': paper_id, 'metadata': hit['_source'], 'content': hit['_source'].get('content', '')}
+        fused_scores[paper_id]['doc'] = doc_content
+
+    # Try vector search if ChromaDB is available
+    if st.session_state.vector_db is not None:
+        try:
+            vector_results = st.session_state.vector_db.search_by_keywords(keywords, n_results=n_results)
+            
+            # Process vector search results, but ONLY include papers that passed our Stage 1 hard filter.
+            for i, doc in enumerate(vector_results):
+                rank = i + 1
+                paper_id = doc.get('paper_id')
+                # Crucial check: Is this paper in our set of valid papers?
+                if paper_id and paper_id in valid_paper_ids:
+                    fused_scores[paper_id]['score'] += 1 / (k + rank)
+                    if fused_scores[paper_id]['doc'] is None:
+                         fused_scores[paper_id]['doc'] = doc
+        except Exception as e:
+            st.warning(f"Vector search failed: {e}. Using Elasticsearch results only.")
 
     # Filter out any entries that somehow didn't get a 'doc' object.
     valid_fused_results = [item for item in fused_scores.values() if item['doc'] is not None]
