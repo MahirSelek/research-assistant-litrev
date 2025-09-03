@@ -109,6 +109,8 @@ class VectorDBManager:
         Adds a paper's content and metadata to ChromaDB (with robust chunking) and Elasticsearch.
         This method is preserved from your original complete file.
         """
+        # Clean metadata for ChromaDB compatibility
+        cleaned_metadata = clean_metadata_for_chromadb(metadata)
         # --- ChromaDB Logic (with original, detailed chunking) ---
         paragraphs = [p.strip() for p in content.split('\n\n') if p.strip()]
         chunks = []
@@ -136,7 +138,7 @@ class VectorDBManager:
         self.collection.add(
             documents=chunks,
             ids=chunk_ids,
-            metadatas=[metadata] * len(chunks)
+            metadatas=[cleaned_metadata] * len(chunks)
         )
 
         # --- Elasticsearch Indexing Logic ---
@@ -241,6 +243,25 @@ class VectorDBManager:
         except Exception as e:
             logging.error(f"Error updating metadata for {paper_id}: {e}")
             raise
+
+def clean_metadata_for_chromadb(metadata: dict) -> dict:
+    """
+    Clean metadata to ensure all values are compatible with ChromaDB.
+    ChromaDB expects str, int, float, or bool, not lists.
+    """
+    cleaned_metadata = {}
+    for key, value in metadata.items():
+        if isinstance(value, list):
+            # Convert lists to comma-separated strings
+            if key == 'keywords':
+                cleaned_metadata[key] = ', '.join(value) if value else ''
+            elif key == 'authors':
+                cleaned_metadata[key] = ', '.join(value) if value else ''
+            else:
+                cleaned_metadata[key] = str(value)
+        else:
+            cleaned_metadata[key] = value
+    return cleaned_metadata
 
 # The factory function that connects everything together from secrets
 @st.cache_resource
