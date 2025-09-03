@@ -412,10 +412,75 @@ def make_citations_clickable(analysis_text: str, papers: list) -> str:
     
     return analysis_text
 
-
-
-
-
+def process_citations_simple(analysis_text: str, papers: list) -> str:
+    """
+    Simple and effective citation processing that adds brackets to unbracketed citations.
+    """
+    if not papers:
+        return analysis_text
+    
+    # Create a mapping of citation numbers to paper links
+    citation_links = {}
+    for i, paper in enumerate(papers):
+        meta = paper.get('metadata', {})
+        link = get_paper_link(meta)
+        if link != "Not available":
+            citation_links[i + 1] = link
+    
+    import re
+    
+    # Step 1: Protect list numbers (1., 2., 3., etc.)
+    def protect_list_numbers(match):
+        return f"__LIST_{match.group(1)}__"
+    
+    analysis_text = re.sub(r'\b(\d+)\.(?=\s)', protect_list_numbers, analysis_text)
+    
+    # Step 2: Protect years (4-digit years)
+    def protect_years(match):
+        year = match.group(1)
+        if len(year) == 4 and (year.startswith('19') or year.startswith('20')):
+            return f"__YEAR_{year}__"
+        return match.group(0)
+    
+    analysis_text = re.sub(r'\b(\d{4})\b', protect_years, analysis_text)
+    
+    # Step 3: Protect percentages and decimals
+    def protect_percentages(match):
+        return f"__PERCENT_{match.group(1)}__"
+    
+    analysis_text = re.sub(r'\b(\d+%)\b', protect_percentages, analysis_text)
+    analysis_text = re.sub(r'\b(\d+\.\d+)\b', protect_percentages, analysis_text)
+    
+    # Step 4: Protect sample sizes (n= numbers)
+    def protect_sample_sizes(match):
+        return f"__SAMPLE_{match.group(1)}__"
+    
+    analysis_text = re.sub(r'n=(\d+)', protect_sample_sizes, analysis_text)
+    
+    # Step 5: Now find and bracket valid citations
+    def add_brackets_to_citations(match):
+        number = match.group(1)
+        # Only add brackets if this is a valid citation number
+        if int(number) in citation_links:
+            return f'[{number}]'
+        return match.group(0)
+    
+    # Find all numbers that are not already in brackets and are valid citations
+    analysis_text = re.sub(r'(?<!\[)\b(\d+)\b(?!\])', add_brackets_to_citations, analysis_text)
+    
+    # Step 6: Make citations clickable
+    for citation_num, link in citation_links.items():
+        pattern = rf'\[{citation_num}\]'
+        replacement = f'[{citation_num}]({link})'
+        analysis_text = re.sub(pattern, replacement, analysis_text)
+    
+    # Step 7: Restore protected numbers
+    analysis_text = re.sub(r'__LIST_(\d+)__', r'\1.', analysis_text)
+    analysis_text = re.sub(r'__YEAR_(\d+)__', r'\1', analysis_text)
+    analysis_text = re.sub(r'__PERCENT_(\d+%|\d+\.\d+)__', r'\1', analysis_text)
+    analysis_text = re.sub(r'__SAMPLE_(\d+)__', r'n=\1', analysis_text)
+    
+    return analysis_text
 
 
 # <<< MODIFICATION: The entire search function is redesigned for accuracy >>>
@@ -544,7 +609,7 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
 
 **IMPORTANT:** Do NOT create a "References" section. Focus only on the thematic analysis and key paper summaries.
 
-**CRITICAL INSTRUCTION FOR CITATIONS:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].` **IMPORTANT:** Always separate multiple citations with individual brackets, like `[2][3][4]` NOT `[234]`. **CRUCIAL:** In the Key Paper Summaries section, do NOT add citation numbers to the paper titles - only add citations at the end of the summary paragraphs. **FORMATTING RULE:** All citations MUST be in square brackets [1], [2], [3], etc. - never use unbracketed numbers for citations.
+**CRITICAL INSTRUCTION FOR CITATIONS:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].` **IMPORTANT:** Always separate multiple citations with individual brackets, like `[2][3][4]` NOT `[234]`. **CRUCIAL:** In the Key Paper Summaries section, do NOT add citation numbers to the paper titles - only add citations at the end of the summary paragraphs. **FORMATTING RULE:** All citations MUST be in square brackets [1], [2], [3], etc. - never use unbracketed numbers for citations. **MANDATORY:** Every citation number must be enclosed in square brackets - this is non-negotiable.
 """
         analysis = post_message_vertexai(prompt)
         
@@ -552,7 +617,7 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
         if analysis:
             # First, reload metadata from .metadata.json files to get the links
             top_papers = reload_paper_metadata(top_papers)
-            analysis = make_citations_clickable(analysis, top_papers)
+            analysis = process_citations_simple(analysis, top_papers)
         
         # <<< MODIFICATION: Return all three pieces of information >>>
         return analysis, top_papers, total_found
@@ -780,7 +845,7 @@ Assistant Response:"""
             response_text = post_message_vertexai(full_prompt)
             if response_text:
                 # Make citations clickable in follow-up responses
-                response_text = make_citations_clickable(response_text, active_conv.get("retrieved_papers", []))
+                response_text = process_citations_simple(response_text, active_conv.get("retrieved_papers", []))
                 active_conv["messages"].append({"role": "assistant", "content": response_text})
                 st.rerun()
 
