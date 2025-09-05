@@ -20,17 +20,17 @@ from vertexai.generative_models import GenerativeModel
 from google.cloud import storage
 from google.api_core.exceptions import NotFound
 
-# SQLite3 Patch for Linux environments
-if platform.system() == "Linux":
-    try:
-        # Import the module
-        import pysqlite3
-        import sys
-        # Directly assign the imported module to the 'sqlite3' key
-        sys.modules["sqlite3"] = pysqlite3
-    except ImportError:
-        # This part remains the same, for when the package isn't installed
-        st.warning("pysqlite3-binary not found. ChromaDB may fail on this environment.")
+# SQLite3 Patch for Linux environments - DISABLED
+# if platform.system() == "Linux":
+#     try:
+#         # Import the module
+#         import pysqlite3
+#         import sys
+#         # Directly assign the imported module to the 'sqlite3' key
+#         sys.modules["sqlite3"] = pysqlite3
+#     except ImportError:
+#         # This part remains the same, for when the package isn't installed
+#         st.warning("pysqlite3-binary not found. ChromaDB may fail on this environment.")
 
 # --- CRITICAL: Set up Python path BEFORE any local imports ---
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
