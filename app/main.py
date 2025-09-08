@@ -309,7 +309,7 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
 
 
 # <<< MODIFICATION: Updated this function to handle the new return values from perform_hybrid_search >>>
-def process_keyword_search(keywords: list, time_filter_type: str | None, selected_year: int | None, selected_month: str | None) -> tuple[str | None, list, int]:
+def process_keyword_search(keywords: list, time_filter_type: str | None) -> tuple[str | None, list, int]:
     if not keywords:
         st.error("Please select at least one keyword.")
         return None, [], 0
@@ -317,15 +317,27 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, selecte
     with st.spinner("Searching for highly relevant papers and generating a comprehensive, in-depth report..."):
         time_filter_dict = None
         now = datetime.datetime.now()
-        if time_filter_type == "Year" and selected_year:
-            time_filter_dict = {"gte": f"{selected_year}-01-01", "lte": f"{selected_year}-12-31"}
-        elif time_filter_type == "Month" and selected_month:
-            year, month = map(int, selected_month.split('-'))
-            time_filter_dict = {"gte": f"{year}-{month:02d}-01", "lt": f"{year}-{(month % 12) + 1:02d}-01" if month < 12 else f"{year+1}-01-01"}
-        elif time_filter_type == "Last week":
-            time_filter_dict = {"gte": (now - datetime.timedelta(days=7)).strftime('%Y-%m-%d')}
-        elif time_filter_type == "Last month":
-            time_filter_dict = {"gte": (now - datetime.timedelta(days=31)).strftime('%Y-%m-%d')}
+        current_year = now.year
+        
+        if time_filter_type == "All time":
+            time_filter_dict = None  # No time filter
+        elif time_filter_type == "All year":
+            time_filter_dict = {"gte": f"{current_year}-01-01", "lte": f"{current_year}-12-31"}
+        elif time_filter_type == "Last 3 months":
+            three_months_ago = now - datetime.timedelta(days=90)
+            time_filter_dict = {"gte": three_months_ago.strftime('%Y-%m-%d')}
+        elif time_filter_type == "Last 6 months":
+            six_months_ago = now - datetime.timedelta(days=180)
+            time_filter_dict = {"gte": six_months_ago.strftime('%Y-%m-%d')}
+        elif time_filter_type in ["January", "February", "March", "April", "May", "June", 
+                                 "July", "August", "September", "October", "November", "December"]:
+            # Map month names to numbers
+            month_map = {
+                "January": 1, "February": 2, "March": 3, "April": 4, "May": 5, "June": 6,
+                "July": 7, "August": 8, "September": 9, "October": 10, "November": 11, "December": 12
+            }
+            month_num = month_map[time_filter_type]
+            time_filter_dict = {"gte": f"{current_year}-{month_num:02d}-01", "lt": f"{current_year}-{month_num+1:02d}-01" if month_num < 12 else f"{current_year+1}-01-01"}
         
         # We explicitly ask for a max of 15 papers for the final list.
         top_papers, total_found = perform_hybrid_search(
@@ -479,24 +491,18 @@ def main():
         with st.form(key="new_analysis_form"):
             st.subheader("Start a New Analysis")
             selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=st.session_state.get('selected_keywords', []))
-            time_filter_type = st.selectbox("Filter by Time Window", ["All time", "Year", "Month", "Last week", "Last month"])
-            selected_year, selected_month = None, None
-            if time_filter_type == "Year":
-                import pandas as pd
-                all_papers = st.session_state.vector_db.get_all_papers()
-                dates = [p['metadata'].get('publication_date') for p in all_papers if p['metadata'].get('publication_date')]
-                years = sorted(pd.to_datetime(dates, errors='coerce').dropna().year.unique(), reverse=True)
-                selected_year = st.selectbox("Select year", years) if years else st.write("No papers with years found.")
-            elif time_filter_type == "Month":
-                import pandas as pd
-                all_papers = st.session_state.vector_db.get_all_papers()
-                dates = [p['metadata'].get('publication_date') for p in all_papers if p['metadata'].get('publication_date')]
-                months = sorted(pd.to_datetime(dates, errors='coerce').dropna().strftime('%Y-%m').unique(), reverse=True)
-                selected_month = st.selectbox("Select month", months) if months else st.write("No papers with months found.")
+            time_filter_type = st.selectbox("Filter by Time Window", [
+                "All time", 
+                "All year", 
+                "Last 3 months", 
+                "Last 6 months", 
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
+            ])
             
             if st.form_submit_button("Search & Analyze"):
                 # <<< MODIFICATION: Handle the new three-part return from the processing function >>>
-                analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type, selected_year, selected_month)
+                analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type)
                 if analysis_result:
                     conv_id = f"conv_{time.time()}"
                     initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)}**\n\n{analysis_result}"}
