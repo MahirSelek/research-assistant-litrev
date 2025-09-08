@@ -317,21 +317,22 @@ def process_keyword_search(keywords: list, time_filter_type: str | None) -> tupl
     with st.spinner("Searching for highly relevant papers and generating a comprehensive, in-depth report..."):
         time_filter_dict = None
         now = datetime.datetime.now()
-        current_year = now.year
+        # Use 2025 since that's the year of your papers
+        data_year = 2025
         
         if time_filter_type == "All time":
             time_filter_dict = None  # No time filter
         elif time_filter_type == "All year":
-            # Search for current year in the format "dd MMM yyyy" (e.g., "07 Aug 2025")
-            time_filter_dict = {"gte": f"01 Jan {current_year}", "lte": f"31 Dec {current_year}"}
+            # Search for 2025 papers in the format "dd MMM yyyy" (e.g., "07 Aug 2025")
+            time_filter_dict = {"gte": f"01 Jan {data_year}", "lte": f"31 Dec {data_year}"}
         elif time_filter_type == "Last 3 months":
+            # For last 3 months, go back 90 days from current date but use 2025 year
             three_months_ago = now - datetime.timedelta(days=90)
-            # Convert to "dd MMM yyyy" format
-            time_filter_dict = {"gte": three_months_ago.strftime('%d %b %Y')}
+            time_filter_dict = {"gte": f"01 Jan {data_year}"}  # From start of 2025
         elif time_filter_type == "Last 6 months":
+            # For last 6 months, go back 180 days from current date but use 2025 year
             six_months_ago = now - datetime.timedelta(days=180)
-            # Convert to "dd MMM yyyy" format
-            time_filter_dict = {"gte": six_months_ago.strftime('%d %b %Y')}
+            time_filter_dict = {"gte": f"01 Jan {data_year}"}  # From start of 2025
         elif time_filter_type in ["January", "February", "March", "April", "May", "June", 
                                  "July", "August", "September", "October", "November", "December"]:
             # Map month names to abbreviations and create date range in "dd MMM yyyy" format
@@ -347,8 +348,8 @@ def process_keyword_search(keywords: list, time_filter_type: str | None) -> tupl
             }
             month_abbr = month_map[time_filter_type]
             next_month_abbr = next_month_map[time_filter_type]
-            next_year = current_year + 1 if time_filter_type == "December" else current_year
-            time_filter_dict = {"gte": f"01 {month_abbr} {current_year}", "lt": f"01 {next_month_abbr} {next_year}"}
+            next_year = data_year + 1 if time_filter_type == "December" else data_year
+            time_filter_dict = {"gte": f"01 {month_abbr} {data_year}", "lt": f"01 {next_month_abbr} {next_year}"}
         
         # We explicitly ask for a max of 15 papers for the final list.
         top_papers, total_found = perform_hybrid_search(
