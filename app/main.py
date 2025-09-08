@@ -171,6 +171,83 @@ def get_paper_link(metadata: dict) -> str:
             return link
     return "Not available"
 
+def filter_papers_by_gcs_dates(papers: list, time_filter_type: str) -> list:
+    """
+    Filter papers based on publication dates stored in GCS metadata.
+    This bypasses Elasticsearch date filtering issues.
+    """
+    if not papers:
+        return papers
+    
+    try:
+        from google.cloud import storage
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(GCS_BUCKET_NAME)
+        
+        filtered_papers = []
+        for paper in papers:
+            paper_id = paper.get('paper_id')
+            if paper_id:
+                # Try to find corresponding .metadata.json file
+                json_filename = paper_id.rsplit('.', 1)[0] + '.metadata.json'
+                json_blob = bucket.blob(json_filename)
+                
+                if json_blob.exists():
+                    try:
+                        json_content = json_blob.download_as_string()
+                        json_metadata = json.loads(json_content)
+                        publication_date = json_metadata.get('publication_date', '')
+                        
+                        # Check if this paper matches our time filter
+                        if matches_time_filter(publication_date, time_filter_type):
+                            filtered_papers.append(paper)
+                    except Exception as e:
+                        # If JSON loading fails, include the paper (better to include than exclude)
+                        filtered_papers.append(paper)
+                else:
+                    # If no JSON file found, include the paper
+                    filtered_papers.append(paper)
+            else:
+                filtered_papers.append(paper)
+        
+        return filtered_papers
+    except Exception as e:
+        # If any error occurs, return original papers
+        return papers
+
+def matches_time_filter(publication_date: str, time_filter_type: str) -> bool:
+    """
+    Check if a publication date matches the selected time filter.
+    """
+    if not publication_date:
+        return False
+    
+    try:
+        # Parse the date "07 Aug 2025"
+        from dateutil import parser as date_parser
+        parsed_date = date_parser.parse(publication_date)
+        
+        if time_filter_type == "All year":
+            return parsed_date.year == 2025
+        elif time_filter_type == "Last 3 months":
+            # Check if paper is from recent months (simplified to 2025)
+            return parsed_date.year == 2025
+        elif time_filter_type == "Last 6 months":
+            # Check if paper is from recent months (simplified to 2025)
+            return parsed_date.year == 2025
+        elif time_filter_type in ["January", "February", "March", "April", "May", "June", 
+                                 "July", "August", "September", "October", "November", "December"]:
+            month_map = {
+                "January": 1, "February": 2, "March": 3, "April": 4, "May": 5, "June": 6,
+                "July": 7, "August": 8, "September": 9, "October": 10, "November": 11, "December": 12
+            }
+            target_month = month_map[time_filter_type]
+            return parsed_date.year == 2025 and parsed_date.month == target_month
+        
+        return True  # For "All time" or unknown filters
+    except Exception:
+        return False  # If date parsing fails, exclude the paper
+
 def reload_paper_metadata(papers: list) -> list:
     """
     Reloads metadata from .metadata.json files to get the actual links.
@@ -352,12 +429,18 @@ def process_keyword_search(keywords: list, time_filter_type: str | None) -> tupl
             time_filter_dict = {"gte": f"01 {month_abbr} {data_year}", "lt": f"01 {next_month_abbr} {next_year}"}
         
         # We explicitly ask for a max of 15 papers for the final list.
+        # Skip Elasticsearch time filtering - we'll use GCS instead
         top_papers, total_found = perform_hybrid_search(
             keywords, 
-            time_filter_dict=time_filter_dict, 
+            time_filter_dict=None,  # No ES time filtering
             n_results=100, 
             max_final_results=15
-        ) 
+        )
+        
+        # Apply GCS-based time filtering if needed
+        if time_filter_type != "All time" and top_papers:
+            top_papers = filter_papers_by_gcs_dates(top_papers, time_filter_type)
+            total_found = len(top_papers) 
         
         if not top_papers:
             st.error("No papers found that contain ALL of the selected keywords within the specified time window. Please try a different combination of keywords.")
