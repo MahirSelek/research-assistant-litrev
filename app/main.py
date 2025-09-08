@@ -322,7 +322,8 @@ def process_keyword_search(keywords: list, time_filter_type: str | None) -> tupl
         if time_filter_type == "All time":
             time_filter_dict = None  # No time filter
         elif time_filter_type == "All year":
-            time_filter_dict = {"gte": f"{current_year}-01-01", "lte": f"{current_year}-12-31"}
+            # Use year-only format for broader matching
+            time_filter_dict = {"gte": f"{current_year}", "lte": f"{current_year}"}
         elif time_filter_type == "Last 3 months":
             three_months_ago = now - datetime.timedelta(days=90)
             time_filter_dict = {"gte": three_months_ago.strftime('%Y-%m-%d')}
@@ -338,6 +339,24 @@ def process_keyword_search(keywords: list, time_filter_type: str | None) -> tupl
             }
             month_num = month_map[time_filter_type]
             time_filter_dict = {"gte": f"{current_year}-{month_num:02d}-01", "lt": f"{current_year}-{month_num+1:02d}-01" if month_num < 12 else f"{current_year+1}-01-01"}
+        
+        # Debug: Let's see what dates are in the database
+        if time_filter_dict:
+            st.info(f"🔍 Debug: Searching with time filter: {time_filter_dict}")
+            # Try a simple search without keywords to see what dates exist
+            debug_results = st.session_state.es_manager.search_papers([], time_filter=time_filter_dict, size=5, operator="OR")
+            if debug_results:
+                sample_dates = [hit['_source'].get('publication_date', 'No date') for hit in debug_results[:3]]
+                st.info(f"📅 Sample dates found: {sample_dates}")
+            else:
+                st.warning("⚠️ No papers found with this date filter - checking if papers exist at all...")
+                # Check if any papers exist without date filter
+                all_papers = st.session_state.es_manager.search_papers([], time_filter=None, size=5, operator="OR")
+                if all_papers:
+                    sample_dates_all = [hit['_source'].get('publication_date', 'No date') for hit in all_papers[:3]]
+                    st.info(f"📅 Sample dates in database: {sample_dates_all}")
+                else:
+                    st.error("❌ No papers found in database at all!")
         
         # We explicitly ask for a max of 15 papers for the final list.
         top_papers, total_found = perform_hybrid_search(
