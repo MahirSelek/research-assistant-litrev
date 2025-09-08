@@ -322,41 +322,33 @@ def process_keyword_search(keywords: list, time_filter_type: str | None) -> tupl
         if time_filter_type == "All time":
             time_filter_dict = None  # No time filter
         elif time_filter_type == "All year":
-            # Use year-only format for broader matching
-            time_filter_dict = {"gte": f"{current_year}", "lte": f"{current_year}"}
+            # Search for current year in the format "dd MMM yyyy" (e.g., "07 Aug 2025")
+            time_filter_dict = {"gte": f"01 Jan {current_year}", "lte": f"31 Dec {current_year}"}
         elif time_filter_type == "Last 3 months":
             three_months_ago = now - datetime.timedelta(days=90)
-            time_filter_dict = {"gte": three_months_ago.strftime('%Y-%m-%d')}
+            # Convert to "dd MMM yyyy" format
+            time_filter_dict = {"gte": three_months_ago.strftime('%d %b %Y')}
         elif time_filter_type == "Last 6 months":
             six_months_ago = now - datetime.timedelta(days=180)
-            time_filter_dict = {"gte": six_months_ago.strftime('%Y-%m-%d')}
+            # Convert to "dd MMM yyyy" format
+            time_filter_dict = {"gte": six_months_ago.strftime('%d %b %Y')}
         elif time_filter_type in ["January", "February", "March", "April", "May", "June", 
                                  "July", "August", "September", "October", "November", "December"]:
-            # Map month names to numbers
+            # Map month names to abbreviations and create date range in "dd MMM yyyy" format
             month_map = {
-                "January": 1, "February": 2, "March": 3, "April": 4, "May": 5, "June": 6,
-                "July": 7, "August": 8, "September": 9, "October": 10, "November": 11, "December": 12
+                "January": "Jan", "February": "Feb", "March": "Mar", "April": "Apr", 
+                "May": "May", "June": "Jun", "July": "Jul", "August": "Aug", 
+                "September": "Sep", "October": "Oct", "November": "Nov", "December": "Dec"
             }
-            month_num = month_map[time_filter_type]
-            time_filter_dict = {"gte": f"{current_year}-{month_num:02d}-01", "lt": f"{current_year}-{month_num+1:02d}-01" if month_num < 12 else f"{current_year+1}-01-01"}
-        
-        # Debug: Let's see what dates are in the database
-        if time_filter_dict:
-            st.info(f"🔍 Debug: Searching with time filter: {time_filter_dict}")
-            # Try a simple search without keywords to see what dates exist
-            debug_results = st.session_state.es_manager.search_papers([], time_filter=time_filter_dict, size=5, operator="OR")
-            if debug_results:
-                sample_dates = [hit['_source'].get('publication_date', 'No date') for hit in debug_results[:3]]
-                st.info(f"📅 Sample dates found: {sample_dates}")
-            else:
-                st.warning("⚠️ No papers found with this date filter - checking if papers exist at all...")
-                # Check if any papers exist without date filter
-                all_papers = st.session_state.es_manager.search_papers([], time_filter=None, size=5, operator="OR")
-                if all_papers:
-                    sample_dates_all = [hit['_source'].get('publication_date', 'No date') for hit in all_papers[:3]]
-                    st.info(f"📅 Sample dates in database: {sample_dates_all}")
-                else:
-                    st.error("❌ No papers found in database at all!")
+            next_month_map = {
+                "January": "Feb", "February": "Mar", "March": "Apr", "April": "May", 
+                "May": "Jun", "June": "Jul", "July": "Aug", "August": "Sep", 
+                "September": "Oct", "October": "Nov", "November": "Dec", "December": "Jan"
+            }
+            month_abbr = month_map[time_filter_type]
+            next_month_abbr = next_month_map[time_filter_type]
+            next_year = current_year + 1 if time_filter_type == "December" else current_year
+            time_filter_dict = {"gte": f"01 {month_abbr} {current_year}", "lt": f"01 {next_month_abbr} {next_year}"}
         
         # We explicitly ask for a max of 15 papers for the final list.
         top_papers, total_found = perform_hybrid_search(
