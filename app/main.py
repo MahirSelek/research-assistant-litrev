@@ -32,7 +32,6 @@ from google.api_core.exceptions import NotFound
 #         # This part remains the same, for when the package isn't installed
 #         st.warning("pysqlite3-binary not found. ChromaDB may fail on this environment.")
 
-# --- CRITICAL: Set up Python path BEFORE any local imports ---
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
@@ -159,7 +158,6 @@ def generate_conversation_title(conversation_history: str) -> str:
         return title.strip().replace('"', '')
     return "New Chat"
 
-# <<< NEW: Robust link retrieval helper function >>>
 def get_paper_link(metadata: dict) -> str:
     """Safely retrieves a link from paper metadata, checking multiple keys."""
     if not isinstance(metadata, dict):
