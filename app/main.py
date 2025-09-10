@@ -332,14 +332,16 @@ def display_restructured_references(primary_papers: list, all_papers: list, tota
             primary_section += f"**[{i+1}]** {title}\n\n"
     
     # Additional Papers section (remaining papers)
-    additional_papers = all_papers[15:] if len(all_papers) > 15 else []
+    # Show additional papers if we have more papers than what's in primary references
+    additional_papers = all_papers[len(primary_papers):] if len(all_papers) > len(primary_papers) else []
     
     if additional_papers:
+        start_number = len(primary_papers) + 1
         additional_section = f"""
         
 ### Additional Papers (For Further Reading)
 
-*Showing papers 16-{len(all_papers)} of {total_found} total papers found*
+*Showing papers {start_number}-{len(all_papers)} of {total_found} total papers found*
 
 <details>
 <summary><strong>Click to show/hide additional papers</strong></summary>
@@ -350,7 +352,7 @@ def display_restructured_references(primary_papers: list, all_papers: list, tota
             meta = paper.get('metadata', {})
             title = meta.get('title', 'N/A')
             link = get_paper_link(meta)
-            paper_number = i + 16  # Start numbering from 16
+            paper_number = i + start_number  # Start numbering after primary papers
             
             if link != "Not available":
                 additional_section += f"**[{paper_number}]** [{title}]({link})\n\n"
@@ -360,7 +362,17 @@ def display_restructured_references(primary_papers: list, all_papers: list, tota
         additional_section += "</details>"
         return primary_section + additional_section
     else:
-        return primary_section
+        # If we have fewer papers than expected, show a note about the total found
+        if total_found > len(primary_papers):
+            additional_section = f"""
+        
+### Additional Papers (For Further Reading)
+
+*Note: {total_found} total papers were found, but only {len(primary_papers)} met the relevance threshold for analysis.*
+"""
+            return primary_section + additional_section
+        else:
+            return primary_section
 
 
 # <<< MODIFICATION: The entire search function is redesigned for accuracy >>>
@@ -425,9 +437,10 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
     ][:max_final_results]
     
     # Create the complete list of all papers (for additional references)
+    # This includes ALL papers from Elasticsearch, not just those that pass the score threshold
     all_papers_list = [
-        item['doc'] for item in sorted_fused_results 
-        if item['score'] >= score_threshold
+        {'paper_id': hit['_id'], 'metadata': hit['_source'], 'content': hit['_source'].get('content', '')}
+        for hit in es_results
     ]
 
     return final_paper_list, all_papers_list, total_papers_found
