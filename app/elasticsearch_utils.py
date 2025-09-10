@@ -58,9 +58,9 @@ class ElasticsearchManager:
         except Exception as e:
             st.error(f"Failed to index paper {paper_id}: {e}")
 
-    def search_papers(self, keywords: List[str], time_filter: Dict = None, size: int = 10, operator: str = "AND") -> List[Dict[str, Any]]:
+    def search_papers(self, keywords: List[str], time_filter: Dict = None, size: int = 10, operator: str = "AND") -> tuple[List[Dict[str, Any]], int]:
         if not keywords:
-            return []
+            return [], 0
         bool_operator = "must" if operator.upper() == "AND" else "should"
         query = {
             "query": {
@@ -82,10 +82,11 @@ class ElasticsearchManager:
             })
         try:
             response = self.es_client.search(index="papers", body=query)
-            return response.get('hits', {}).get('hits', [])
+            hits = response.get('hits', {})
+            return hits.get('hits', []), hits.get('total', {}).get('value', 0)
         except Exception as e:
             st.error(f"An error occurred during Elasticsearch search: {e}")
-            return []
+            return [], 0
 
 @st.cache_resource
 def get_es_manager(cloud_id: str, username: str, password: str) -> ElasticsearchManager:
