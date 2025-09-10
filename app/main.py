@@ -320,8 +320,12 @@ def display_citations_separately(analysis_text: str, analysis_papers: list, all_
     
     # Show additional papers if more than 15 found
     if total_found > 15 and len(all_papers) > 15:
-        citations_section += f"**Additional papers found ({len(all_papers) - 15} more):**\n\n"
-        for i, paper in enumerate(all_papers[15:], start=16):
+        additional_count = total_found - 15
+        citations_section += f"**Additional papers found ({additional_count} more):**\n\n"
+        
+        # Show only first 5 additional papers, then make rest collapsible
+        papers_to_show = min(5, additional_count)
+        for i, paper in enumerate(all_papers[15:15+papers_to_show], start=16):
             meta = paper.get('metadata', {})
             title = meta.get('title', 'N/A')
             link = get_paper_link(meta)
@@ -330,6 +334,23 @@ def display_citations_separately(analysis_text: str, analysis_papers: list, all_
                 citations_section += f"**[{i}]** [{title}]({link})\n\n"
             else:
                 citations_section += f"**[{i}]** {title}\n\n"
+        
+        # Add collapsible section for remaining papers
+        if additional_count > 5:
+            remaining_count = additional_count - 5
+            citations_section += f"<details>\n<summary>Show {remaining_count} more papers</summary>\n\n"
+            
+            for i, paper in enumerate(all_papers[20:], start=21):
+                meta = paper.get('metadata', {})
+                title = meta.get('title', 'N/A')
+                link = get_paper_link(meta)
+                
+                if link != "Not available":
+                    citations_section += f"**[{i}]** [{title}]({link})\n\n"
+                else:
+                    citations_section += f"**[{i}]** {title}\n\n"
+            
+            citations_section += "</details>\n\n"
     
     return analysis_text + citations_section
 
