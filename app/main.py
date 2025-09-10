@@ -343,16 +343,22 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
     OR: Find papers containing AT LEAST ONE keyword
     Returns a tuple: (list of top papers, list of all papers, total number of papers found).
     """
+    # Debug: Print which operator is being used
+    print(f"DEBUG: Using operator_type = {operator_type}")
+    
     if operator_type == "AND":
-        # AND Strategy: Find papers containing ALL keywords
+        # AND Strategy: Find papers containing ALL keywords (more restrictive, so we can search more)
         es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
     else:
-        # OR Strategy: Find papers containing AT LEAST ONE keyword
+        # OR Strategy: Find papers containing AT LEAST ONE keyword (less restrictive, so we limit results)
         es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="OR")
 
     # Create a set of valid paper IDs from the search for efficient lookup.
     valid_paper_ids = {hit['_id'] for hit in es_results}
     total_papers_found = len(valid_paper_ids)
+    
+    # Debug: Print number of results found
+    print(f"DEBUG: Found {total_papers_found} papers with {operator_type} operator")
 
     # If the search returns no results, we stop immediately.
     if not valid_paper_ids:
