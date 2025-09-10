@@ -83,9 +83,22 @@ class ElasticsearchManager:
         try:
             response = self.es_client.search(index="papers", body=query)
             hits = response.get('hits', {})
-            return hits.get('hits', []), hits.get('total', {}).get('value', 0)
+            total = hits.get('total', {})
+            
+            # Handle different Elasticsearch versions for total count
+            if isinstance(total, dict):
+                total_count = total.get('value', 0)
+            elif isinstance(total, int):
+                total_count = total
+            else:
+                # Fallback: count the actual results
+                total_count = len(hits.get('hits', []))
+                
+            return hits.get('hits', []), total_count
+            
         except Exception as e:
             st.error(f"An error occurred during Elasticsearch search: {e}")
+            # Return empty results instead of causing app to crash
             return [], 0
 
 @st.cache_resource
