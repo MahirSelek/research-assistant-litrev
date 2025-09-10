@@ -169,82 +169,6 @@ def get_paper_link(metadata: dict) -> str:
             return link
     return "Not available"
 
-def filter_papers_by_gcs_dates(papers: list, time_filter_type: str) -> list:
-    """
-    Filter papers based on publication dates stored in GCS metadata.
-    This bypasses Elasticsearch date filtering issues.
-    """
-    if not papers:
-        return papers
-    
-    try:
-        from google.cloud import storage
-        storage_client = storage.Client()
-        bucket = storage_client.bucket(GCS_BUCKET_NAME)
-        
-        filtered_papers = []
-        for paper in papers:
-            paper_id = paper.get('paper_id')
-            if paper_id:
-                # Try to find corresponding .metadata.json file
-                json_filename = paper_id.rsplit('.', 1)[0] + '.metadata.json'
-                json_blob = bucket.blob(json_filename)
-                
-                if json_blob.exists():
-                    try:
-                        json_content = json_blob.download_as_string()
-                        json_metadata = json.loads(json_content)
-                        publication_date = json_metadata.get('publication_date', '')
-                        
-                        # Check if this paper matches our time filter
-                        if matches_time_filter(publication_date, time_filter_type):
-                            filtered_papers.append(paper)
-                    except Exception as e:
-                        # If JSON loading fails, include the paper (better to include than exclude)
-                        filtered_papers.append(paper)
-                else:
-                    # If no JSON file found, include the paper
-                    filtered_papers.append(paper)
-            else:
-                filtered_papers.append(paper)
-        
-        return filtered_papers
-    except Exception as e:
-        # If any error occurs, return original papers
-        return papers
-
-def matches_time_filter(publication_date: str, time_filter_type: str) -> bool:
-    """
-    Check if a publication date matches the selected time filter.
-    """
-    if not publication_date:
-        return False
-    
-    try:
-        # Parse the date "07 Aug 2025"
-        from dateutil import parser as date_parser
-        parsed_date = date_parser.parse(publication_date)
-        
-        if time_filter_type == "All year":
-            return parsed_date.year == 2025
-        elif time_filter_type == "Last 3 months":
-            # Check if paper is from recent months (simplified to 2025)
-            return parsed_date.year == 2025
-        elif time_filter_type == "Last 6 months":
-            # Check if paper is from recent months (simplified to 2025)
-            return parsed_date.year == 2025
-        elif time_filter_type in ["January", "February", "March", "April", "May", "June", 
-                                 "July", "August", "September", "October", "November", "December"]:
-            month_map = {
-                "January": 1, "February": 2, "March": 3, "April": 4, "May": 5, "June": 6,
-                "July": 7, "August": 8, "September": 9, "October": 10, "November": 11, "December": 12
-            }
-            target_month = month_map[time_filter_type]
-            return parsed_date.year == 2025 and parsed_date.month == target_month
-        
-        return True  # For "All time" or unknown filters
-    except Exception:
-        return False  # If date parsing fails, exclude the paper
 
 def reload_paper_metadata(papers: list) -> list:
     """
@@ -294,23 +218,17 @@ def reload_paper_metadata(papers: list) -> list:
         # If any error occurs, return original papers
         return papers
 
-def display_citations_separately(analysis_text: str, analysis_papers: list, all_papers: list, total_found: int) -> str:
+def display_citations_separately(analysis_text: str, papers: list) -> str:
     """
-    Display citations with analysis papers and all papers in references.
+    SIMPLE SOLUTION: Instead of trying to detect citations in text, just display them separately at the end.
     """
-    if not analysis_papers:
+    if not papers:
         return analysis_text
     
     # Create a simple citations section
     citations_section = "\n\n---\n\n### References\n\n"
     
-    # Show analysis papers (used for AI analysis)
-    if total_found > 15:
-        citations_section += f"**Papers used for analysis (top 15 of {total_found} found):**\n\n"
-    else:
-        citations_section += f"**Papers used for analysis ({len(analysis_papers)} found):**\n\n"
-    
-    for i, paper in enumerate(analysis_papers):
+    for i, paper in enumerate(papers):
         meta = paper.get('metadata', {})
         title = meta.get('title', 'N/A')
         link = get_paper_link(meta)
@@ -320,33 +238,11 @@ def display_citations_separately(analysis_text: str, analysis_papers: list, all_
         else:
             citations_section += f"**[{i+1}]** {title}\n\n"
     
-    # Show additional papers if more than 15 found
-    if total_found > 15 and len(all_papers) > 15:
-        additional_count = total_found - 15
-        citations_section += f"**Additional papers found ({additional_count} more):**\n\n"
-        
-        # Show first 5 additional papers immediately
-        papers_to_show = min(5, additional_count)
-        for i, paper in enumerate(all_papers[15:15+papers_to_show], start=16):
-            meta = paper.get('metadata', {})
-            title = meta.get('title', 'N/A')
-            link = get_paper_link(meta)
-            
-            if link != "Not available":
-                citations_section += f"**[{i}]** [{title}]({link})\n\n"
-            else:
-                citations_section += f"**[{i}]** {title}\n\n"
-        
-        # Add note about remaining papers
-        if additional_count > 5:
-            remaining_count = additional_count - 5
-            citations_section += f"*... and {remaining_count} more papers (see expandable section below)*\n\n"
-    
     return analysis_text + citations_section
 
 
 # <<< MODIFICATION: The entire search function is redesigned for accuracy >>>
-def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15, use_and_operator: bool = True) -> tuple[list, int]:
+def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15) -> tuple[list, int]:
     """
     Performs a strict, two-stage search.
     1.  Uses Elasticsearch with an 'AND' operator to find only papers containing ALL keywords.
@@ -354,9 +250,8 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
     Returns a tuple: (list of top papers, total number of papers found).
     """
     # Stage 1: The Hard Filter. This is the most important step.
-    # We find papers that contain keywords based on the selected operator (AND/OR).
-    operator = "AND" if use_and_operator else "OR"
-    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator=operator)
+    # We find only the papers that contain ALL the specified keywords. This is our "universe" of valid results.
+    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
 
     # Create a set of valid paper IDs from the strict 'AND' search for efficient lookup.
     valid_paper_ids = {hit['_id'] for hit in es_results}
@@ -413,79 +308,47 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
 
 
 # <<< MODIFICATION: Updated this function to handle the new return values from perform_hybrid_search >>>
-def process_keyword_search(keywords: list, time_filter_type: str | None, use_and_operator: bool = True) -> tuple[str | None, list, int]:
+def process_keyword_search(keywords: list, time_filter_type: str | None) -> tuple[str | None, list, int]:
     if not keywords:
         st.error("Please select at least one keyword.")
         return None, [], 0
 
     with st.spinner("Searching for highly relevant papers and generating a comprehensive, in-depth report..."):
+        # Calculate time filter based on time_filter_type
         time_filter_dict = None
-        now = datetime.datetime.now()
-        # Use 2025 since that's the year of your papers
-        data_year = 2025
-        
         if time_filter_type == "All time":
-            time_filter_dict = None  # No time filter
+            time_filter_dict = None
         elif time_filter_type == "All year":
-            # Search for 2025 papers in the format "dd MMM yyyy" (e.g., "07 Aug 2025")
-            time_filter_dict = {"gte": f"01 Jan {data_year}", "lte": f"31 Dec {data_year}"}
+            # Search for papers from the current year
+            from datetime import datetime
+            current_year = datetime.now().year
+            time_filter_dict = {"gte": f"{current_year}-01-01", "lt": f"{current_year+1}-01-01"}
         elif time_filter_type == "Last 3 months":
-            # For last 3 months, go back 90 days from current date but use 2025 year
-            three_months_ago = now - datetime.timedelta(days=90)
-            time_filter_dict = {"gte": f"01 Jan {data_year}"}  # From start of 2025
+            # Calculate 3 months ago from current date
+            from datetime import datetime, timedelta
+            three_months_ago = datetime.now() - timedelta(days=90)
+            time_filter_dict = {"gte": three_months_ago.strftime('%Y-%m-%d')}
         elif time_filter_type == "Last 6 months":
-            # For last 6 months, go back 180 days from current date but use 2025 year
-            six_months_ago = now - datetime.timedelta(days=180)
-            time_filter_dict = {"gte": f"01 Jan {data_year}"}  # From start of 2025
-        elif time_filter_type in ["January", "February", "March", "April", "May", "June", 
-                                 "July", "August", "September", "October", "November", "December"]:
-            # Map month names to abbreviations and create date range in "dd MMM yyyy" format
-            month_map = {
-                "January": "Jan", "February": "Feb", "March": "Mar", "April": "Apr", 
-                "May": "May", "June": "Jun", "July": "Jul", "August": "Aug", 
-                "September": "Sep", "October": "Oct", "November": "Nov", "December": "Dec"
-            }
-            next_month_map = {
-                "January": "Feb", "February": "Mar", "March": "Apr", "April": "May", 
-                "May": "Jun", "June": "Jul", "July": "Aug", "August": "Sep", 
-                "September": "Oct", "October": "Nov", "November": "Dec", "December": "Jan"
-            }
-            month_abbr = month_map[time_filter_type]
-            next_month_abbr = next_month_map[time_filter_type]
-            next_year = data_year + 1 if time_filter_type == "December" else data_year
-            time_filter_dict = {"gte": f"01 {month_abbr} {data_year}", "lt": f"01 {next_month_abbr} {next_year}"}
+            # Calculate 6 months ago from current date
+            from datetime import datetime, timedelta
+            six_months_ago = datetime.now() - timedelta(days=180)
+            time_filter_dict = {"gte": six_months_ago.strftime('%Y-%m-%d')}
         
-        # Get more results to potentially show all papers in references
-        # Skip Elasticsearch time filtering - we'll use GCS instead
-        all_papers, total_found = perform_hybrid_search(
+        # We explicitly ask for a max of 15 papers for the final list.
+        top_papers, total_found = perform_hybrid_search(
             keywords, 
-            time_filter_dict=None,  # No ES time filtering
-            n_results=200,  # Increased to get more papers
-            max_final_results=200,  # Get all papers, not just 15
-            use_and_operator=use_and_operator
-        )
+            time_filter_dict=time_filter_dict, 
+            n_results=100, 
+            max_final_results=15
+        ) 
         
-        # Apply GCS-based time filtering if needed
-        if time_filter_type != "All time" and all_papers:
-            all_papers = filter_papers_by_gcs_dates(all_papers, time_filter_type)
-            total_found = len(all_papers) 
-        
-        if not all_papers:
-            st.error("No papers found that contain the selected keywords within the specified time window. Please try a different combination of keywords.")
+        if not top_papers:
+            st.error("No papers found that contain ALL of the selected keywords within the specified time window. Please try a different combination of keywords.")
             return None, [], 0
-        
-        # Separate papers for analysis (top 15) vs all papers for references
-        top_papers = all_papers[:15]  # Top 15 for analysis
-        analysis_papers = top_papers  # Papers used for AI analysis
-        all_papers_for_refs = all_papers  # All papers for references
-
-        # Show simple paper count information
-        if total_found > 15:
-            st.info(f"Found {total_found} papers. Using top 15 for analysis.")
         
         context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
         # <<< MODIFICATION: Build the context for the LLM using only the top 15 papers >>>
-        for i, result in enumerate(analysis_papers):
+        for i, result in enumerate(top_papers):
             meta = result.get('metadata', {})
             title = meta.get('title', 'N/A')
             link = get_paper_link(meta)
@@ -495,16 +358,11 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, use_and
             context += f"Link: {link}\n"
             context += f"Content: {content_preview}\n---\n\n"
         
-        # Add paper count info to prompt
-        paper_count_info = ""
-        if total_found > 15:
-            paper_count_info = f"\n**IMPORTANT NOTE:** This analysis is based on the top 15 most relevant papers out of {total_found} total papers found. Additional papers are listed in the references section.\n"
-        
         prompt = f"""{context}
 ---
 **CRITICAL TASK:**
 
-You are a world-class scientific analyst. Your task is to generate an exceptionally detailed and extensive multi-part report based *only* on the provided paper sources. The final report should be substantial in length, reflecting a deep synthesis of information from all provided papers.{paper_count_info}
+You are a world-class scientific analyst. Your task is to generate an exceptionally detailed and extensive multi-part report based *only* on the provided paper sources. The final report should be substantial in length, reflecting a deep synthesis of information from all provided papers.
 
 **Part 1: Thematic Analysis**
 For the sections "Key Methodological Advances," "Emerging Trends," and "Overall Summary," your analysis **MUST** be exhaustive. Generate at least **three long and detailed paragraphs** or a comprehensive multi-level bulleted list for each of these sections. Do not just list findings; you must deeply synthesize information across multiple sources, explain the significance, compare and contrast approaches, and build a compelling narrative about the state of the research.
@@ -529,9 +387,8 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
         # Make citations clickable
         if analysis:
             # First, reload metadata from .metadata.json files to get the links
-            analysis_papers = reload_paper_metadata(analysis_papers)
-            all_papers_for_refs = reload_paper_metadata(all_papers_for_refs)
-            analysis = display_citations_separately(analysis, analysis_papers, all_papers_for_refs, total_found)
+            top_papers = reload_paper_metadata(top_papers)
+            analysis = display_citations_separately(analysis, top_papers)
         
         # <<< MODIFICATION: Return all three pieces of information >>>
         return analysis, top_papers, total_found
@@ -630,26 +487,17 @@ def main():
             st.subheader("Start a New Analysis")
             selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=st.session_state.get('selected_keywords', []))
             
-            # Search operator selection
-            search_operator = st.radio(
-                "Search Method",
-                ["AND (papers must contain ALL keywords)", "OR (papers must contain AT LEAST ONE keyword)"],
-                help="AND: More precise results, fewer papers. OR: Broader results, more papers."
-            )
-            use_and_operator = search_operator.startswith("AND")
             
             time_filter_type = st.selectbox("Filter by Time Window", [
                 "All time", 
                 "All year", 
                 "Last 3 months", 
-                "Last 6 months", 
-                "January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December"
+                "Last 6 months"
             ])
             
             if st.form_submit_button("Search & Analyze"):
                 # <<< MODIFICATION: Handle the new three-part return from the processing function >>>
-                analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type, use_and_operator)
+                analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type)
                 if analysis_result:
                     conv_id = f"conv_{time.time()}"
                     initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)}**\n\n{analysis_result}"}
@@ -659,8 +507,7 @@ def main():
                         "messages": [initial_message], 
                         "keywords": selected_keywords,
                         "retrieved_papers": retrieved_papers,
-                        "total_papers_found": total_found, # <<< MODIFICATION: Store the total count
-                        "search_operator": "AND" if use_and_operator else "OR"
+                        "total_papers_found": total_found # <<< MODIFICATION: Store the total count
                     }
                     st.session_state.active_conversation_id = conv_id
                     st.rerun()
@@ -703,12 +550,10 @@ def main():
                 st.markdown(message["content"])
 
         if "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
-            # Show analysis papers (top 15)
-            analysis_papers = active_conv["retrieved_papers"][:15]
-            total_found = active_conv.get("total_papers_found", len(active_conv["retrieved_papers"]))
-            
-            with st.expander("Papers Used for Analysis (Top 15)"):
-                for paper_index, paper in enumerate(analysis_papers):
+            with st.expander("View and Download Retrieved Papers for this Analysis"):
+                # Display papers without the count message
+                
+                for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
                     meta = paper.get('metadata', {})
                     title = meta.get('title', 'N/A')
                     paper_id = paper.get('paper_id')
@@ -725,34 +570,8 @@ def main():
                                     data=pdf_bytes,
                                     file_name=paper_id,
                                     mime="application/pdf",
-                                    key=f"download_analysis_{active_id}_{paper_id}"
+                                    key=f"download_{active_id}_{paper_id}"
                                 )
-            
-            # Show additional papers if more than 15 found
-            if total_found > 15 and len(active_conv["retrieved_papers"]) > 15:
-                additional_papers = active_conv["retrieved_papers"][15:]
-                additional_count = len(additional_papers)
-                
-                with st.expander(f"Additional Papers Found ({additional_count} more)"):
-                    for paper_index, paper in enumerate(additional_papers):
-                        meta = paper.get('metadata', {})
-                        title = meta.get('title', 'N/A')
-                        paper_id = paper.get('paper_id')
-
-                        col1, col2 = st.columns([4, 1])
-                        with col1:
-                            st.markdown(f"**{paper_index+16}. {title}**")
-                        with col2:
-                            if paper_id:
-                                pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
-                                if pdf_bytes:
-                                    st.download_button(
-                                        label="Download PDF",
-                                        data=pdf_bytes,
-                                        file_name=paper_id,
-                                        mime="application/pdf",
-                                        key=f"download_additional_{active_id}_{paper_id}"
-                                    )
 
 
 
@@ -767,10 +586,8 @@ def main():
             chat_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in active_conv["messages"]])
             full_context = ""
             if active_conv.get("retrieved_papers"):
-                # Use only the top 15 papers for context in follow-up conversations
-                context_papers = active_conv["retrieved_papers"][:15]
-                full_context += "Here is the full context of the papers used for analysis:\n\n"
-                for i, paper in enumerate(context_papers):
+                full_context += "Here is the full context of every paper found in the initial analysis:\n\n"
+                for i, paper in enumerate(active_conv["retrieved_papers"]):
                     meta = paper.get('metadata', {})
                     title = meta.get('title', 'N/A')
                     link = get_paper_link(meta)
@@ -793,10 +610,7 @@ Assistant Response:"""
             response_text = post_message_vertexai(full_prompt)
             if response_text:
                 # Make citations clickable in follow-up responses
-                all_papers = active_conv.get("retrieved_papers", [])
-                analysis_papers = all_papers[:15] if len(all_papers) > 15 else all_papers
-                total_found = active_conv.get("total_papers_found", len(all_papers))
-                response_text = display_citations_separately(response_text, analysis_papers, all_papers, total_found)
+                response_text = display_citations_separately(response_text, active_conv.get("retrieved_papers", []))
                 active_conv["messages"].append({"role": "assistant", "content": response_text})
                 st.rerun()
 
