@@ -62,13 +62,36 @@ class ElasticsearchManager:
         if not keywords:
             return []
         bool_operator = "must" if operator.upper() == "AND" else "should"
+        
+        # For OR operations, use phrase matching to treat multi-word keywords as single units
+        if operator.upper() == "OR":
+            keyword_queries = []
+            for keyword in keywords:
+                if " " in keyword:  # Multi-word keyword
+                    keyword_queries.append({
+                        "multi_match": {
+                            "query": keyword,
+                            "fields": ["title", "abstract", "content"],
+                            "type": "phrase"
+                        }
+                    })
+                else:  # Single word keyword
+                    keyword_queries.append({
+                        "multi_match": {
+                            "query": keyword,
+                            "fields": ["title", "abstract", "content"]
+                        }
+                    })
+        else:  # AND operation - use regular multi_match
+            keyword_queries = [
+                {"multi_match": {"query": keyword, "fields": ["title", "abstract", "content"]}} 
+                for keyword in keywords
+            ]
+        
         query = {
             "query": {
                 "bool": {
-                    bool_operator: [
-                        # Search across title, abstract, and content for better results.
-                        {"multi_match": {"query": keyword, "fields": ["title", "abstract", "content"]}} for keyword in keywords
-                    ],
+                    bool_operator: keyword_queries,
                     "filter": []
                 }
             },
