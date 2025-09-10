@@ -373,7 +373,22 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
     """
     # Stage 1: The Hard Filter. This is the most important step.
     # We find papers that contain the specified keywords based on the selected strategy (AND/OR).
-    es_results, total_papers_found = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator=search_operator)
+    try:
+        search_result = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator=search_operator)
+        
+        # Handle both old and new return formats
+        if isinstance(search_result, tuple) and len(search_result) == 2:
+            es_results, total_papers_found = search_result
+        else:
+            # Fallback to old format (just a list)
+            es_results = search_result if isinstance(search_result, list) else []
+            total_papers_found = len(es_results)
+            
+    except Exception as e:
+        st.error(f"Error in Elasticsearch search: {e}")
+        import traceback
+        st.error(f"Traceback: {traceback.format_exc()}")
+        return [], [], 0
 
     # Create a set of valid paper IDs from the Elasticsearch search for efficient lookup.
     valid_paper_ids = {hit['_id'] for hit in es_results}
