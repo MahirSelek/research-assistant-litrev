@@ -294,9 +294,10 @@ def reload_paper_metadata(papers: list) -> list:
         # If any error occurs, return original papers
         return papers
 
-def display_citations_separately(analysis_text: str, papers: list) -> str:
+def display_citations_separately(analysis_text: str, papers: list, all_papers: list = None) -> str:
     """
     SIMPLE SOLUTION: Instead of trying to detect citations in text, just display them separately at the end.
+    Shows top 15 papers in main references, and additional papers in a separate section.
     """
     if not papers:
         return analysis_text
@@ -304,6 +305,7 @@ def display_citations_separately(analysis_text: str, papers: list) -> str:
     # Create a simple citations section
     citations_section = "\n\n---\n\n### References\n\n"
     
+    # Display the top 15 papers (used in analysis)
     for i, paper in enumerate(papers):
         meta = paper.get('metadata', {})
         title = meta.get('title', 'N/A')
@@ -314,28 +316,44 @@ def display_citations_separately(analysis_text: str, papers: list) -> str:
         else:
             citations_section += f"**[{i+1}]** {title}\n\n"
     
+    # Display additional papers if available
+    if all_papers and len(all_papers) > len(papers):
+        additional_papers = all_papers[len(papers):]
+        citations_section += "\n\n### Additional Papers Found\n\n"
+        citations_section += f"*The following {len(additional_papers)} additional papers were found in the search but not included in the main analysis:*\n\n"
+        
+        for i, paper in enumerate(additional_papers):
+            meta = paper.get('metadata', {})
+            title = meta.get('title', 'N/A')
+            link = get_paper_link(meta)
+            
+            if link != "Not available":
+                citations_section += f"**[{i+len(papers)+1}]** [{title}]({link})\n\n"
+            else:
+                citations_section += f"**[{i+len(papers)+1}]** {title}\n\n"
+    
     return analysis_text + citations_section
 
 
 # <<< MODIFICATION: The entire search function is redesigned for accuracy >>>
-def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15) -> tuple[list, int]:
+def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15, operator_type: str = "AND") -> tuple[list, list, int]:
     """
     Performs a strict, two-stage search.
-    1.  Uses Elasticsearch with an 'AND' operator to find only papers containing ALL keywords.
+    1.  Uses Elasticsearch with the specified operator (AND/OR) to find papers based on keyword matching.
     2.  Uses a vector search to re-rank the papers from stage 1 for semantic relevance.
-    Returns a tuple: (list of top papers, total number of papers found).
+    Returns a tuple: (list of top papers, list of all papers, total number of papers found).
     """
     # Stage 1: The Hard Filter. This is the most important step.
-    # We find only the papers that contain ALL the specified keywords. This is our "universe" of valid results.
-    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
+    # We find papers based on the selected operator (AND/OR). This is our "universe" of valid results.
+    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator=operator_type)
 
-    # Create a set of valid paper IDs from the strict 'AND' search for efficient lookup.
+    # Create a set of valid paper IDs from the search for efficient lookup.
     valid_paper_ids = {hit['_id'] for hit in es_results}
     total_papers_found = len(valid_paper_ids)
 
-    # If the strict 'AND' search returns no results, we stop immediately.
+    # If the search returns no results, we stop immediately.
     if not valid_paper_ids:
-        return [], 0 # Return an empty list and a count of 0
+        return [], [], 0 # Return empty lists and a count of 0
 
     # Stage 2: Re-ranking via Vector Search and Reciprocal Rank Fusion (RRF).
     # The vector search helps us find the most semantically relevant papers within our "universe" of valid results.
@@ -379,15 +397,21 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
         item['doc'] for item in sorted_fused_results 
         if item['score'] >= score_threshold
     ][:max_final_results]
+    
+    # Create the list of all papers (not limited by max_final_results)
+    all_papers_list = [
+        item['doc'] for item in sorted_fused_results 
+        if item['score'] >= score_threshold
+    ]
 
-    return final_paper_list, total_papers_found
+    return final_paper_list, all_papers_list, total_papers_found
 
 
 # <<< MODIFICATION: Updated this function to handle the new return values from perform_hybrid_search >>>
-def process_keyword_search(keywords: list, time_filter_type: str | None) -> tuple[str | None, list, int]:
+def process_keyword_search(keywords: list, time_filter_type: str | None, operator_type: str = "AND") -> tuple[str | None, list, list, int]:
     if not keywords:
         st.error("Please select at least one keyword.")
-        return None, [], 0
+        return None, [], [], 0
 
     with st.spinner("Searching for highly relevant papers and generating a comprehensive, in-depth report..."):
         time_filter_dict = None
@@ -428,21 +452,24 @@ def process_keyword_search(keywords: list, time_filter_type: str | None) -> tupl
         
         # We explicitly ask for a max of 15 papers for the final list.
         # Skip Elasticsearch time filtering - we'll use GCS instead
-        top_papers, total_found = perform_hybrid_search(
+        top_papers, all_papers, total_found = perform_hybrid_search(
             keywords, 
             time_filter_dict=None,  # No ES time filtering
             n_results=100, 
-            max_final_results=15
+            max_final_results=15,
+            operator_type=operator_type
         )
         
         # Apply GCS-based time filtering if needed
         if time_filter_type != "All time" and top_papers:
             top_papers = filter_papers_by_gcs_dates(top_papers, time_filter_type)
+            all_papers = filter_papers_by_gcs_dates(all_papers, time_filter_type)
             total_found = len(top_papers) 
         
         if not top_papers:
-            st.error("No papers found that contain ALL of the selected keywords within the specified time window. Please try a different combination of keywords.")
-            return None, [], 0
+            operator_text = "ALL" if operator_type == "AND" else "at least one"
+            st.error(f"No papers found that contain {operator_text} of the selected keywords within the specified time window. Please try a different combination of keywords.")
+            return None, [], [], 0
 
         context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
         # <<< MODIFICATION: Build the context for the LLM using only the top 15 papers >>>
@@ -486,10 +513,11 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
         if analysis:
             # First, reload metadata from .metadata.json files to get the links
             top_papers = reload_paper_metadata(top_papers)
-            analysis = display_citations_separately(analysis, top_papers)
+            all_papers = reload_paper_metadata(all_papers)
+            analysis = display_citations_separately(analysis, top_papers, all_papers)
         
-        # <<< MODIFICATION: Return all three pieces of information >>>
-        return analysis, top_papers, total_found
+        # <<< MODIFICATION: Return all four pieces of information >>>
+        return analysis, top_papers, all_papers, total_found
 
 def display_paper_management():
     st.subheader("Add Papers to Database")
@@ -584,6 +612,15 @@ def main():
         with st.form(key="new_analysis_form"):
             st.subheader("Start a New Analysis")
             selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=st.session_state.get('selected_keywords', []))
+            
+            # Search operator selection
+            search_operator = st.radio(
+                "Search Strategy",
+                ["AND (All keywords must be present)", "OR (At least one keyword must be present)"],
+                help="AND: Papers must contain ALL selected keywords. OR: Papers must contain AT LEAST ONE selected keyword."
+            )
+            operator_type = "AND" if "AND" in search_operator else "OR"
+            
             time_filter_type = st.selectbox("Filter by Time Window", [
                 "All time", 
                 "All year", 
@@ -594,8 +631,8 @@ def main():
             ])
             
             if st.form_submit_button("Search & Analyze"):
-                # <<< MODIFICATION: Handle the new three-part return from the processing function >>>
-                analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type)
+                # <<< MODIFICATION: Handle the new four-part return from the processing function >>>
+                analysis_result, retrieved_papers, all_papers, total_found = process_keyword_search(selected_keywords, time_filter_type, operator_type)
                 if analysis_result:
                     conv_id = f"conv_{time.time()}"
                     initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)}**\n\n{analysis_result}"}
@@ -605,7 +642,9 @@ def main():
                         "messages": [initial_message], 
                         "keywords": selected_keywords,
                         "retrieved_papers": retrieved_papers,
-                        "total_papers_found": total_found # <<< MODIFICATION: Store the total count
+                        "all_papers": all_papers, # Store all papers found
+                        "total_papers_found": total_found, # <<< MODIFICATION: Store the total count
+                        "search_operator": operator_type # Store the search operator used
                     }
                     st.session_state.active_conversation_id = conv_id
                     st.rerun()
@@ -646,6 +685,15 @@ def main():
             avatar = BOT_AVATAR if message["role"] == "assistant" else USER_AVATAR
             with st.chat_message(message["role"], avatar=avatar):
                 st.markdown(message["content"])
+                
+                # Display paper count information for assistant messages
+                if message["role"] == "assistant" and "total_papers_found" in active_conv:
+                    total_found = active_conv["total_papers_found"]
+                    retrieved_count = len(active_conv.get("retrieved_papers", []))
+                    search_operator = active_conv.get("search_operator", "AND")
+                    operator_text = "ALL" if search_operator == "AND" else "at least one"
+                    
+                    st.info(f"📊 **Search Results**: Found {total_found} papers containing {operator_text} of the selected keywords. Showing top {retrieved_count} most relevant papers in the analysis above.")
 
         if "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
             with st.expander("View and Download Retrieved Papers for this Analysis"):
@@ -708,7 +756,7 @@ Assistant Response:"""
             response_text = post_message_vertexai(full_prompt)
             if response_text:
                 # Make citations clickable in follow-up responses
-                response_text = display_citations_separately(response_text, active_conv.get("retrieved_papers", []))
+                response_text = display_citations_separately(response_text, active_conv.get("retrieved_papers", []), active_conv.get("all_papers", []))
                 active_conv["messages"].append({"role": "assistant", "content": response_text})
                 st.rerun()
 
