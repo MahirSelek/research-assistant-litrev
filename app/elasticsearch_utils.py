@@ -74,6 +74,10 @@ class ElasticsearchManager:
             },
             "size": size
         }
+        
+        # For OR queries, we need to set minimum_should_match to 1 to ensure at least one keyword matches
+        if operator.upper() == "OR":
+            query["query"]["bool"]["minimum_should_match"] = 1
         if time_filter:
             query["query"]["bool"]["filter"].append({
                 "range": {
