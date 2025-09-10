@@ -337,22 +337,10 @@ def display_citations_separately(analysis_text: str, analysis_papers: list, all_
             else:
                 citations_section += f"**[{i}]** {title}\n\n"
         
-        # Add collapsible section for remaining papers
+        # Add note about remaining papers
         if additional_count > 5:
             remaining_count = additional_count - 5
-            citations_section += f"<details>\n<summary>🔽 Click to show {remaining_count} more papers</summary>\n\n"
-            
-            for i, paper in enumerate(all_papers[20:], start=21):
-                meta = paper.get('metadata', {})
-                title = meta.get('title', 'N/A')
-                link = get_paper_link(meta)
-                
-                if link != "Not available":
-                    citations_section += f"**[{i}]** [{title}]({link})\n\n"
-                else:
-                    citations_section += f"**[{i}]** {title}\n\n"
-            
-            citations_section += "</details>\n\n"
+            citations_section += f"*... and {remaining_count} more papers (see expandable section below)*\n\n"
     
     return analysis_text + citations_section
 
@@ -493,7 +481,8 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, use_and
 
         # Show paper count information
         if total_found > 15:
-            st.info(f"📊 Found {total_found} papers. Using the top 15 most relevant papers for analysis. Showing {min(20, total_found)} papers in the references section below.")
+            displayed_count = min(20, total_found)
+            st.info(f"📊 Found {total_found} papers. Using the top 15 most relevant papers for analysis. Showing {displayed_count} papers in the references section below.")
         
         context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
         # <<< MODIFICATION: Build the context for the LLM using only the top 15 papers >>>
@@ -715,10 +704,12 @@ def main():
                 st.markdown(message["content"])
 
         if "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
-            with st.expander("View and Download Retrieved Papers for this Analysis"):
-                # Display papers without the count message
-                
-                for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
+            # Show analysis papers (top 15)
+            analysis_papers = active_conv["retrieved_papers"][:15]
+            total_found = active_conv.get("total_papers_found", len(active_conv["retrieved_papers"]))
+            
+            with st.expander("📊 Papers Used for Analysis (Top 15)"):
+                for paper_index, paper in enumerate(analysis_papers):
                     meta = paper.get('metadata', {})
                     title = meta.get('title', 'N/A')
                     paper_id = paper.get('paper_id')
@@ -735,8 +726,34 @@ def main():
                                     data=pdf_bytes,
                                     file_name=paper_id,
                                     mime="application/pdf",
-                                    key=f"download_{active_id}_{paper_id}"
+                                    key=f"download_analysis_{active_id}_{paper_id}"
                                 )
+            
+            # Show additional papers if more than 15 found
+            if total_found > 15 and len(active_conv["retrieved_papers"]) > 15:
+                additional_papers = active_conv["retrieved_papers"][15:]
+                additional_count = len(additional_papers)
+                
+                with st.expander(f"📚 Additional Papers Found ({additional_count} more)"):
+                    for paper_index, paper in enumerate(additional_papers):
+                        meta = paper.get('metadata', {})
+                        title = meta.get('title', 'N/A')
+                        paper_id = paper.get('paper_id')
+
+                        col1, col2 = st.columns([4, 1])
+                        with col1:
+                            st.markdown(f"**{paper_index+16}. {title}**")
+                        with col2:
+                            if paper_id:
+                                pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
+                                if pdf_bytes:
+                                    st.download_button(
+                                        label="Download PDF",
+                                        data=pdf_bytes,
+                                        file_name=paper_id,
+                                        mime="application/pdf",
+                                        key=f"download_additional_{active_id}_{paper_id}"
+                                    )
 
 
 

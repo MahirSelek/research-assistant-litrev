@@ -63,24 +63,31 @@ class ElasticsearchManager:
             return []
         bool_operator = "must" if operator.upper() == "AND" else "should"
         
-        # For both AND and OR, use phrase matching for multi-word keywords to treat them as single units
-        keyword_queries = []
-        for keyword in keywords:
-            if " " in keyword:  # Multi-word keyword - use phrase matching
-                keyword_queries.append({
-                    "multi_match": {
-                        "query": keyword,
-                        "fields": ["title", "abstract", "content"],
-                        "type": "phrase"
-                    }
-                })
-            else:  # Single word keyword - use regular matching
-                keyword_queries.append({
-                    "multi_match": {
-                        "query": keyword,
-                        "fields": ["title", "abstract", "content"]
-                    }
-                })
+        # AND operator: Use original logic (was working correctly)
+        if operator.upper() == "AND":
+            keyword_queries = [
+                {"multi_match": {"query": keyword, "fields": ["title", "abstract", "content"]}} 
+                for keyword in keywords
+            ]
+        # OR operator: Use phrase matching for multi-word keywords
+        else:
+            keyword_queries = []
+            for keyword in keywords:
+                if " " in keyword:  # Multi-word keyword - use phrase matching
+                    keyword_queries.append({
+                        "multi_match": {
+                            "query": keyword,
+                            "fields": ["title", "abstract", "content"],
+                            "type": "phrase"
+                        }
+                    })
+                else:  # Single word keyword - use regular matching
+                    keyword_queries.append({
+                        "multi_match": {
+                            "query": keyword,
+                            "fields": ["title", "abstract", "content"]
+                        }
+                    })
         
         query = {
             "query": {
