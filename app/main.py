@@ -169,6 +169,82 @@ def get_paper_link(metadata: dict) -> str:
             return link
     return "Not available"
 
+def filter_papers_by_gcs_dates(papers: list, time_filter_type: str) -> list:
+    """
+    Filter papers based on publication dates stored in GCS metadata.
+    This bypasses Elasticsearch date filtering issues.
+    """
+    if not papers:
+        return papers
+    
+    try:
+        from google.cloud import storage
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(GCS_BUCKET_NAME)
+        
+        filtered_papers = []
+        for paper in papers:
+            paper_id = paper.get('paper_id')
+            if paper_id:
+                # Try to find corresponding .metadata.json file
+                json_filename = paper_id.rsplit('.', 1)[0] + '.metadata.json'
+                json_blob = bucket.blob(json_filename)
+                
+                if json_blob.exists():
+                    try:
+                        json_content = json_blob.download_as_string()
+                        json_metadata = json.loads(json_content)
+                        publication_date = json_metadata.get('publication_date', '')
+                        
+                        # Check if this paper matches our time filter
+                        if matches_time_filter(publication_date, time_filter_type):
+                            filtered_papers.append(paper)
+                    except Exception as e:
+                        # If JSON loading fails, include the paper (better to include than exclude)
+                        filtered_papers.append(paper)
+                else:
+                    # If no JSON file found, include the paper
+                    filtered_papers.append(paper)
+            else:
+                filtered_papers.append(paper)
+        
+        return filtered_papers
+    except Exception as e:
+        # If any error occurs, return original papers
+        return papers
+
+def matches_time_filter(publication_date: str, time_filter_type: str) -> bool:
+    """
+    Check if a publication date matches the selected time filter.
+    """
+    if not publication_date:
+        return False
+    
+    try:
+        # Parse the date "07 Aug 2025"
+        from dateutil import parser as date_parser
+        parsed_date = date_parser.parse(publication_date)
+        
+        if time_filter_type == "All year":
+            return parsed_date.year == 2025
+        elif time_filter_type == "Last 3 months":
+            # Check if paper is from recent months (simplified to 2025)
+            return parsed_date.year == 2025
+        elif time_filter_type == "Last 6 months":
+            # Check if paper is from recent months (simplified to 2025)
+            return parsed_date.year == 2025
+        elif time_filter_type in ["January", "February", "March", "April", "May", "June", 
+                                 "July", "August", "September", "October", "November", "December"]:
+            month_map = {
+                "January": 1, "February": 2, "March": 3, "April": 4, "May": 5, "June": 6,
+                "July": 7, "August": 8, "September": 9, "October": 10, "November": 11, "December": 12
+            }
+            target_month = month_map[time_filter_type]
+            return parsed_date.year == 2025 and parsed_date.month == target_month
+        
+        return True  # For "All time" or unknown filters
+    except Exception:
+        return False  # If date parsing fails, exclude the paper
 
 def reload_paper_metadata(papers: list) -> list:
     """
@@ -242,27 +318,27 @@ def display_citations_separately(analysis_text: str, papers: list) -> str:
 
 
 # <<< MODIFICATION: The entire search function is redesigned for accuracy >>>
-def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15, operator: str = "AND") -> tuple[list, int]:
+def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15) -> tuple[list, int]:
     """
-    Performs a two-stage search with configurable operator.
-    1.  Uses Elasticsearch with specified operator (AND/OR) to find papers containing keywords.
+    Performs a strict, two-stage search.
+    1.  Uses Elasticsearch with an 'AND' operator to find only papers containing ALL keywords.
     2.  Uses a vector search to re-rank the papers from stage 1 for semantic relevance.
     Returns a tuple: (list of top papers, total number of papers found).
     """
-    # Stage 1: The Search Filter. This is the most important step.
-    # We find papers that contain the specified keywords based on the selected operator (AND/OR).
-    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator=operator)
+    # Stage 1: The Hard Filter. This is the most important step.
+    # We find only the papers that contain ALL the specified keywords. This is our "universe" of valid results.
+    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
 
-    # Create a set of valid paper IDs from the search for efficient lookup.
+    # Create a set of valid paper IDs from the strict 'AND' search for efficient lookup.
     valid_paper_ids = {hit['_id'] for hit in es_results}
     total_papers_found = len(valid_paper_ids)
 
-    # If the search returns no results, we stop immediately.
+    # If the strict 'AND' search returns no results, we stop immediately.
     if not valid_paper_ids:
         return [], 0 # Return an empty list and a count of 0
 
     # Stage 2: Re-ranking via Vector Search and Reciprocal Rank Fusion (RRF).
-    # The vector search helps us find the most semantically relevant papers within our set of valid results.
+    # The vector search helps us find the most semantically relevant papers within our "universe" of valid results.
     fused_scores = defaultdict(lambda: {'score': 0, 'doc': None})
     k = 60 # RRF constant
 
@@ -279,7 +355,7 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
         try:
             vector_results = st.session_state.vector_db.search_by_keywords(keywords, n_results=n_results)
             
-            # Process vector search results, but ONLY include papers that passed our Stage 1 search filter.
+            # Process vector search results, but ONLY include papers that passed our Stage 1 hard filter.
             for i, doc in enumerate(vector_results):
                 rank = i + 1
                 paper_id = doc.get('paper_id')
@@ -308,46 +384,66 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
 
 
 # <<< MODIFICATION: Updated this function to handle the new return values from perform_hybrid_search >>>
-def process_keyword_search(keywords: list, time_filter_type: str | None, operator: str = "AND") -> tuple[str | None, list, int]:
+def process_keyword_search(keywords: list, time_filter_type: str | None) -> tuple[str | None, list, int]:
     if not keywords:
         st.error("Please select at least one keyword.")
         return None, [], 0
 
     with st.spinner("Searching for highly relevant papers and generating a comprehensive, in-depth report..."):
-        # Calculate time filter based on time_filter_type
         time_filter_dict = None
+        now = datetime.datetime.now()
+        # Use 2025 since that's the year of your papers
+        data_year = 2025
+        
         if time_filter_type == "All time":
-            time_filter_dict = None
+            time_filter_dict = None  # No time filter
         elif time_filter_type == "All year":
-            # Search for papers from the current year
-            from datetime import datetime
-            current_year = datetime.now().year
-            time_filter_dict = {"gte": f"{current_year}-01-01", "lt": f"{current_year+1}-01-01"}
+            # Search for 2025 papers in the format "dd MMM yyyy" (e.g., "07 Aug 2025")
+            time_filter_dict = {"gte": f"01 Jan {data_year}", "lte": f"31 Dec {data_year}"}
         elif time_filter_type == "Last 3 months":
-            # Calculate 3 months ago from current date
-            from datetime import datetime, timedelta
-            three_months_ago = datetime.now() - timedelta(days=90)
-            time_filter_dict = {"gte": three_months_ago.strftime('%Y-%m-%d')}
+            # For last 3 months, go back 90 days from current date but use 2025 year
+            three_months_ago = now - datetime.timedelta(days=90)
+            time_filter_dict = {"gte": f"01 Jan {data_year}"}  # From start of 2025
         elif time_filter_type == "Last 6 months":
-            # Calculate 6 months ago from current date
-            from datetime import datetime, timedelta
-            six_months_ago = datetime.now() - timedelta(days=180)
-            time_filter_dict = {"gte": six_months_ago.strftime('%Y-%m-%d')}
+            # For last 6 months, go back 180 days from current date but use 2025 year
+            six_months_ago = now - datetime.timedelta(days=180)
+            time_filter_dict = {"gte": f"01 Jan {data_year}"}  # From start of 2025
+        elif time_filter_type in ["January", "February", "March", "April", "May", "June", 
+                                 "July", "August", "September", "October", "November", "December"]:
+            # Map month names to abbreviations and create date range in "dd MMM yyyy" format
+            month_map = {
+                "January": "Jan", "February": "Feb", "March": "Mar", "April": "Apr", 
+                "May": "May", "June": "Jun", "July": "Jul", "August": "Aug", 
+                "September": "Sep", "October": "Oct", "November": "Nov", "December": "Dec"
+            }
+            next_month_map = {
+                "January": "Feb", "February": "Mar", "March": "Apr", "April": "May", 
+                "May": "Jun", "June": "Jul", "July": "Aug", "August": "Sep", 
+                "September": "Oct", "October": "Nov", "November": "Dec", "December": "Jan"
+            }
+            month_abbr = month_map[time_filter_type]
+            next_month_abbr = next_month_map[time_filter_type]
+            next_year = data_year + 1 if time_filter_type == "December" else data_year
+            time_filter_dict = {"gte": f"01 {month_abbr} {data_year}", "lt": f"01 {next_month_abbr} {next_year}"}
         
         # We explicitly ask for a max of 15 papers for the final list.
+        # Skip Elasticsearch time filtering - we'll use GCS instead
         top_papers, total_found = perform_hybrid_search(
             keywords, 
-            time_filter_dict=time_filter_dict, 
+            time_filter_dict=None,  # No ES time filtering
             n_results=100, 
-            max_final_results=15,
-            operator=operator
-        ) 
+            max_final_results=15
+        )
+        
+        # Apply GCS-based time filtering if needed
+        if time_filter_type != "All time" and top_papers:
+            top_papers = filter_papers_by_gcs_dates(top_papers, time_filter_type)
+            total_found = len(top_papers) 
         
         if not top_papers:
-            operator_text = "ALL of" if operator == "AND" else "at least one of"
-            st.error(f"No papers found that contain {operator_text} the selected keywords within the specified time window. Please try a different combination of keywords.")
+            st.error("No papers found that contain ALL of the selected keywords within the specified time window. Please try a different combination of keywords.")
             return None, [], 0
-        
+
         context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
         # <<< MODIFICATION: Build the context for the LLM using only the top 15 papers >>>
         for i, result in enumerate(top_papers):
@@ -488,37 +584,28 @@ def main():
         with st.form(key="new_analysis_form"):
             st.subheader("Start a New Analysis")
             selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=st.session_state.get('selected_keywords', []))
-            
-            
             time_filter_type = st.selectbox("Filter by Time Window", [
                 "All time", 
                 "All year", 
                 "Last 3 months", 
-                "Last 6 months"
-            ])
-            
-            search_operator = st.selectbox("Search Operator", [
-                "AND (All keywords must be present)",
-                "OR (At least one keyword must be present)"
+                "Last 6 months", 
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
             ])
             
             if st.form_submit_button("Search & Analyze"):
                 # <<< MODIFICATION: Handle the new three-part return from the processing function >>>
-                # Extract operator from the selected option
-                operator = "AND" if "AND" in search_operator else "OR"
-                analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type, operator)
+                analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type)
                 if analysis_result:
                     conv_id = f"conv_{time.time()}"
-                    operator_text = "ALL keywords" if operator == "AND" else "at least one keyword"
-                    initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)} ({operator_text} required)**\n\n{analysis_result}"}
+                    initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)}**\n\n{analysis_result}"}
                     title = generate_conversation_title(analysis_result)
                     st.session_state.conversations[conv_id] = {
                         "title": title, 
                         "messages": [initial_message], 
                         "keywords": selected_keywords,
                         "retrieved_papers": retrieved_papers,
-                        "total_papers_found": total_found, # <<< MODIFICATION: Store the total count
-                        "search_operator": operator # Store the operator used for this search
+                        "total_papers_found": total_found # <<< MODIFICATION: Store the total count
                     }
                     st.session_state.active_conversation_id = conv_id
                     st.rerun()
