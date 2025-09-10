@@ -87,6 +87,42 @@ class ElasticsearchManager:
             st.error(f"An error occurred during Elasticsearch search: {e}")
             return []
 
+    def search_papers_or(self, keywords: List[str], time_filter: Dict = None, size: int = 10) -> List[Dict[str, Any]]:
+        """
+        Separate OR search function that finds papers matching at least one keyword.
+        This is kept separate from the AND search to avoid confusion and maintain clarity.
+        """
+        if not keywords:
+            return []
+        
+        query = {
+            "query": {
+                "bool": {
+                    "should": [
+                        # Search across title, abstract, and content for better results.
+                        {"multi_match": {"query": keyword, "fields": ["title", "abstract", "content"]}} for keyword in keywords
+                    ],
+                    "minimum_should_match": 1,  # At least one keyword must match
+                    "filter": []
+                }
+            },
+            "size": size
+        }
+        
+        if time_filter:
+            query["query"]["bool"]["filter"].append({
+                "range": {
+                    "publication_date": time_filter
+                }
+            })
+        
+        try:
+            response = self.es_client.search(index="papers", body=query)
+            return response.get('hits', {}).get('hits', [])
+        except Exception as e:
+            st.error(f"An error occurred during Elasticsearch OR search: {e}")
+            return []
+
 @st.cache_resource
 def get_es_manager(cloud_id: str, username: str, password: str) -> ElasticsearchManager:
     """
