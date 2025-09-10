@@ -36,6 +36,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     from elasticsearch_utils import get_es_manager
+    from vector_db import get_vector_db
 except ImportError as e:
     st.error(f"Failed to import a local module: {e}. Ensure all .py files are in the 'app/' directory.")
     st.stop()
@@ -125,6 +126,9 @@ def get_pdf_bytes_from_gcs(bucket_name: str, blob_name: str) -> bytes | None:
 def initialize_session_state():
     if 'es_manager' not in st.session_state:
         st.session_state.es_manager = get_es_manager(cloud_id=ELASTIC_CLOUD_ID, username=ELASTIC_USER, password=ELASTIC_PASSWORD)
+    if 'vector_db' not in st.session_state:
+        # Completely disable ChromaDB - no warnings, no errors
+        st.session_state.vector_db = None
     if 'conversations' not in st.session_state:
         st.session_state.conversations = {}
     if 'active_conversation_id' not in st.session_state:
@@ -312,100 +316,24 @@ def display_citations_separately(analysis_text: str, papers: list) -> str:
     
     return analysis_text + citations_section
 
-def display_restructured_references(primary_papers: list, all_papers: list, total_found: int) -> str:
-    """
-    Display references in two sections: Primary References (top 15) and Additional Papers.
-    """
-    if not primary_papers:
-        return ""
-    
-    # Primary References section (top 15)
-    primary_section = "\n\n---\n\n### Primary References (Used in Generation)\n\n"
-    for i, paper in enumerate(primary_papers):
-        meta = paper.get('metadata', {})
-        title = meta.get('title', 'N/A')
-        link = get_paper_link(meta)
-        
-        if link != "Not available":
-            primary_section += f"**[{i+1}]** [{title}]({link})\n\n"
-        else:
-            primary_section += f"**[{i+1}]** {title}\n\n"
-    
-    # Additional Papers section (remaining papers)
-    # Show additional papers if we have more papers than what's in primary references
-    additional_papers = all_papers[len(primary_papers):] if len(all_papers) > len(primary_papers) else []
-    
-    if additional_papers:
-        start_number = len(primary_papers) + 1
-        additional_section = f"""
-        
-### Additional Papers (For Further Reading)
-
-*Showing papers {start_number}-{len(all_papers)} of {total_found} total papers found*
-
-<details>
-<summary><strong>Click to show/hide additional papers</strong></summary>
-
-"""
-        
-        for i, paper in enumerate(additional_papers):
-            meta = paper.get('metadata', {})
-            title = meta.get('title', 'N/A')
-            link = get_paper_link(meta)
-            paper_number = i + start_number  # Start numbering after primary papers
-            
-            if link != "Not available":
-                additional_section += f"**[{paper_number}]** [{title}]({link})\n\n"
-            else:
-                additional_section += f"**[{paper_number}]** {title}\n\n"
-        
-        additional_section += "</details>"
-        return primary_section + additional_section
-    else:
-        # If we have fewer papers than expected, show a note about the total found
-        if total_found > len(primary_papers):
-            additional_section = f"""
-        
-### Additional Papers (For Further Reading)
-
-*Note: {total_found} total papers were found, but only {len(primary_papers)} met the relevance threshold for analysis.*
-"""
-            return primary_section + additional_section
-        else:
-            return primary_section
-
 
 # <<< MODIFICATION: The entire search function is redesigned for accuracy >>>
-def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15, search_operator: str = "AND") -> tuple[list, list, int]:
+def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15) -> tuple[list, int]:
     """
-    Performs a two-stage search with configurable keyword matching strategy.
-    1.  Uses Elasticsearch with configurable operator (AND/OR) to find papers matching keywords.
+    Performs a strict, two-stage search.
+    1.  Uses Elasticsearch with an 'AND' operator to find only papers containing ALL keywords.
     2.  Uses a vector search to re-rank the papers from stage 1 for semantic relevance.
-    Returns a tuple: (list of top papers for generation, list of all papers, total number of papers found).
+    Returns a tuple: (list of top papers, total number of papers found).
     """
     # Stage 1: The Hard Filter. This is the most important step.
-    # We find papers that contain the specified keywords based on the selected strategy (AND/OR).
-    try:
-        search_result = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator=search_operator)
-        
-        # Handle both old and new return formats
-        if isinstance(search_result, tuple) and len(search_result) == 2:
-            es_results, total_papers_found = search_result
-        else:
-            # Fallback to old format (just a list)
-            es_results = search_result if isinstance(search_result, list) else []
-            total_papers_found = len(es_results)
-            
-    except Exception as e:
-        st.error(f"Error in Elasticsearch search: {e}")
-        import traceback
-        st.error(f"Traceback: {traceback.format_exc()}")
-        return [], [], 0
+    # We find only the papers that contain ALL the specified keywords. This is our "universe" of valid results.
+    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
 
-    # Create a set of valid paper IDs from the Elasticsearch search for efficient lookup.
+    # Create a set of valid paper IDs from the strict 'AND' search for efficient lookup.
     valid_paper_ids = {hit['_id'] for hit in es_results}
+    total_papers_found = len(valid_paper_ids)
 
-    # If the Elasticsearch search returns no results, we stop immediately.
+    # If the strict 'AND' search returns no results, we stop immediately.
     if not valid_paper_ids:
         return [], 0 # Return an empty list and a count of 0
 
@@ -422,7 +350,23 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
         doc_content = {'paper_id': paper_id, 'metadata': hit['_source'], 'content': hit['_source'].get('content', '')}
         fused_scores[paper_id]['doc'] = doc_content
 
-    # Vector search is disabled - only using Elasticsearch results
+    # Try vector search if ChromaDB is available
+    if st.session_state.vector_db is not None:
+        try:
+            vector_results = st.session_state.vector_db.search_by_keywords(keywords, n_results=n_results)
+            
+            # Process vector search results, but ONLY include papers that passed our Stage 1 hard filter.
+            for i, doc in enumerate(vector_results):
+                rank = i + 1
+                paper_id = doc.get('paper_id')
+                # Crucial check: Is this paper in our set of valid papers?
+                if paper_id and paper_id in valid_paper_ids:
+                    fused_scores[paper_id]['score'] += 1 / (k + rank)
+                    if fused_scores[paper_id]['doc'] is None:
+                         fused_scores[paper_id]['doc'] = doc
+        except Exception:
+            # Silently fail - no warning messages
+            pass
 
     # Filter out any entries that somehow didn't get a 'doc' object.
     valid_fused_results = [item for item in fused_scores.values() if item['doc'] is not None]
@@ -435,22 +379,15 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
         item['doc'] for item in sorted_fused_results 
         if item['score'] >= score_threshold
     ][:max_final_results]
-    
-    # Create the complete list of all papers (for additional references)
-    # This includes ALL papers from Elasticsearch, not just those that pass the score threshold
-    all_papers_list = [
-        {'paper_id': hit['_id'], 'metadata': hit['_source'], 'content': hit['_source'].get('content', '')}
-        for hit in es_results
-    ]
 
-    return final_paper_list, all_papers_list, total_papers_found
+    return final_paper_list, total_papers_found
 
 
 # <<< MODIFICATION: Updated this function to handle the new return values from perform_hybrid_search >>>
-def process_keyword_search(keywords: list, time_filter_type: str | None, search_operator: str = "AND") -> tuple[str | None, list, list, int]:
+def process_keyword_search(keywords: list, time_filter_type: str | None) -> tuple[str | None, list, int]:
     if not keywords:
         st.error("Please select at least one keyword.")
-        return None, [], [], 0
+        return None, [], 0
 
     with st.spinner("Searching for highly relevant papers and generating a comprehensive, in-depth report..."):
         time_filter_dict = None
@@ -491,12 +428,11 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
         
         # We explicitly ask for a max of 15 papers for the final list.
         # Skip Elasticsearch time filtering - we'll use GCS instead
-        top_papers, all_papers, total_found = perform_hybrid_search(
+        top_papers, total_found = perform_hybrid_search(
             keywords, 
             time_filter_dict=None,  # No ES time filtering
             n_results=100, 
-            max_final_results=15,
-            search_operator=search_operator
+            max_final_results=15
         )
         
         # Apply GCS-based time filtering if needed
@@ -505,9 +441,8 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
             total_found = len(top_papers) 
         
         if not top_papers:
-            strategy_text = "ALL of the selected keywords" if search_operator == "AND" else "at least one of the selected keywords"
-            st.error(f"No papers found that contain {strategy_text} within the specified time window. Please try a different combination of keywords.")
-            return None, [], [], 0
+            st.error("No papers found that contain ALL of the selected keywords within the specified time window. Please try a different combination of keywords.")
+            return None, [], 0
 
         context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
         # <<< MODIFICATION: Build the context for the LLM using only the top 15 papers >>>
@@ -547,16 +482,14 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
 """
         analysis = post_message_vertexai(prompt)
         
-        # Make citations clickable and restructure references
+        # Make citations clickable
         if analysis:
             # First, reload metadata from .metadata.json files to get the links
             top_papers = reload_paper_metadata(top_papers)
-            all_papers = reload_paper_metadata(all_papers)
-            # Use the new restructured references function
-            analysis = analysis + display_restructured_references(top_papers, all_papers, total_found)
+            analysis = display_citations_separately(analysis, top_papers)
         
-        # <<< MODIFICATION: Return all four pieces of information >>>
-        return analysis, top_papers, all_papers, total_found
+        # <<< MODIFICATION: Return all three pieces of information >>>
+        return analysis, top_papers, total_found
 
 def display_paper_management():
     st.subheader("Add Papers to Database")
@@ -579,13 +512,13 @@ def display_paper_management():
                 metadata = json_map.get(pdf_base_name)
 
                 if metadata:
-                    # If metadata is found, proceed with adding the paper to Elasticsearch
+                    # If metadata is found, proceed with adding the paper
                     metadata['paper_id'] = uploaded_file.name
                     pdf_content_bytes = io.BytesIO(uploaded_file.getvalue())
                     paper_content = read_pdf_content(pdf_content_bytes)
                     if paper_content:
-                        st.session_state.es_manager.index_paper(paper_id=uploaded_file.name, metadata=metadata, content=paper_content)
-                        st.success(f"✅ Successfully added '{uploaded_file.name}' with full metadata to Elasticsearch.")
+                        st.session_state.vector_db.add_paper(paper_id=uploaded_file.name, content=paper_content, metadata=metadata)
+                        st.success(f"✅ Successfully added '{uploaded_file.name}' with full metadata.")
                     else:
                         st.error(f"❌ Could not read content from '{uploaded_file.name}'.")
                 else:
@@ -651,14 +584,6 @@ def main():
         with st.form(key="new_analysis_form"):
             st.subheader("Start a New Analysis")
             selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=st.session_state.get('selected_keywords', []))
-            
-            # Feature 1: Search Strategy Selection
-            search_strategy = st.radio(
-                "Search Strategy",
-                ["Match all keywords (AND)", "Match any keyword (OR)"],
-                help="Choose how keywords should be matched: 'Match all' finds papers containing every keyword, 'Match any' finds papers containing at least one keyword."
-            )
-            
             time_filter_type = st.selectbox("Filter by Time Window", [
                 "All time", 
                 "All year", 
@@ -669,10 +594,8 @@ def main():
             ])
             
             if st.form_submit_button("Search & Analyze"):
-                # Extract search operator from strategy selection
-                search_operator = "AND" if "Match all" in search_strategy else "OR"
-                # <<< MODIFICATION: Handle the new four-part return from the processing function >>>
-                analysis_result, retrieved_papers, all_papers, total_found = process_keyword_search(selected_keywords, time_filter_type, search_operator)
+                # <<< MODIFICATION: Handle the new three-part return from the processing function >>>
+                analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type)
                 if analysis_result:
                     conv_id = f"conv_{time.time()}"
                     initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)}**\n\n{analysis_result}"}
@@ -682,7 +605,6 @@ def main():
                         "messages": [initial_message], 
                         "keywords": selected_keywords,
                         "retrieved_papers": retrieved_papers,
-                        "all_papers": all_papers,  # <<< MODIFICATION: Store all papers
                         "total_papers_found": total_found # <<< MODIFICATION: Store the total count
                     }
                     st.session_state.active_conversation_id = conv_id
@@ -724,10 +646,6 @@ def main():
             avatar = BOT_AVATAR if message["role"] == "assistant" else USER_AVATAR
             with st.chat_message(message["role"], avatar=avatar):
                 st.markdown(message["content"])
-                
-                # Display total count for assistant messages (analysis results)
-                if message["role"] == "assistant" and "total_papers_found" in active_conv:
-                    st.info(f"📊 **Found {active_conv['total_papers_found']} matching papers** (showing top 15 most relevant)")
 
         if "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
             with st.expander("View and Download Retrieved Papers for this Analysis"):
