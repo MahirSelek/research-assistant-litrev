@@ -62,6 +62,8 @@ class ElasticsearchManager:
         if not keywords:
             return []
         bool_operator = "must" if operator.upper() == "AND" else "should"
+        
+        # Build the base query structure
         query = {
             "query": {
                 "bool": {
@@ -74,6 +76,10 @@ class ElasticsearchManager:
             },
             "size": size
         }
+        
+        # For OR queries, we need to specify minimum_should_match to ensure at least one keyword matches
+        if operator.upper() == "OR":
+            query["query"]["bool"]["minimum_should_match"] = 1
         if time_filter:
             query["query"]["bool"]["filter"].append({
                 "range": {
