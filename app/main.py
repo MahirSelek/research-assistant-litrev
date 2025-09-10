@@ -375,6 +375,10 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
         except Exception:
             # Silently fail - no warning messages
             pass
+    else:
+        # Debug: Vector DB is disabled, so we only have ES results
+        if operator.upper() == "OR":
+            print(f"DEBUG OR Vector: Vector DB disabled, using only ES results")
 
     # Filter out any entries that somehow didn't get a 'doc' object.
     valid_fused_results = [item for item in fused_scores.values() if item['doc'] is not None]
@@ -383,13 +387,27 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
     sorted_fused_results = sorted(valid_fused_results, key=lambda x: x['score'], reverse=True)
     
     # Create the final list, filtered by a minimum score and limited by the max_final_results parameter (now 15).
-    # For OR searches, use a lower score threshold since individual keyword matches may have lower scores
-    effective_score_threshold = score_threshold * 0.5 if operator.upper() == "OR" else score_threshold
+    # For OR searches, skip score threshold filtering and just take top results
+    if operator.upper() == "OR":
+        # For OR searches, just take the top results without score filtering
+        final_paper_list = [item['doc'] for item in sorted_fused_results[:max_final_results]]
+        
+        # Debug: Show score information for OR searches
+        print(f"DEBUG OR Filtering: Total fused results = {len(sorted_fused_results)}")
+        if sorted_fused_results:
+            print(f"DEBUG OR Filtering: Highest score = {sorted_fused_results[0]['score']}")
+            print(f"DEBUG OR Filtering: Lowest score = {sorted_fused_results[-1]['score']}")
+        print(f"DEBUG OR Filtering: Taking top {len(final_paper_list)} results without score filtering")
+    else:
+        # For AND searches, use the original score threshold filtering
+        final_paper_list = [
+            item['doc'] for item in sorted_fused_results 
+            if item['score'] >= score_threshold
+        ][:max_final_results]
     
-    final_paper_list = [
-        item['doc'] for item in sorted_fused_results 
-        if item['score'] >= effective_score_threshold
-    ][:max_final_results]
+    # Debug: Show final results for OR searches
+    if operator.upper() == "OR":
+        print(f"DEBUG OR Final: Final paper list length = {len(final_paper_list)}")
 
     return final_paper_list, total_papers_found
 
