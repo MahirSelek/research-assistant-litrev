@@ -135,6 +135,8 @@ def initialize_session_state():
         st.session_state.active_conversation_id = None
     if 'selected_keywords' not in st.session_state:
         st.session_state.selected_keywords = []
+    if 'search_mode' not in st.session_state:
+        st.session_state.search_mode = "all_keywords"
 
 def local_css(file_name):
     try:
@@ -318,22 +320,25 @@ def display_citations_separately(analysis_text: str, papers: list) -> str:
 
 
 # <<< MODIFICATION: The entire search function is redesigned for accuracy >>>
-def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15) -> tuple[list, int]:
+def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15, search_mode: str = "all_keywords") -> tuple[list, int]:
     """
     Performs a strict, two-stage search.
-    1.  Uses Elasticsearch with an 'AND' operator to find only papers containing ALL keywords.
+    1.  Uses Elasticsearch with either 'AND' or 'OR' operator based on search_mode:
+        - "all_keywords": Find papers containing ALL keywords (AND operator)
+        - "any_keyword": Find papers containing AT LEAST ONE keyword (OR operator)
     2.  Uses a vector search to re-rank the papers from stage 1 for semantic relevance.
     Returns a tuple: (list of top papers, total number of papers found).
     """
     # Stage 1: The Hard Filter. This is the most important step.
-    # We find only the papers that contain ALL the specified keywords. This is our "universe" of valid results.
-    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
+    # Determine the operator based on search mode
+    operator = "AND" if search_mode == "all_keywords" else "OR"
+    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator=operator)
 
-    # Create a set of valid paper IDs from the strict 'AND' search for efficient lookup.
+    # Create a set of valid paper IDs from the Elasticsearch search for efficient lookup.
     valid_paper_ids = {hit['_id'] for hit in es_results}
     total_papers_found = len(valid_paper_ids)
 
-    # If the strict 'AND' search returns no results, we stop immediately.
+    # If the search returns no results, we stop immediately.
     if not valid_paper_ids:
         return [], 0 # Return an empty list and a count of 0
 
@@ -384,7 +389,7 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
 
 
 # <<< MODIFICATION: Updated this function to handle the new return values from perform_hybrid_search >>>
-def process_keyword_search(keywords: list, time_filter_type: str | None) -> tuple[str | None, list, int]:
+def process_keyword_search(keywords: list, time_filter_type: str | None, search_mode: str = "all_keywords") -> tuple[str | None, list, int]:
     if not keywords:
         st.error("Please select at least one keyword.")
         return None, [], 0
@@ -432,7 +437,8 @@ def process_keyword_search(keywords: list, time_filter_type: str | None) -> tupl
             keywords, 
             time_filter_dict=None,  # No ES time filtering
             n_results=100, 
-            max_final_results=15
+            max_final_results=15,
+            search_mode=search_mode
         )
         
         # Apply GCS-based time filtering if needed
@@ -441,7 +447,8 @@ def process_keyword_search(keywords: list, time_filter_type: str | None) -> tupl
             total_found = len(top_papers) 
         
         if not top_papers:
-            st.error("No papers found that contain ALL of the selected keywords within the specified time window. Please try a different combination of keywords.")
+            search_mode_text = "ALL of the selected keywords" if search_mode == "all_keywords" else "AT LEAST ONE of the selected keywords"
+            st.error(f"No papers found that contain {search_mode_text} within the specified time window. Please try a different combination of keywords.")
             return None, [], 0
 
         context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
@@ -573,6 +580,7 @@ def main():
         if st.button("➕ New Analysis", use_container_width=True):
             st.session_state.active_conversation_id = None
             st.session_state.selected_keywords = []
+            st.session_state.search_mode = "all_keywords"
             st.rerun()
 
         display_chat_history()
@@ -584,6 +592,19 @@ def main():
         with st.form(key="new_analysis_form"):
             st.subheader("Start a New Analysis")
             selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=st.session_state.get('selected_keywords', []))
+            
+            # Search mode selection
+            search_mode_options = {
+                "all_keywords": "Find papers containing ALL keywords",
+                "any_keyword": "Find papers containing AT LEAST ONE keyword"
+            }
+            search_mode_display = st.selectbox(
+                "Search Mode", 
+                options=list(search_mode_options.keys()),
+                format_func=lambda x: search_mode_options[x],
+                index=0 if st.session_state.get('search_mode', 'all_keywords') == 'all_keywords' else 1
+            )
+            
             time_filter_type = st.selectbox("Filter by Time Window", [
                 "All time", 
                 "All year", 
@@ -594,16 +615,21 @@ def main():
             ])
             
             if st.form_submit_button("Search & Analyze"):
+                # Store the selected search mode in session state
+                st.session_state.search_mode = search_mode_display
+                
                 # <<< MODIFICATION: Handle the new three-part return from the processing function >>>
-                analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type)
+                analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type, search_mode_display)
                 if analysis_result:
                     conv_id = f"conv_{time.time()}"
-                    initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)}**\n\n{analysis_result}"}
+                    search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
+                    initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)} (Search Mode: {search_mode_text})**\n\n{analysis_result}"}
                     title = generate_conversation_title(analysis_result)
                     st.session_state.conversations[conv_id] = {
                         "title": title, 
                         "messages": [initial_message], 
                         "keywords": selected_keywords,
+                        "search_mode": search_mode_display,
                         "retrieved_papers": retrieved_papers,
                         "total_papers_found": total_found # <<< MODIFICATION: Store the total count
                     }
