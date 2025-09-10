@@ -301,14 +301,14 @@ def display_citations_separately(analysis_text: str, analysis_papers: list, all_
     if not analysis_papers:
         return analysis_text
     
-    # Create a comprehensive citations section
+    # Create a simple citations section
     citations_section = "\n\n---\n\n### References\n\n"
     
     # Show analysis papers (used for AI analysis)
     if total_found > 15:
-        citations_section += f"**📊 Papers used for analysis (top 15 of {total_found} found):**\n\n"
+        citations_section += f"**Papers used for analysis (top 15 of {total_found} found):**\n\n"
     else:
-        citations_section += f"**📊 Papers used for analysis ({len(analysis_papers)} found):**\n\n"
+        citations_section += f"**Papers used for analysis ({len(analysis_papers)} found):**\n\n"
     
     for i, paper in enumerate(analysis_papers):
         meta = paper.get('metadata', {})
@@ -323,7 +323,7 @@ def display_citations_separately(analysis_text: str, analysis_papers: list, all_
     # Show additional papers if more than 15 found
     if total_found > 15 and len(all_papers) > 15:
         additional_count = total_found - 15
-        citations_section += f"**📚 Additional papers found ({additional_count} more):**\n\n"
+        citations_section += f"**Additional papers found ({additional_count} more):**\n\n"
         
         # Show first 5 additional papers immediately
         papers_to_show = min(5, additional_count)
@@ -479,10 +479,9 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, use_and
         analysis_papers = top_papers  # Papers used for AI analysis
         all_papers_for_refs = all_papers  # All papers for references
 
-        # Show paper count information
+        # Show simple paper count information
         if total_found > 15:
-            displayed_count = min(20, total_found)
-            st.info(f"📊 Found {total_found} papers. Using the top 15 most relevant papers for analysis. Showing {displayed_count} papers in the references section below.")
+            st.info(f"Found {total_found} papers. Using top 15 for analysis.")
         
         context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
         # <<< MODIFICATION: Build the context for the LLM using only the top 15 papers >>>
@@ -708,7 +707,7 @@ def main():
             analysis_papers = active_conv["retrieved_papers"][:15]
             total_found = active_conv.get("total_papers_found", len(active_conv["retrieved_papers"]))
             
-            with st.expander("📊 Papers Used for Analysis (Top 15)"):
+            with st.expander("Papers Used for Analysis (Top 15)"):
                 for paper_index, paper in enumerate(analysis_papers):
                     meta = paper.get('metadata', {})
                     title = meta.get('title', 'N/A')
@@ -734,7 +733,7 @@ def main():
                 additional_papers = active_conv["retrieved_papers"][15:]
                 additional_count = len(additional_papers)
                 
-                with st.expander(f"📚 Additional Papers Found ({additional_count} more)"):
+                with st.expander(f"Additional Papers Found ({additional_count} more)"):
                     for paper_index, paper in enumerate(additional_papers):
                         meta = paper.get('metadata', {})
                         title = meta.get('title', 'N/A')
