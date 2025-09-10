@@ -327,7 +327,7 @@ def perform_hybrid_search_AND(keywords: list, time_filter_dict: dict | None = No
     """
     # Stage 1: The Hard Filter. This is the most important step.
     # We find only the papers that contain ALL the specified keywords. This is our "universe" of valid results.
-    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
+    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results)
 
     # Create a set of valid paper IDs from the strict 'AND' search for efficient lookup.
     valid_paper_ids = {hit['_id'] for hit in es_results}
@@ -391,7 +391,7 @@ def perform_hybrid_search_OR(keywords: list, time_filter_dict: dict | None = Non
     Returns a tuple: (list of top papers, total number of papers found).
     """
     # Stage 1: The Broad Filter. Find papers that contain ANY of the specified keywords.
-    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="OR")
+    es_results = st.session_state.es_manager.search_papers_OR(keywords, time_filter=time_filter_dict, size=n_results)
 
     # Create a set of valid paper IDs from the OR search for efficient lookup.
     valid_paper_ids = {hit['_id'] for hit in es_results}
