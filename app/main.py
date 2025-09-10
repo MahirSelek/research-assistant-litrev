@@ -318,30 +318,22 @@ def display_citations_separately(analysis_text: str, papers: list) -> str:
 
 
 # <<< MODIFICATION: The entire search function is redesigned for accuracy >>>
-def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15, operator: str = "AND") -> tuple[list, int]:
+def perform_hybrid_search_AND(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15) -> tuple[list, int]:
     """
-    Performs a two-stage search with configurable operator.
-    1.  Uses Elasticsearch with specified operator (AND/OR) to find papers.
+    Performs a strict, two-stage AND search.
+    1.  Uses Elasticsearch with an 'AND' operator to find only papers containing ALL keywords.
     2.  Uses a vector search to re-rank the papers from stage 1 for semantic relevance.
     Returns a tuple: (list of top papers, total number of papers found).
     """
     # Stage 1: The Hard Filter. This is the most important step.
-    # We find papers that contain the specified keywords based on the operator.
-    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator=operator)
+    # We find only the papers that contain ALL the specified keywords. This is our "universe" of valid results.
+    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
 
-    # Create a set of valid paper IDs from the search for efficient lookup.
+    # Create a set of valid paper IDs from the strict 'AND' search for efficient lookup.
     valid_paper_ids = {hit['_id'] for hit in es_results}
     total_papers_found = len(valid_paper_ids)
-    
-    # Debug information
-    if operator.upper() == "OR":
-        print(f"DEBUG OR Search: Found {len(es_results)} ES results for keywords: {keywords}")
-        if es_results:
-            print(f"DEBUG OR Search: First result title: {es_results[0].get('_source', {}).get('title', 'No title')}")
-        else:
-            print("DEBUG OR Search: No ES results found")
 
-    # If the search returns no results, we stop immediately.
+    # If the strict 'AND' search returns no results, we stop immediately.
     if not valid_paper_ids:
         return [], 0 # Return an empty list and a count of 0
 
@@ -375,10 +367,6 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
         except Exception:
             # Silently fail - no warning messages
             pass
-    else:
-        # Debug: Vector DB is disabled, so we only have ES results
-        if operator.upper() == "OR":
-            print(f"DEBUG OR Vector: Vector DB disabled, using only ES results")
 
     # Filter out any entries that somehow didn't get a 'doc' object.
     valid_fused_results = [item for item in fused_scores.values() if item['doc'] is not None]
@@ -387,27 +375,71 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
     sorted_fused_results = sorted(valid_fused_results, key=lambda x: x['score'], reverse=True)
     
     # Create the final list, filtered by a minimum score and limited by the max_final_results parameter (now 15).
-    # For OR searches, skip score threshold filtering and just take top results
-    if operator.upper() == "OR":
-        # For OR searches, just take the top results without score filtering
-        final_paper_list = [item['doc'] for item in sorted_fused_results[:max_final_results]]
-        
-        # Debug: Show score information for OR searches
-        print(f"DEBUG OR Filtering: Total fused results = {len(sorted_fused_results)}")
-        if sorted_fused_results:
-            print(f"DEBUG OR Filtering: Highest score = {sorted_fused_results[0]['score']}")
-            print(f"DEBUG OR Filtering: Lowest score = {sorted_fused_results[-1]['score']}")
-        print(f"DEBUG OR Filtering: Taking top {len(final_paper_list)} results without score filtering")
-    else:
-        # For AND searches, use the original score threshold filtering
-        final_paper_list = [
-            item['doc'] for item in sorted_fused_results 
-            if item['score'] >= score_threshold
-        ][:max_final_results]
+    final_paper_list = [
+        item['doc'] for item in sorted_fused_results 
+        if item['score'] >= score_threshold
+    ][:max_final_results]
+
+    return final_paper_list, total_papers_found
+
+
+def perform_hybrid_search_OR(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, max_final_results: int = 15) -> tuple[list, int]:
+    """
+    Performs a broad, two-stage OR search.
+    1.  Uses Elasticsearch with an 'OR' operator to find papers containing ANY keywords.
+    2.  Uses a vector search to re-rank the papers from stage 1 for semantic relevance.
+    Returns a tuple: (list of top papers, total number of papers found).
+    """
+    # Stage 1: The Broad Filter. Find papers that contain ANY of the specified keywords.
+    es_results = st.session_state.es_manager.search_papers_OR(keywords, time_filter=time_filter_dict, size=n_results)
+
+    # Create a set of valid paper IDs from the OR search for efficient lookup.
+    valid_paper_ids = {hit['_id'] for hit in es_results}
+    total_papers_found = len(valid_paper_ids)
+
+    # If the OR search returns no results, we stop immediately.
+    if not valid_paper_ids:
+        return [], 0 # Return an empty list and a count of 0
+
+    # Stage 2: Re-ranking via Vector Search and Reciprocal Rank Fusion (RRF).
+    # The vector search helps us find the most semantically relevant papers within our "universe" of valid results.
+    fused_scores = defaultdict(lambda: {'score': 0, 'doc': None})
+    k = 60 # RRF constant
+
+    # Process Elasticsearch results (all of these are guaranteed to be valid).
+    for i, hit in enumerate(es_results):
+        rank = i + 1
+        paper_id = hit['_id']
+        fused_scores[paper_id]['score'] += 1 / (k + rank)
+        doc_content = {'paper_id': paper_id, 'metadata': hit['_source'], 'content': hit['_source'].get('content', '')}
+        fused_scores[paper_id]['doc'] = doc_content
+
+    # Try vector search if ChromaDB is available
+    if st.session_state.vector_db is not None:
+        try:
+            vector_results = st.session_state.vector_db.search_by_keywords(keywords, n_results=n_results)
+            
+            # Process vector search results, but ONLY include papers that passed our Stage 1 hard filter.
+            for i, doc in enumerate(vector_results):
+                rank = i + 1
+                paper_id = doc.get('paper_id')
+                # Crucial check: Is this paper in our set of valid papers?
+                if paper_id and paper_id in valid_paper_ids:
+                    fused_scores[paper_id]['score'] += 1 / (k + rank)
+                    if fused_scores[paper_id]['doc'] is None:
+                         fused_scores[paper_id]['doc'] = doc
+        except Exception:
+            # Silently fail - no warning messages
+            pass
+
+    # Filter out any entries that somehow didn't get a 'doc' object.
+    valid_fused_results = [item for item in fused_scores.values() if item['doc'] is not None]
+
+    # Sort the combined results by the fused relevance score.
+    sorted_fused_results = sorted(valid_fused_results, key=lambda x: x['score'], reverse=True)
     
-    # Debug: Show final results for OR searches
-    if operator.upper() == "OR":
-        print(f"DEBUG OR Final: Final paper list length = {len(final_paper_list)}")
+    # For OR searches, just take the top results without score filtering (broader results)
+    final_paper_list = [item['doc'] for item in sorted_fused_results[:max_final_results]]
 
     return final_paper_list, total_papers_found
 
@@ -457,13 +489,20 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, operato
         
         # We explicitly ask for a max of 15 papers for the final list.
         # Skip Elasticsearch time filtering - we'll use GCS instead
-        top_papers, total_found = perform_hybrid_search(
-            keywords, 
-            time_filter_dict=None,  # No ES time filtering
-            n_results=100, 
-            max_final_results=15,
-            operator=operator
-        )
+        if operator == "AND":
+            top_papers, total_found = perform_hybrid_search_AND(
+                keywords, 
+                time_filter_dict=None,  # No ES time filtering
+                n_results=100, 
+                max_final_results=15
+            )
+        else:  # OR operator
+            top_papers, total_found = perform_hybrid_search_OR(
+                keywords, 
+                time_filter_dict=None,  # No ES time filtering
+                n_results=100, 
+                max_final_results=15
+            )
         
         # Debug information for OR searches
         if operator == "OR":
