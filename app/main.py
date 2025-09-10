@@ -296,25 +296,56 @@ def reload_paper_metadata(papers: list) -> list:
         # If any error occurs, return original papers
         return papers
 
-def display_citations_separately(analysis_text: str, papers: list) -> str:
+def display_citations_separately(analysis_text: str, papers: list, analysis_papers: list = None, search_mode: str = "all_keywords") -> str:
     """
-    SIMPLE SOLUTION: Instead of trying to detect citations in text, just display them separately at the end.
+    Display citations separately at the end, with different sections for OR queries.
     """
     if not papers:
         return analysis_text
     
-    # Create a simple citations section
     citations_section = "\n\n---\n\n### References\n\n"
     
-    for i, paper in enumerate(papers):
-        meta = paper.get('metadata', {})
-        title = meta.get('title', 'N/A')
-        link = get_paper_link(meta)
+    if search_mode == "any_keyword" and analysis_papers:
+        # For OR queries: Separate analysis papers from additional papers
+        citations_section += "#### References Used in Analysis\n\n"
         
-        if link != "Not available":
-            citations_section += f"**[{i+1}]** [{title}]({link})\n\n"
-        else:
-            citations_section += f"**[{i+1}]** {title}\n\n"
+        # Show papers used in analysis (top 15)
+        for i, paper in enumerate(analysis_papers):
+            meta = paper.get('metadata', {})
+            title = meta.get('title', 'N/A')
+            link = get_paper_link(meta)
+            
+            if link != "Not available":
+                citations_section += f"**[{i+1}]** [{title}]({link})\n\n"
+            else:
+                citations_section += f"**[{i+1}]** {title}\n\n"
+        
+        # Show additional papers found in search
+        additional_papers = [p for p in papers if p not in analysis_papers]
+        if additional_papers:
+            citations_section += "#### Additional References Found\n\n"
+            start_num = len(analysis_papers) + 1
+            
+            for i, paper in enumerate(additional_papers):
+                meta = paper.get('metadata', {})
+                title = meta.get('title', 'N/A')
+                link = get_paper_link(meta)
+                
+                if link != "Not available":
+                    citations_section += f"**[{start_num + i}]** [{title}]({link})\n\n"
+                else:
+                    citations_section += f"**[{start_num + i}]** {title}\n\n"
+    else:
+        # For AND queries or when no analysis_papers specified: Show all papers normally
+        for i, paper in enumerate(papers):
+            meta = paper.get('metadata', {})
+            title = meta.get('title', 'N/A')
+            link = get_paper_link(meta)
+            
+            if link != "Not available":
+                citations_section += f"**[{i+1}]** [{title}]({link})\n\n"
+            else:
+                citations_section += f"**[{i+1}]** {title}\n\n"
     
     return analysis_text + citations_section
 
@@ -533,7 +564,8 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
         if analysis:
             # First, reload metadata from .metadata.json files to get the links
             papers_for_references = reload_paper_metadata(papers_for_references)
-            analysis = display_citations_separately(analysis, papers_for_references)
+            top_papers_for_analysis = reload_paper_metadata(top_papers_for_analysis)
+            analysis = display_citations_separately(analysis, papers_for_references, top_papers_for_analysis, search_mode)
         
         # <<< MODIFICATION: Return all three pieces of information >>>
         return analysis, papers_for_references, total_found
@@ -774,7 +806,11 @@ Assistant Response:"""
             response_text = post_message_vertexai(full_prompt)
             if response_text:
                 # Make citations clickable in follow-up responses
-                response_text = display_citations_separately(response_text, active_conv.get("retrieved_papers", []))
+                retrieved_papers = active_conv.get("retrieved_papers", [])
+                search_mode = active_conv.get("search_mode", "all_keywords")
+                
+                # For follow-up responses, we don't have separate analysis papers, so use all papers
+                response_text = display_citations_separately(response_text, retrieved_papers, None, search_mode)
                 active_conv["messages"].append({"role": "assistant", "content": response_text})
                 st.rerun()
 
