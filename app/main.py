@@ -509,7 +509,8 @@ def main():
                 analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type, operator)
                 if analysis_result:
                     conv_id = f"conv_{time.time()}"
-                    initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)}**\n\n{analysis_result}"}
+                    operator_text = "ALL keywords" if operator == "AND" else "at least one keyword"
+                    initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)} ({operator_text} required)**\n\n{analysis_result}"}
                     title = generate_conversation_title(analysis_result)
                     st.session_state.conversations[conv_id] = {
                         "title": title, 
