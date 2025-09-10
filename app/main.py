@@ -338,14 +338,17 @@ def display_citations_separately(analysis_text: str, papers: list, all_papers: l
 # <<< MODIFICATION: The entire search function is redesigned for accuracy >>>
 def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15, operator_type: str = "AND") -> tuple[list, list, int]:
     """
-    Performs a strict, two-stage search.
-    1.  Uses Elasticsearch with the specified operator (AND/OR) to find papers based on keyword matching.
-    2.  Uses a vector search to re-rank the papers from stage 1 for semantic relevance.
+    Performs a two-stage search with different strategies for AND vs OR operators.
+    AND: Find papers containing ALL keywords
+    OR: Find papers containing AT LEAST ONE keyword
     Returns a tuple: (list of top papers, list of all papers, total number of papers found).
     """
-    # Stage 1: The Hard Filter. This is the most important step.
-    # We find papers based on the selected operator (AND/OR). This is our "universe" of valid results.
-    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator=operator_type)
+    if operator_type == "AND":
+        # AND Strategy: Find papers containing ALL keywords
+        es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
+    else:
+        # OR Strategy: Find papers containing AT LEAST ONE keyword
+        es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="OR")
 
     # Create a set of valid paper IDs from the search for efficient lookup.
     valid_paper_ids = {hit['_id'] for hit in es_results}
@@ -371,6 +374,7 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
     # Try vector search if ChromaDB is available
     if st.session_state.vector_db is not None:
         try:
+            # Use the same operator strategy for vector search
             vector_results = st.session_state.vector_db.search_by_keywords(keywords, n_results=n_results)
             
             # Process vector search results, but ONLY include papers that passed our Stage 1 hard filter.
