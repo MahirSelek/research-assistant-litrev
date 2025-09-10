@@ -58,9 +58,9 @@ class ElasticsearchManager:
         except Exception as e:
             st.error(f"Failed to index paper {paper_id}: {e}")
 
-    def search_papers(self, keywords: List[str], time_filter: Dict = None, size: int = 10, operator: str = "AND") -> tuple[List[Dict[str, Any]], int]:
+    def search_papers(self, keywords: List[str], time_filter: Dict = None, size: int = 10, operator: str = "AND") -> List[Dict[str, Any]]:
         if not keywords:
-            return [], 0
+            return []
         bool_operator = "must" if operator.upper() == "AND" else "should"
         query = {
             "query": {
@@ -82,24 +82,10 @@ class ElasticsearchManager:
             })
         try:
             response = self.es_client.search(index="papers", body=query)
-            hits = response.get('hits', {})
-            total = hits.get('total', {})
-            
-            # Handle different Elasticsearch versions for total count
-            if isinstance(total, dict):
-                total_count = total.get('value', 0)
-            elif isinstance(total, int):
-                total_count = total
-            else:
-                # Fallback: count the actual results
-                total_count = len(hits.get('hits', []))
-                
-            return hits.get('hits', []), total_count
-            
+            return response.get('hits', {}).get('hits', [])
         except Exception as e:
             st.error(f"An error occurred during Elasticsearch search: {e}")
-            # Return empty results instead of causing app to crash
-            return [], 0
+            return []
 
 @st.cache_resource
 def get_es_manager(cloud_id: str, username: str, password: str) -> ElasticsearchManager:
