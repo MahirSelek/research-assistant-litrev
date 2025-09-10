@@ -332,6 +332,14 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
     # Create a set of valid paper IDs from the search for efficient lookup.
     valid_paper_ids = {hit['_id'] for hit in es_results}
     total_papers_found = len(valid_paper_ids)
+    
+    # Debug information
+    if operator.upper() == "OR":
+        print(f"DEBUG OR Search: Found {len(es_results)} ES results for keywords: {keywords}")
+        if es_results:
+            print(f"DEBUG OR Search: First result title: {es_results[0].get('_source', {}).get('title', 'No title')}")
+        else:
+            print("DEBUG OR Search: No ES results found")
 
     # If the search returns no results, we stop immediately.
     if not valid_paper_ids:
@@ -375,9 +383,12 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
     sorted_fused_results = sorted(valid_fused_results, key=lambda x: x['score'], reverse=True)
     
     # Create the final list, filtered by a minimum score and limited by the max_final_results parameter (now 15).
+    # For OR searches, use a lower score threshold since individual keyword matches may have lower scores
+    effective_score_threshold = score_threshold * 0.5 if operator.upper() == "OR" else score_threshold
+    
     final_paper_list = [
         item['doc'] for item in sorted_fused_results 
-        if item['score'] >= score_threshold
+        if item['score'] >= effective_score_threshold
     ][:max_final_results]
 
     return final_paper_list, total_papers_found
@@ -435,6 +446,10 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, operato
             max_final_results=15,
             operator=operator
         )
+        
+        # Debug information for OR searches
+        if operator == "OR":
+            st.info(f"🔍 OR Search Debug: Found {total_found} total papers, analyzing top {len(top_papers)} papers")
         
         # Apply GCS-based time filtering if needed
         if time_filter_type != "All time" and top_papers:

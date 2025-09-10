@@ -62,6 +62,8 @@ class ElasticsearchManager:
         if not keywords:
             return []
         bool_operator = "must" if operator.upper() == "AND" else "should"
+        
+        # Build the base query structure
         query = {
             "query": {
                 "bool": {
@@ -74,6 +76,10 @@ class ElasticsearchManager:
             },
             "size": size
         }
+        
+        # For OR queries, we need to set minimum_should_match to 1 to ensure at least one keyword matches
+        if operator.upper() == "OR":
+            query["query"]["bool"]["minimum_should_match"] = 1
         if time_filter:
             query["query"]["bool"]["filter"].append({
                 "range": {
@@ -81,8 +87,20 @@ class ElasticsearchManager:
                 }
             })
         try:
+            # Debug: Print the query for OR searches
+            if operator.upper() == "OR":
+                print(f"DEBUG ES Query: {query}")
+            
             response = self.es_client.search(index="papers", body=query)
-            return response.get('hits', {}).get('hits', [])
+            hits = response.get('hits', {}).get('hits', [])
+            
+            # Debug: Print results for OR searches
+            if operator.upper() == "OR":
+                print(f"DEBUG ES Response: Found {len(hits)} hits")
+                if hits:
+                    print(f"DEBUG ES Response: First hit score: {hits[0].get('_score', 'No score')}")
+            
+            return hits
         except Exception as e:
             st.error(f"An error occurred during Elasticsearch search: {e}")
             return []
