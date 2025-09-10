@@ -242,27 +242,27 @@ def display_citations_separately(analysis_text: str, papers: list) -> str:
 
 
 # <<< MODIFICATION: The entire search function is redesigned for accuracy >>>
-def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15) -> tuple[list, int]:
+def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15, operator: str = "AND") -> tuple[list, int]:
     """
-    Performs a strict, two-stage search.
-    1.  Uses Elasticsearch with an 'AND' operator to find only papers containing ALL keywords.
+    Performs a two-stage search with configurable operator.
+    1.  Uses Elasticsearch with specified operator (AND/OR) to find papers containing keywords.
     2.  Uses a vector search to re-rank the papers from stage 1 for semantic relevance.
     Returns a tuple: (list of top papers, total number of papers found).
     """
-    # Stage 1: The Hard Filter. This is the most important step.
-    # We find only the papers that contain ALL the specified keywords. This is our "universe" of valid results.
-    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
+    # Stage 1: The Search Filter. This is the most important step.
+    # We find papers that contain the specified keywords based on the selected operator (AND/OR).
+    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator=operator)
 
-    # Create a set of valid paper IDs from the strict 'AND' search for efficient lookup.
+    # Create a set of valid paper IDs from the search for efficient lookup.
     valid_paper_ids = {hit['_id'] for hit in es_results}
     total_papers_found = len(valid_paper_ids)
 
-    # If the strict 'AND' search returns no results, we stop immediately.
+    # If the search returns no results, we stop immediately.
     if not valid_paper_ids:
         return [], 0 # Return an empty list and a count of 0
 
     # Stage 2: Re-ranking via Vector Search and Reciprocal Rank Fusion (RRF).
-    # The vector search helps us find the most semantically relevant papers within our "universe" of valid results.
+    # The vector search helps us find the most semantically relevant papers within our set of valid results.
     fused_scores = defaultdict(lambda: {'score': 0, 'doc': None})
     k = 60 # RRF constant
 
@@ -279,7 +279,7 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
         try:
             vector_results = st.session_state.vector_db.search_by_keywords(keywords, n_results=n_results)
             
-            # Process vector search results, but ONLY include papers that passed our Stage 1 hard filter.
+            # Process vector search results, but ONLY include papers that passed our Stage 1 search filter.
             for i, doc in enumerate(vector_results):
                 rank = i + 1
                 paper_id = doc.get('paper_id')
@@ -308,7 +308,7 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
 
 
 # <<< MODIFICATION: Updated this function to handle the new return values from perform_hybrid_search >>>
-def process_keyword_search(keywords: list, time_filter_type: str | None) -> tuple[str | None, list, int]:
+def process_keyword_search(keywords: list, time_filter_type: str | None, operator: str = "AND") -> tuple[str | None, list, int]:
     if not keywords:
         st.error("Please select at least one keyword.")
         return None, [], 0
@@ -339,11 +339,13 @@ def process_keyword_search(keywords: list, time_filter_type: str | None) -> tupl
             keywords, 
             time_filter_dict=time_filter_dict, 
             n_results=100, 
-            max_final_results=15
+            max_final_results=15,
+            operator=operator
         ) 
         
         if not top_papers:
-            st.error("No papers found that contain ALL of the selected keywords within the specified time window. Please try a different combination of keywords.")
+            operator_text = "ALL of" if operator == "AND" else "at least one of"
+            st.error(f"No papers found that contain {operator_text} the selected keywords within the specified time window. Please try a different combination of keywords.")
             return None, [], 0
         
         context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
@@ -495,9 +497,16 @@ def main():
                 "Last 6 months"
             ])
             
+            search_operator = st.selectbox("Search Operator", [
+                "AND (All keywords must be present)",
+                "OR (At least one keyword must be present)"
+            ])
+            
             if st.form_submit_button("Search & Analyze"):
                 # <<< MODIFICATION: Handle the new three-part return from the processing function >>>
-                analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type)
+                # Extract operator from the selected option
+                operator = "AND" if "AND" in search_operator else "OR"
+                analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type, operator)
                 if analysis_result:
                     conv_id = f"conv_{time.time()}"
                     initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)}**\n\n{analysis_result}"}
@@ -507,7 +516,8 @@ def main():
                         "messages": [initial_message], 
                         "keywords": selected_keywords,
                         "retrieved_papers": retrieved_papers,
-                        "total_papers_found": total_found # <<< MODIFICATION: Store the total count
+                        "total_papers_found": total_found, # <<< MODIFICATION: Store the total count
+                        "search_operator": operator # Store the operator used for this search
                     }
                     st.session_state.active_conversation_id = conv_id
                     st.rerun()
