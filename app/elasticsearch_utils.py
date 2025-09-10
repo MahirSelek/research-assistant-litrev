@@ -74,39 +74,6 @@ class ElasticsearchManager:
             },
             "size": size
         }
-        
-        # For OR queries, we need to set minimum_should_match to 1 to ensure at least one keyword matches
-        if operator.upper() == "OR":
-            query["query"]["bool"]["minimum_should_match"] = 1
-        if time_filter:
-            query["query"]["bool"]["filter"].append({
-                "range": {
-                    "publication_date": time_filter
-                }
-            })
-        try:
-            response = self.es_client.search(index="papers", body=query)
-            return response.get('hits', {}).get('hits', [])
-        except Exception as e:
-            st.error(f"An error occurred during Elasticsearch search: {e}")
-            return []
-
-    def search_papers_OR(self, keywords: List[str], time_filter: Dict = None, size: int = 10) -> List[Dict[str, Any]]:
-        if not keywords:
-            return []
-        query = {
-            "query": {
-                "bool": {
-                    "should": [
-                        # Search across title, abstract, and content for better results.
-                        {"multi_match": {"query": keyword, "fields": ["title", "abstract", "content"]}} for keyword in keywords
-                    ],
-                    "minimum_should_match": 1,
-                    "filter": []
-                }
-            },
-            "size": size
-        }
         if time_filter:
             query["query"]["bool"]["filter"].append({
                 "range": {
