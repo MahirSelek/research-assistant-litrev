@@ -322,17 +322,27 @@ def display_citations_separately(analysis_text: str, papers: list) -> str:
 # <<< MODIFICATION: The entire search function is redesigned for accuracy >>>
 def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15, search_mode: str = "all_keywords") -> tuple[list, int]:
     """
-    Performs a strict, two-stage search.
-    1.  Uses Elasticsearch with either 'AND' or 'OR' operator based on search_mode:
-        - "all_keywords": Find papers containing ALL keywords (AND operator)
-        - "any_keyword": Find papers containing AT LEAST ONE keyword (OR operator)
-    2.  Uses a vector search to re-rank the papers from stage 1 for semantic relevance.
-    Returns a tuple: (list of top papers, total number of papers found).
+    Performs a search with different strategies based on search_mode:
+    1. "all_keywords": Two-stage search (Elasticsearch AND + vector re-ranking)
+    2. "any_keyword": Single-stage search (Elasticsearch OR only, return ALL papers)
+    Returns a tuple: (list of papers, total number of papers found).
     """
-    # Stage 1: The Hard Filter. This is the most important step.
     # Determine the operator based on search mode
     operator = "AND" if search_mode == "all_keywords" else "OR"
-    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator=operator)
+    
+    if search_mode == "all_keywords":
+        # For AND queries: Use the original two-stage hybrid approach
+        return perform_and_search(keywords, time_filter_dict, n_results, score_threshold, max_final_results)
+    else:
+        # For OR queries: Return ALL papers found, no filtering
+        return perform_or_search(keywords, time_filter_dict, n_results)
+
+def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15) -> tuple[list, int]:
+    """
+    Performs the original two-stage hybrid search for AND queries.
+    """
+    # Stage 1: The Hard Filter. This is the most important step.
+    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
 
     # Create a set of valid paper IDs from the Elasticsearch search for efficient lookup.
     valid_paper_ids = {hit['_id'] for hit in es_results}
@@ -387,6 +397,25 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
 
     return final_paper_list, total_papers_found
 
+def perform_or_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100) -> tuple[list, int]:
+    """
+    Performs a simple OR search returning ALL papers found.
+    """
+    # Get ALL papers that contain at least one keyword
+    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="OR")
+    
+    # Convert to the expected format
+    all_papers = []
+    for hit in es_results:
+        paper_id = hit['_id']
+        doc_content = {'paper_id': paper_id, 'metadata': hit['_source'], 'content': hit['_source'].get('content', '')}
+        all_papers.append(doc_content)
+    
+    total_papers_found = len(all_papers)
+    
+    # Return ALL papers found (no filtering)
+    return all_papers, total_papers_found
+
 
 # <<< MODIFICATION: Updated this function to handle the new return values from perform_hybrid_search >>>
 def process_keyword_search(keywords: list, time_filter_type: str | None, search_mode: str = "all_keywords") -> tuple[str | None, list, int]:
@@ -431,9 +460,8 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
             next_year = data_year + 1 if time_filter_type == "December" else data_year
             time_filter_dict = {"gte": f"01 {month_abbr} {data_year}", "lt": f"01 {next_month_abbr} {next_year}"}
         
-        # We explicitly ask for a max of 15 papers for the final list.
         # Skip Elasticsearch time filtering - we'll use GCS instead
-        top_papers, total_found = perform_hybrid_search(
+        all_papers, total_found = perform_hybrid_search(
             keywords, 
             time_filter_dict=None,  # No ES time filtering
             n_results=100, 
@@ -442,18 +470,30 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
         )
         
         # Apply GCS-based time filtering if needed
-        if time_filter_type != "All time" and top_papers:
-            top_papers = filter_papers_by_gcs_dates(top_papers, time_filter_type)
-            total_found = len(top_papers) 
+        if time_filter_type != "All time" and all_papers:
+            all_papers = filter_papers_by_gcs_dates(all_papers, time_filter_type)
+            total_found = len(all_papers) 
         
-        if not top_papers:
+        if not all_papers:
             search_mode_text = "ALL of the selected keywords" if search_mode == "all_keywords" else "AT LEAST ONE of the selected keywords"
             st.error(f"No papers found that contain {search_mode_text} within the specified time window. Please try a different combination of keywords.")
             return None, [], 0
 
+        # For OR queries: Use top 15 for analysis, but keep ALL papers for references
+        # For AND queries: Use the already filtered top papers
+        if search_mode == "any_keyword":
+            # Sort all papers by relevance (simple sort by title for now, could be improved)
+            sorted_papers = sorted(all_papers, key=lambda x: x.get('metadata', {}).get('title', ''))
+            top_papers_for_analysis = sorted_papers[:15]  # Use top 15 for analysis
+            papers_for_references = all_papers  # Use ALL papers for references
+        else:
+            # For AND queries, use the same papers for both analysis and references
+            top_papers_for_analysis = all_papers
+            papers_for_references = all_papers
+
         context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
         # <<< MODIFICATION: Build the context for the LLM using only the top 15 papers >>>
-        for i, result in enumerate(top_papers):
+        for i, result in enumerate(top_papers_for_analysis):
             meta = result.get('metadata', {})
             title = meta.get('title', 'N/A')
             link = get_paper_link(meta)
@@ -492,11 +532,11 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
         # Make citations clickable
         if analysis:
             # First, reload metadata from .metadata.json files to get the links
-            top_papers = reload_paper_metadata(top_papers)
-            analysis = display_citations_separately(analysis, top_papers)
+            papers_for_references = reload_paper_metadata(papers_for_references)
+            analysis = display_citations_separately(analysis, papers_for_references)
         
         # <<< MODIFICATION: Return all three pieces of information >>>
-        return analysis, top_papers, total_found
+        return analysis, papers_for_references, total_found
 
 def display_paper_management():
     st.subheader("Add Papers to Database")
