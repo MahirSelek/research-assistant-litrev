@@ -58,13 +58,14 @@ class ElasticsearchManager:
         except Exception as e:
             st.error(f"Failed to index paper {paper_id}: {e}")
 
-    def search_papers(self, keywords: List[str], time_filter: Dict = None, size: int = 10) -> List[Dict[str, Any]]:
+    def search_papers(self, keywords: List[str], time_filter: Dict = None, size: int = 10, operator: str = "AND") -> List[Dict[str, Any]]:
         if not keywords:
             return []
+        bool_operator = "must" if operator.upper() == "AND" else "should"
         query = {
             "query": {
                 "bool": {
-                    "must": [
+                    bool_operator: [
                         # Search across title, abstract, and content for better results.
                         {"multi_match": {"query": keyword, "fields": ["title", "abstract", "content"]}} for keyword in keywords
                     ],
@@ -73,6 +74,10 @@ class ElasticsearchManager:
             },
             "size": size
         }
+        
+        # For OR queries, we need to set minimum_should_match to 1 to ensure at least one keyword matches
+        if operator.upper() == "OR":
+            query["query"]["bool"]["minimum_should_match"] = 1
         if time_filter:
             query["query"]["bool"]["filter"].append({
                 "range": {
