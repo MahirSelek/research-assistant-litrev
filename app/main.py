@@ -298,7 +298,7 @@ def reload_paper_metadata(papers: list) -> list:
 
 def display_citations_separately(analysis_text: str, papers: list, analysis_papers: list = None, search_mode: str = "all_keywords") -> str:
     """
-    Display citations separately at the end, with different sections for OR queries.
+    Display citations separately at the end, with different sections based on search mode and paper count.
     """
     if not papers:
         return analysis_text
@@ -306,7 +306,7 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
     citations_section = "\n\n---\n\n### References\n\n"
     
     if search_mode == "any_keyword" and analysis_papers:
-        # For OR queries: Separate analysis papers from additional papers
+        # For OR queries: Always separate analysis papers from additional papers
         citations_section += "#### References Used in Analysis\n\n"
         
         # Show papers used in analysis (top 15)
@@ -335,8 +335,40 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
                     citations_section += f"**[{start_num + i}]** [{title}]({link})\n\n"
                 else:
                     citations_section += f"**[{start_num + i}]** {title}\n\n"
+    
+    elif search_mode == "all_keywords" and len(papers) > 15:
+        # For AND queries with more than 15 papers: Separate into analysis and additional
+        citations_section += "#### References Used in Analysis\n\n"
+        
+        # Show first 15 papers (used in analysis)
+        for i, paper in enumerate(papers[:15]):
+            meta = paper.get('metadata', {})
+            title = meta.get('title', 'N/A')
+            link = get_paper_link(meta)
+            
+            if link != "Not available":
+                citations_section += f"**[{i+1}]** [{title}]({link})\n\n"
+            else:
+                citations_section += f"**[{i+1}]** {title}\n\n"
+        
+        # Show additional papers beyond the first 15
+        additional_papers = papers[15:]
+        if additional_papers:
+            citations_section += "#### Additional References Found\n\n"
+            start_num = 16  # Continue from [16]
+            
+            for i, paper in enumerate(additional_papers):
+                meta = paper.get('metadata', {})
+                title = meta.get('title', 'N/A')
+                link = get_paper_link(meta)
+                
+                if link != "Not available":
+                    citations_section += f"**[{start_num + i}]** [{title}]({link})\n\n"
+                else:
+                    citations_section += f"**[{start_num + i}]** {title}\n\n"
+    
     else:
-        # For AND queries or when no analysis_papers specified: Show all papers normally
+        # For AND queries with 15 or fewer papers, or when no analysis_papers specified: Show all papers normally
         for i, paper in enumerate(papers):
             meta = paper.get('metadata', {})
             title = meta.get('title', 'N/A')
