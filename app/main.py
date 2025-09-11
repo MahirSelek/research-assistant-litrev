@@ -452,13 +452,13 @@ def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_r
     # Sort the combined results by the fused relevance score.
     sorted_fused_results = sorted(valid_fused_results, key=lambda x: x['score'], reverse=True)
     
-    # Create the final list, filtered by a minimum score and limited by the max_final_results parameter (now 15).
-    final_paper_list = [
+    # Return ALL papers found (not just top 15) - let the display function handle the separation
+    all_papers = [
         item['doc'] for item in sorted_fused_results 
         if item['score'] >= score_threshold
-    ][:max_final_results]
+    ]
 
-    return final_paper_list, total_papers_found
+    return all_papers, total_papers_found
 
 def perform_or_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100) -> tuple[list, int]:
     """
@@ -542,17 +542,10 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
             st.error(f"No papers found that contain {search_mode_text} within the specified time window. Please try a different combination of keywords.")
             return None, [], 0
 
-        # For OR queries: Use top 15 for analysis, but keep ALL papers for references
-        # For AND queries: Use the already filtered top papers
-        if search_mode == "any_keyword":
-            # Sort all papers by relevance (simple sort by title for now, could be improved)
-            sorted_papers = sorted(all_papers, key=lambda x: x.get('metadata', {}).get('title', ''))
-            top_papers_for_analysis = sorted_papers[:15]  # Use top 15 for analysis
-            papers_for_references = all_papers  # Use ALL papers for references
-        else:
-            # For AND queries, use the same papers for both analysis and references
-            top_papers_for_analysis = all_papers
-            papers_for_references = all_papers
+        # For both AND and OR queries: Use top 15 for analysis, but keep ALL papers for references
+        # Papers are already sorted by relevance from the search functions
+        top_papers_for_analysis = all_papers[:15]  # Use top 15 for analysis
+        papers_for_references = all_papers  # Use ALL papers for references
 
         context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
         # <<< MODIFICATION: Build the context for the LLM using only the top 15 papers >>>
