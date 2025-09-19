@@ -374,7 +374,6 @@ def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_r
         return [], 0 # Return an empty list and a count of 0
 
     # Stage 2: Re-ranking via Vector Search and Reciprocal Rank Fusion (RRF).
-    # The vector search helps us find the most semantically relevant papers within our "universe" of valid results.
     fused_scores = defaultdict(lambda: {'score': 0, 'doc': None})
     k = 60 # RRF constant
 
