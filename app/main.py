@@ -341,8 +341,8 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
     
     citations_section = "\n\n---\n\n### References\n\n"
     
-    if search_mode == "any_keyword" and analysis_papers:
-        # For OR queries: Separate analysis papers from additional papers
+    if analysis_papers and len(papers) > len(analysis_papers):
+        # For both OR and AND queries: Separate analysis papers from additional papers when there are more papers found
         citations_section += "#### References Used in Analysis\n\n"
         
         # Show papers used in analysis (top 15)
@@ -372,7 +372,7 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
                 else:
                     citations_section += f"**[{start_num + i}]** {title}\n\n"
     else:
-        # For AND queries or when no analysis_papers specified: Show all papers normally
+        # When no analysis_papers specified or all papers are used in analysis: Show all papers normally
         for i, paper in enumerate(papers):
             meta = paper.get('metadata', {})
             title = meta.get('title', 'N/A')
@@ -407,6 +407,7 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
 def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15) -> tuple[list, int]:
     """
     Performs Elasticsearch AND search with relevance scoring for AND queries.
+    Returns ALL papers found, not just the top 15.
     """
     # Stage 1: The Hard Filter. This is the most important step.
     es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
@@ -437,13 +438,13 @@ def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_r
     # Sort the combined results by the fused relevance score.
     sorted_fused_results = sorted(valid_fused_results, key=lambda x: x['score'], reverse=True)
     
-    # Create the final list, filtered by a minimum score and limited by the max_final_results parameter (now 15).
-    final_paper_list = [
+    # Return ALL papers that meet the score threshold (not limited to max_final_results)
+    all_papers = [
         item['doc'] for item in sorted_fused_results 
         if item['score'] >= score_threshold
-    ][:max_final_results]
+    ]
 
-    return final_paper_list, total_papers_found
+    return all_papers, total_papers_found
 
 def perform_or_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100) -> tuple[list, int]:
     """
@@ -527,17 +528,17 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
             st.error(f"No papers found that contain {search_mode_text} within the specified time window. Please try a different combination of keywords.")
             return None, [], 0
 
-        # For OR queries: Use top 15 for analysis, but keep ALL papers for references
-        # For AND queries: Use the already filtered top papers
+        # For both OR and AND queries: Use top 15 for analysis, but keep ALL papers for references
         if search_mode == "any_keyword":
             # Sort all papers by relevance (simple sort by title for now, could be improved)
             sorted_papers = sorted(all_papers, key=lambda x: x.get('metadata', {}).get('title', ''))
             top_papers_for_analysis = sorted_papers[:15]  # Use top 15 for analysis
             papers_for_references = all_papers  # Use ALL papers for references
         else:
-            # For AND queries, use the same papers for both analysis and references
-            top_papers_for_analysis = all_papers
-            papers_for_references = all_papers
+            # For AND queries: Use top 15 for analysis, but keep ALL papers for references (same as OR)
+            # Sort all papers by relevance score (they're already sorted from perform_and_search)
+            top_papers_for_analysis = all_papers[:15]  # Use top 15 for analysis
+            papers_for_references = all_papers  # Use ALL papers for references
 
         context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
         # <<< MODIFICATION: Build the context for the LLM using only the top 15 papers >>>
