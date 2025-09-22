@@ -61,45 +61,25 @@ class ElasticsearchManager:
     def search_papers(self, keywords: List[str], time_filter: Dict = None, size: int = 10, operator: str = "AND") -> List[Dict[str, Any]]:
         if not keywords:
             return []
+        bool_operator = "must" if operator.upper() == "AND" else "should"
         
-        if operator.upper() == "AND":
-            # For AND queries: Use strict phrase matching to ensure ALL keywords are present
-            query = {
-                "query": {
-                    "bool": {
-                        "must": [
-                            # Each keyword must be found as a phrase in at least one field
-                            {
-                                "bool": {
-                                    "should": [
-                                        {"match_phrase": {"title": keyword}},
-                                        {"match_phrase": {"abstract": keyword}},
-                                        {"match_phrase": {"content": keyword}}
-                                    ],
-                                    "minimum_should_match": 1
-                                }
-                            } for keyword in keywords
-                        ],
-                        "filter": []
-                    }
-                },
-                "size": size
-            }
-        else:
-            # For OR queries: Use the original flexible matching
-            query = {
-                "query": {
-                    "bool": {
-                        "should": [
-                            # Search across title, abstract, and content for better results.
-                            {"multi_match": {"query": keyword, "fields": ["title", "abstract", "content"]}} for keyword in keywords
-                        ],
-                        "minimum_should_match": 1,
-                        "filter": []
-                    }
-                },
-                "size": size
-            }
+        # Build the base query structure
+        query = {
+            "query": {
+                "bool": {
+                    bool_operator: [
+                        # Search across title, abstract, and content for better results.
+                        {"multi_match": {"query": keyword, "fields": ["title", "abstract", "content"]}} for keyword in keywords
+                    ],
+                    "filter": []
+                }
+            },
+            "size": size
+        }
+        
+        # For OR queries, we need to specify minimum_should_match to ensure at least one keyword matches
+        if operator.upper() == "OR":
+            query["query"]["bool"]["minimum_should_match"] = 1
         if time_filter:
             query["query"]["bool"]["filter"].append({
                 "range": {

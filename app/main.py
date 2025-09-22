@@ -22,7 +22,7 @@ from google.cloud import storage
 from google.api_core.exceptions import NotFound
 
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(_file_))))
 
 try:
     from elasticsearch_utils import get_es_manager
@@ -32,7 +32,7 @@ except ImportError as e:
 
 # --- App Configuration & Constants ---
 try:
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'config', 'config.yaml')
+    config_path = os.path.join(os.path.dirname(os.path.abspath(_file_)), '..', 'config', 'config.yaml')
     with open(config_path, 'r') as file:
         config = yaml.safe_load(file)
 except FileNotFoundError:
@@ -341,8 +341,8 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
     
     citations_section = "\n\n---\n\n### References\n\n"
     
-    if analysis_papers and len(papers) > len(analysis_papers):
-        # For both OR and AND queries: Separate analysis papers from additional papers when there are more papers found
+    if search_mode == "any_keyword" and analysis_papers:
+        # For OR queries: Separate analysis papers from additional papers
         citations_section += "#### References Used in Analysis\n\n"
         
         # Show papers used in analysis (top 15)
@@ -352,9 +352,9 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
             link = get_paper_link(meta)
             
             if link != "Not available":
-                citations_section += f"**[{i+1}]** [{title}]({link})\n\n"
+                citations_section += f"*[{i+1}]* [{title}]({link})\n\n"
             else:
-                citations_section += f"**[{i+1}]** {title}\n\n"
+                citations_section += f"*[{i+1}]* {title}\n\n"
         
         # Show additional papers found in search
         additional_papers = [p for p in papers if p not in analysis_papers]
@@ -368,20 +368,20 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
                 link = get_paper_link(meta)
                 
                 if link != "Not available":
-                    citations_section += f"**[{start_num + i}]** [{title}]({link})\n\n"
+                    citations_section += f"*[{start_num + i}]* [{title}]({link})\n\n"
                 else:
-                    citations_section += f"**[{start_num + i}]** {title}\n\n"
+                    citations_section += f"*[{start_num + i}]* {title}\n\n"
     else:
-        # When no analysis_papers specified or all papers are used in analysis: Show all papers normally
+        # For AND queries or when no analysis_papers specified: Show all papers normally
         for i, paper in enumerate(papers):
             meta = paper.get('metadata', {})
             title = meta.get('title', 'N/A')
             link = get_paper_link(meta)
             
             if link != "Not available":
-                citations_section += f"**[{i+1}]** [{title}]({link})\n\n"
+                citations_section += f"*[{i+1}]* [{title}]({link})\n\n"
             else:
-                citations_section += f"**[{i+1}]** {title}\n\n"
+                citations_section += f"*[{i+1}]* {title}\n\n"
     
     return analysis_text + citations_section
 
@@ -407,7 +407,6 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
 def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15) -> tuple[list, int]:
     """
     Performs Elasticsearch AND search with relevance scoring for AND queries.
-    Returns ALL papers found, not just the top 15.
     """
     # Stage 1: The Hard Filter. This is the most important step.
     es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
@@ -438,13 +437,13 @@ def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_r
     # Sort the combined results by the fused relevance score.
     sorted_fused_results = sorted(valid_fused_results, key=lambda x: x['score'], reverse=True)
     
-    # Return ALL papers that meet the score threshold (not limited to max_final_results)
-    all_papers = [
+    # Create the final list, filtered by a minimum score and limited by the max_final_results parameter (now 15).
+    final_paper_list = [
         item['doc'] for item in sorted_fused_results 
         if item['score'] >= score_threshold
-    ]
+    ][:max_final_results]
 
-    return all_papers, total_papers_found
+    return final_paper_list, total_papers_found
 
 def perform_or_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100) -> tuple[list, int]:
     """
@@ -528,17 +527,17 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
             st.error(f"No papers found that contain {search_mode_text} within the specified time window. Please try a different combination of keywords.")
             return None, [], 0
 
-        # For both OR and AND queries: Use top 15 for analysis, but keep ALL papers for references
+        # For OR queries: Use top 15 for analysis, but keep ALL papers for references
+        # For AND queries: Use the already filtered top papers
         if search_mode == "any_keyword":
             # Sort all papers by relevance (simple sort by title for now, could be improved)
             sorted_papers = sorted(all_papers, key=lambda x: x.get('metadata', {}).get('title', ''))
             top_papers_for_analysis = sorted_papers[:15]  # Use top 15 for analysis
             papers_for_references = all_papers  # Use ALL papers for references
         else:
-            # For AND queries: Use top 15 for analysis, but keep ALL papers for references (same as OR)
-            # Sort all papers by relevance score (they're already sorted from perform_and_search)
-            top_papers_for_analysis = all_papers[:15]  # Use top 15 for analysis
-            papers_for_references = all_papers  # Use ALL papers for references
+            # For AND queries, use the same papers for both analysis and references
+            top_papers_for_analysis = all_papers
+            papers_for_references = all_papers
 
         context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
         # <<< MODIFICATION: Build the context for the LLM using only the top 15 papers >>>
@@ -554,27 +553,27 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
         
         prompt = f"""{context}
 ---
-**CRITICAL TASK:**
+*CRITICAL TASK:*
 
-You are a world-class scientific analyst. Your task is to generate an exceptionally detailed and extensive multi-part report based *only* on the provided paper sources. The final report should be substantial in length, reflecting a deep synthesis of information from all provided papers.
+You are a world-class scientific analyst. Your task is to generate an exceptionally detailed and extensive multi-part report based only on the provided paper sources. The final report should be substantial in length, reflecting a deep synthesis of information from all provided papers.
 
-**Part 1: Thematic Analysis**
-For the sections "Key Methodological Advances," "Emerging Trends," and "Overall Summary," your analysis **MUST** be exhaustive. Generate at least **three long and detailed paragraphs** or a comprehensive multi-level bulleted list for each of these sections. Do not just list findings; you must deeply synthesize information across multiple sources, explain the significance, compare and contrast approaches, and build a compelling narrative about the state of the research.
+*Part 1: Thematic Analysis*
+For the sections "Key Methodological Advances," "Emerging Trends," and "Overall Summary," your analysis *MUST* be exhaustive. Generate at least *three long and detailed paragraphs* or a comprehensive multi-level bulleted list for each of these sections. Do not just list findings; you must deeply synthesize information across multiple sources, explain the significance, compare and contrast approaches, and build a compelling narrative about the state of the research.
 
    ### Diseases: List the specific diseases, conditions, or traits studied.
    ### Sample Size & Genetic Ancestry: Summarize sample sizes and genetic ancestries mentioned across the papers.
-   ### Key Methodological Advances: Provide an in-depth description of significant methods, pipelines, or statistical approaches. Explain *why* they are important advances, how they differ from previous methods, and what new possibilities they unlock.
+   ### Key Methodological Advances: Provide an in-depth description of significant methods, pipelines, or statistical approaches. Explain why they are important advances, how they differ from previous methods, and what new possibilities they unlock.
    ### Emerging Trends: Identify future directions and new research areas. Synthesize recurring themes to explain what trends are emerging in the field. Discuss the implications of these trends for science and medicine.
    ### Overall Summary: Provide a comprehensive, multi-paragraph textual summary of the key findings and clinical implications. This should be a full executive summary, not a brief conclusion.
 
-**CRITICAL INSTRUCTION FOR PART 1:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].`
+*CRITICAL INSTRUCTION FOR PART 1:* At the end of every sentence or key finding that you derive from a source, you *MUST* include a citation marker referencing the source's number in brackets. For example: This new method improves risk prediction [1]. Multiple sources can be cited like This was observed in several cohorts [2][3].
 
-**Part 2: Key Paper Summaries**
+*Part 2: Key Paper Summaries*
 Create a new section titled ### Key Paper Summaries. Under this heading, identify the top 3-5 most impactful papers from the sources and provide a detailed, one-paragraph summary for each.
 
-**IMPORTANT:** Do NOT create a "References" section. Focus only on the thematic analysis and key paper summaries.
+*IMPORTANT:* Do NOT create a "References" section. Focus only on the thematic analysis and key paper summaries.
 
-**CRITICAL INSTRUCTION FOR CITATIONS:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].` **IMPORTANT:** Always separate multiple citations with individual brackets, like `[2][3][4]` NOT `[234]`. **CRUCIAL:** In the Key Paper Summaries section, do NOT add citation numbers to the paper titles - only add citations at the end of the summary paragraphs. **FORMATTING RULE:** All citations MUST be in square brackets [1], [2], [3], etc. - never use unbracketed numbers for citations.
+*CRITICAL INSTRUCTION FOR CITATIONS:* At the end of every sentence or key finding that you derive from a source, you *MUST* include a citation marker referencing the source's number in brackets. For example: This new method improves risk prediction [1]. Multiple sources can be cited like This was observed in several cohorts [2][3]. *IMPORTANT:* Always separate multiple citations with individual brackets, like [2][3][4] NOT [234]. *CRUCIAL:* In the Key Paper Summaries section, do NOT add citation numbers to the paper titles - only add citations at the end of the summary paragraphs. *FORMATTING RULE:* All citations MUST be in square brackets [1], [2], [3], etc. - never use unbracketed numbers for citations.
 """
         analysis = post_message_vertexai(prompt)
         
@@ -661,7 +660,7 @@ def display_chat_history():
 
 def main():
     st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant")
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+    current_dir = os.path.dirname(os.path.abspath(_file_))
     style_path = os.path.join(current_dir, "style.css")
     local_css(style_path)
     initialize_session_state()
@@ -713,7 +712,7 @@ def main():
                 if analysis_result:
                     conv_id = f"conv_{time.time()}"
                     search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
-                    initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)} (Search Mode: {search_mode_text})**\n\n{analysis_result}"}
+                    initial_message = {"role": "assistant", "content": f"*Analysis for: {', '.join(selected_keywords)} (Search Mode: {search_mode_text})*\n\n{analysis_result}"}
                     title = generate_conversation_title(analysis_result)
                     st.session_state.conversations[conv_id] = {
                         "title": title, 
@@ -775,7 +774,7 @@ def main():
 
                     col1, col2 = st.columns([4, 1])
                     with col1:
-                        st.markdown(f"**{paper_index+1}. {title}**")
+                        st.markdown(f"*{paper_index+1}. {title}*")
                     with col2:
                         if paper_id:
                             pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
@@ -833,5 +832,5 @@ Assistant Response:"""
                 active_conv["messages"].append({"role": "assistant", "content": response_text})
                 st.rerun()
 
-if __name__ == "__main__":
+if _name_ == "_main_":
     main()
