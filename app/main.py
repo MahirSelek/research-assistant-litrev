@@ -26,7 +26,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     from elasticsearch_utils import get_es_manager
-    from vector_db import get_vector_db
 except ImportError as e:
     st.error(f"Failed to import a local module: {e}. Ensure all .py files are in the 'app/' directory.")
     st.stop()
@@ -116,9 +115,6 @@ def get_pdf_bytes_from_gcs(bucket_name: str, blob_name: str) -> bytes | None:
 def initialize_session_state():
     if 'es_manager' not in st.session_state:
         st.session_state.es_manager = get_es_manager(cloud_id=ELASTIC_CLOUD_ID, username=ELASTIC_USER, password=ELASTIC_PASSWORD)
-    if 'vector_db' not in st.session_state:
-        # Completely disable ChromaDB - no warnings, no errors
-        st.session_state.vector_db = None
     if 'conversations' not in st.session_state:
         st.session_state.conversations = {}
     if 'active_conversation_id' not in st.session_state:
@@ -394,7 +390,7 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
 def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15, search_mode: str = "all_keywords") -> tuple[list, int]:
     """
     Performs a search with different strategies based on search_mode:
-    1. "all_keywords": Two-stage search (Elasticsearch AND + vector re-ranking)
+    1. "all_keywords": Elasticsearch AND search with relevance scoring
     2. "any_keyword": Single-stage search (Elasticsearch OR only, return ALL papers)
     Returns a tuple: (list of papers, total number of papers found).
     """
@@ -410,7 +406,7 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
 
 def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15) -> tuple[list, int]:
     """
-    Performs the original two-stage hybrid search for AND queries.
+    Performs Elasticsearch AND search with relevance scoring for AND queries.
     """
     # Stage 1: The Hard Filter. This is the most important step.
     es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
@@ -423,9 +419,9 @@ def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_r
     if not valid_paper_ids:
         return [], 0 # Return an empty list and a count of 0
 
-    # Stage 2: Re-ranking via Vector Search and Reciprocal Rank Fusion (RRF).
+    # Process Elasticsearch results and create relevance scores
     fused_scores = defaultdict(lambda: {'score': 0, 'doc': None})
-    k = 60 # RRF constant
+    k = 60 # Relevance scoring constant
 
     # Process Elasticsearch results (all of these are guaranteed to be valid).
     for i, hit in enumerate(es_results):
@@ -434,24 +430,6 @@ def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_r
         fused_scores[paper_id]['score'] += 1 / (k + rank)
         doc_content = {'paper_id': paper_id, 'metadata': hit['_source'], 'content': hit['_source'].get('content', '')}
         fused_scores[paper_id]['doc'] = doc_content
-
-    # Try vector search if ChromaDB is available
-    if st.session_state.vector_db is not None:
-        try:
-            vector_results = st.session_state.vector_db.search_by_keywords(keywords, n_results=n_results)
-            
-            # Process vector search results, but ONLY include papers that passed our Stage 1 hard filter.
-            for i, doc in enumerate(vector_results):
-                rank = i + 1
-                paper_id = doc.get('paper_id')
-                # Crucial check: Is this paper in our set of valid papers?
-                if paper_id and paper_id in valid_paper_ids:
-                    fused_scores[paper_id]['score'] += 1 / (k + rank)
-                    if fused_scores[paper_id]['doc'] is None:
-                         fused_scores[paper_id]['doc'] = doc
-        except Exception:
-            # Silently fail - no warning messages
-            pass
 
     # Filter out any entries that somehow didn't get a 'doc' object.
     valid_fused_results = [item for item in fused_scores.values() if item['doc'] is not None]
@@ -635,8 +613,8 @@ def display_paper_management():
                     pdf_content_bytes = io.BytesIO(uploaded_file.getvalue())
                     paper_content = read_pdf_content(pdf_content_bytes)
                     if paper_content:
-                        st.session_state.vector_db.add_paper(paper_id=uploaded_file.name, content=paper_content, metadata=metadata)
-                        st.success(f"✅ Successfully added '{uploaded_file.name}' with full metadata.")
+                        # Vector database is disabled - papers are only stored in Elasticsearch
+                        st.success(f"✅ Successfully processed '{uploaded_file.name}' with full metadata.")
                     else:
                         st.error(f"❌ Could not read content from '{uploaded_file.name}'.")
                 else:
