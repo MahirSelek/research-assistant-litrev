@@ -286,12 +286,62 @@ def reload_paper_metadata(papers: list) -> list:
         # If any error occurs, return original papers
         return papers
 
+def make_inline_citations_clickable(analysis_text: str, analysis_papers: list) -> str:
+    """
+    Make inline citations clickable by converting [1], [2][3] etc. to clickable links.
+    Only citations that correspond to papers in analysis_papers will be made clickable.
+    """
+    if not analysis_papers:
+        return analysis_text
+    
+    import re
+    
+    # Create a mapping of citation numbers to paper links
+    citation_links = {}
+    for i, paper in enumerate(analysis_papers):
+        meta = paper.get('metadata', {})
+        link = get_paper_link(meta)
+        if link != "Not available":
+            citation_links[i + 1] = link
+    
+    # Function to replace citation numbers with clickable links
+    def replace_citation(match):
+        citation_text = match.group(0)  # e.g., "[1]" or "[2][3]"
+        
+        # Extract individual citation numbers
+        citation_numbers = re.findall(r'\[(\d+)\]', citation_text)
+        
+        # Replace each citation number with a clickable link if it exists in our mapping
+        result_parts = []
+        for num_str in citation_numbers:
+            num = int(num_str)
+            if num in citation_links:
+                # Create clickable link that opens in new tab
+                result_parts.append(f'<a href="{citation_links[num]}" target="_blank" class="citation-link">[{num}]</a>')
+            else:
+                # Keep original citation if not in analysis papers
+                result_parts.append(f'[{num}]')
+        
+        return ''.join(result_parts)
+    
+    # Find all citation patterns like [1], [2][3], [1][2][3], etc.
+    citation_pattern = r'\[\d+\](?:\[\d+\])*'
+    
+    # Replace citations with clickable links
+    clickable_text = re.sub(citation_pattern, replace_citation, analysis_text)
+    
+    return clickable_text
+
 def display_citations_separately(analysis_text: str, papers: list, analysis_papers: list = None, search_mode: str = "all_keywords") -> str:
     """
     Display citations separately at the end, with different sections for OR queries.
     """
     if not papers:
         return analysis_text
+    
+    # Make inline citations clickable for analysis papers
+    if analysis_papers:
+        analysis_text = make_inline_citations_clickable(analysis_text, analysis_papers)
     
     citations_section = "\n\n---\n\n### References\n\n"
     
@@ -712,6 +762,7 @@ def main():
         padding: 2px 4px;
         border-radius: 3px;
         transition: all 0.2s ease;
+        display: inline-block;
     }
     .citation-link:hover {
         color: #0056b3;
@@ -732,7 +783,7 @@ def main():
         for message in active_conv["messages"]:
             avatar = BOT_AVATAR if message["role"] == "assistant" else USER_AVATAR
             with st.chat_message(message["role"], avatar=avatar):
-                st.markdown(message["content"])
+                st.markdown(message["content"], unsafe_allow_html=True)
 
         if "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
             with st.expander("View and Download Retrieved Papers for this Analysis"):
