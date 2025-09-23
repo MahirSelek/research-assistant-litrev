@@ -341,7 +341,7 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
     
     citations_section = "\n\n---\n\n### References\n\n"
     
-    if (search_mode == "any_keyword" or search_mode == "all_keywords") and analysis_papers:
+    if search_mode == "any_keyword" and analysis_papers:
         # For OR queries: Separate analysis papers from additional papers
         citations_section += "#### References Used in Analysis\n\n"
         
