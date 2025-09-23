@@ -447,21 +447,30 @@ def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_r
 
 def perform_or_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100) -> tuple[list, int]:
     """
-    Performs a simple OR search returning ALL papers found.
+    Performs an OR search returning ALL papers found, sorted by Elasticsearch relevance score.
     """
     # Get ALL papers that contain at least one keyword
     es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="OR")
     
-    # Convert to the expected format
+    # Convert to the expected format and preserve relevance scores
     all_papers = []
     for hit in es_results:
         paper_id = hit['_id']
-        doc_content = {'paper_id': paper_id, 'metadata': hit['_source'], 'content': hit['_source'].get('content', '')}
+        relevance_score = hit.get('_score', 0.0)  # Get Elasticsearch relevance score
+        doc_content = {
+            'paper_id': paper_id, 
+            'metadata': hit['_source'], 
+            'content': hit['_source'].get('content', ''),
+            'relevance_score': relevance_score  # Store the relevance score
+        }
         all_papers.append(doc_content)
+    
+    # Sort papers by relevance score (highest first)
+    all_papers.sort(key=lambda x: x.get('relevance_score', 0.0), reverse=True)
     
     total_papers_found = len(all_papers)
     
-    # Return ALL papers found (no filtering)
+    # Return ALL papers found, sorted by relevance
     return all_papers, total_papers_found
 
 
@@ -530,9 +539,8 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
         # For OR queries: Use top 15 for analysis, but keep ALL papers for references
         # For AND queries: Use the already filtered top papers
         if search_mode == "any_keyword":
-            # Sort all papers by relevance (simple sort by title for now, could be improved)
-            sorted_papers = sorted(all_papers, key=lambda x: x.get('metadata', {}).get('title', ''))
-            top_papers_for_analysis = sorted_papers[:15]  # Use top 15 for analysis
+            # Papers are already sorted by relevance score from perform_or_search
+            top_papers_for_analysis = all_papers[:15]  # Use top 15 most relevant papers for analysis
             papers_for_references = all_papers  # Use ALL papers for references
         else:
             # For AND queries, use the same papers for both analysis and references
