@@ -341,7 +341,7 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
     
     citations_section = "\n\n---\n\n### References\n\n"
     
-    if search_mode == "any_keyword" and analysis_papers:
+    if (search_mode == "any_keyword" or search_mode == "all_keywords") and analysis_papers:
         # For OR queries: Separate analysis papers from additional papers
         citations_section += "#### References Used in Analysis\n\n"
         
@@ -437,11 +437,11 @@ def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_r
     # Sort the combined results by the fused relevance score.
     sorted_fused_results = sorted(valid_fused_results, key=lambda x: x['score'], reverse=True)
     
-    # Create the final list, filtered by a minimum score and limited by the max_final_results parameter (now 15).
+    # Create the final list, filtered by a minimum score (return ALL papers found, not just top 15)
     final_paper_list = [
         item['doc'] for item in sorted_fused_results 
         if item['score'] >= score_threshold
-    ][:max_final_results]
+    ]
 
     return final_paper_list, total_papers_found
 
@@ -535,9 +535,9 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
             top_papers_for_analysis = sorted_papers[:15]  # Use top 15 for analysis
             papers_for_references = all_papers  # Use ALL papers for references
         else:
-            # For AND queries, use the same papers for both analysis and references
-            top_papers_for_analysis = all_papers
-            papers_for_references = all_papers
+            # For AND queries: Use top 15 for analysis, but keep ALL papers for references
+            top_papers_for_analysis = all_papers[:15]  # Use top 15 for analysis
+            papers_for_references = all_papers  # Use ALL papers for references
 
         context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
         # <<< MODIFICATION: Build the context for the LLM using only the top 15 papers >>>
