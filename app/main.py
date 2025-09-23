@@ -437,11 +437,11 @@ def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_r
     # Sort the combined results by the fused relevance score.
     sorted_fused_results = sorted(valid_fused_results, key=lambda x: x['score'], reverse=True)
     
-    # Create the final list, filtered by a minimum score and limited by the max_final_results parameter (now 15).
+    # Create the final list, filtered by a minimum score (return ALL papers found, not just top 15).
     final_paper_list = [
         item['doc'] for item in sorted_fused_results 
         if item['score'] >= score_threshold
-    ][:max_final_results]
+    ]
 
     return final_paper_list, total_papers_found
 
