@@ -535,9 +535,9 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
             top_papers_for_analysis = sorted_papers[:15]  # Use top 15 for analysis
             papers_for_references = all_papers  # Use ALL papers for references
         else:
-            # For AND queries, use the same papers for both analysis and references
-            top_papers_for_analysis = all_papers
-            papers_for_references = all_papers
+            # For AND queries: Use top 15 for analysis, but keep ALL papers for references
+            top_papers_for_analysis = all_papers[:15]  # Use top 15 for analysis
+            papers_for_references = all_papers  # Use ALL papers for references
 
         context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
         # <<< MODIFICATION: Build the context for the LLM using only the top 15 papers >>>
