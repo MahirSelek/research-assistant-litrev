@@ -386,7 +386,6 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
     return analysis_text + citations_section
 
 
-# <<< MODIFICATION: The entire search function is redesigned for accuracy >>>
 def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15, search_mode: str = "all_keywords") -> tuple[list, int]:
     """
     Performs a search with different strategies based on search_mode:
