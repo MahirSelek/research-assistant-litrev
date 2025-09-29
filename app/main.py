@@ -736,7 +736,7 @@ def main():
         with st.expander("Upload Documents"):
             display_paper_management()
 
-    # Add CSS and JavaScript for clickable citations
+    # CSS and JavaScript for clickable citations
     st.markdown("""
     <style>
     .citation-link {
