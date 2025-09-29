@@ -733,7 +733,7 @@ def main():
                     st.rerun()
 
         st.markdown("---")
-        with st.expander("Paper Management"):
+        with st.expander("Upload Documents"):
             display_paper_management()
 
     # Add CSS and JavaScript for clickable citations
