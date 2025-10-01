@@ -1,4 +1,5 @@
 # app/elasticsearch_utils.py
+# suitable for Elasticsearch 8.0.0 and main.py v2
 
 import streamlit as st
 from elasticsearch import Elasticsearch
