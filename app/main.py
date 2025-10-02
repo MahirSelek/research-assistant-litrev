@@ -30,7 +30,7 @@ except ImportError as e:
     st.error(f"Failed to import a local module: {e}. Ensure all .py files are in the 'app/' directory.")
     st.stop()
 
-# --- App Configuration & Constants ---
+# App Configuration & Constants
 try:
     config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'config', 'config.yaml')
     with open(config_path, 'r') as file:
@@ -42,28 +42,27 @@ except Exception as e:
     st.error(f"Error loading config.yaml: {e}")
     st.stop()
 
-# --- Configuration from Streamlit Secrets ---
+# Configuration from Streamlit Secrets
 try:
-    # --- Elastic Cloud Configuration ---
+    # Elastic Cloud Configuration
     ELASTIC_CLOUD_ID = st.secrets["elasticsearch"]["cloud_id"]
     ELASTIC_USER = st.secrets["elasticsearch"]["username"]
     ELASTIC_PASSWORD = st.secrets["elasticsearch"]["password"]
 
-    # --- Vertex AI Configurations ---
+    # Vertex AI Configurations
     # Reading lowercase keys to match secrets.toml best practice
     VERTEXAI_PROJECT = st.secrets["vertex_ai"]["VERTEXAI_PROJECT"]
     VERTEXAI_LOCATION = st.secrets["vertex_ai"]["VERTEXAI_LOCATION"]
     VERTEXAI_MODEL_ID = "gemini-2.0-flash-001"
 
-    # --- GCS Configuration ---
+    # GCS Configuration
     GCS_BUCKET_NAME = st.secrets["app_config"]["gcs_bucket_name"]
 
-    # --- Google Service Account Credentials ---
+    # Google Service Account Credentials
     # 1. Read the secret, which is a Streamlit AttrDict object.
     gcp_service_account_secret = st.secrets["gcp_service_account"]
     
     # 2. Convert the AttrDict to a standard Python dictionary.
-    #    THIS IS THE FIX for the "not JSON serializable" error.
     GOOGLE_CREDENTIALS_DICT = dict(gcp_service_account_secret)
     
     # 3. Write the standard dictionary to a temporary file.
@@ -77,14 +76,14 @@ except KeyError as e:
     st.error(f"Missing secret configuration for key: '{e}'. Please check that your .streamlit/secrets.toml file (for local development) or your Streamlit Cloud secrets match the required structure.")
     st.stop()
 
-# --- Interface Constants ---
+# Interface Constants
 GENETICS_KEYWORDS = [
     "Polygenic risk score", "Complex disease", "Multifactorial disease", "PRS", "Risk", "Risk prediction", "Genetic risk prediction", "GWAS", "Genome-wide association study", "GWAS summary statistics", "Relative risk", "Absolute risk", "clinical polygenic risk score", "disease prevention", "disease management", "personalized medicine", "precision medicine", "UK biobank", "biobank", "All of US biobank", "PRS pipeline", "PRS workflow", "PRS tool", "PRS conversion", "Binary trait", "Continuous trait", "Meta-analysis", "Genome-wide association", "Genetic susceptibility", "PRSs Clinical utility", "Genomic risk prediction", "clinical implementation", "PGS", "SNP hereditability", "Risk estimation", "Machine learning in genetic prediction", "PRSs clinical application", "Risk stratification", "Multiancestry PRS", "Integrative PRS model", "Longitudinal PRS analysis", "Genetic screening", "Ethical implication of PRS", "human genetics", "human genome variation", "genetics of common multifactorial diseases", "genetics of common traits", "pharmacogenetics", "pharmacogenomics"
-]
+]   
 USER_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM0OTUwNTciIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0iZmVhdGhlciBmZWF0aGVyLXVzZXIiPjxwYXRoIGQ9Ik0yMCAyMWMwLTMuODctMy4xMy03LTctN3MtNyAzLjEzLTcgN1oiPjwvcGF0aD48Y2lyY2xlIGN4PSIxMiIgY3k9IjciIHI9IjQiPjwvY2lyY2xlPjwvc3ZnPg=="
 BOT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDdiZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNOS41IDEyLjVsLTggNkw5LjUgMjEgMTEgMTRsMS41IDcgNy41LTEuNS03LjUgMy4vTDE0IDQuNSA5LjUgOHoiLz48cGF0aCBkPSJNMy41IDEwLjVMOCA1bDIgMy41Ii8+PHBhdGggZD0iTTE4IDNMMTAuNSAxMC41Ii8+PC9zdmc+"
 
-# --- API and Helper Functions ---
+# API and Helper Functions
 def post_message_vertexai(input_text: str) -> str | None:
     try:
         vertexai.init(project=VERTEXAI_PROJECT, location=VERTEXAI_LOCATION)
