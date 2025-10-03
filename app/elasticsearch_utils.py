@@ -54,7 +54,7 @@ class ElasticsearchManager:
             document = metadata.copy()
             document['content'] = content
             
-            # Now index the complete document, ensuring the 'link' key is saved.
+            # Complete document indexing, ensuring the 'link' key is saved.
             self.es_client.index(index=index_name, id=paper_id, document=document)
         except Exception as e:
             st.error(f"Failed to index paper {paper_id}: {e}")
@@ -64,7 +64,7 @@ class ElasticsearchManager:
             return []
         bool_operator = "must" if operator.upper() == "AND" else "should"
         
-        # Build the base query structure
+        # The base query structure
         query = {
             "query": {
                 "bool": {
