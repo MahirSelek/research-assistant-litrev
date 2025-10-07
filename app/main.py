@@ -208,7 +208,7 @@ def matches_time_filter(publication_date: str, time_filter_type: str) -> bool:
         return False
     
     try:
-        # Parse the date "07 Aug 2025"
+        # Parse the date 
         from dateutil import parser as date_parser
         parsed_date = date_parser.parse(publication_date)
         
