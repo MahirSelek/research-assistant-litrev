@@ -233,6 +233,94 @@ def matches_time_filter(publication_date: str, time_filter_type: str) -> bool:
     except Exception:
         return False  # If date parsing fails, exclude the paper
 
+def sync_bucket_to_elasticsearch() -> dict:
+    """
+    Simple function to sync new papers from Google Cloud bucket to Elasticsearch.
+    Returns a dictionary with sync results.
+    """
+    try:
+        # Get all currently indexed papers
+        es_manager = st.session_state.es_manager
+        response = es_manager.es_client.search(
+            index="papers",
+            body={
+                "query": {"match_all": {}},
+                "_source": False,  # Only get IDs
+                "size": 10000
+            }
+        )
+        indexed_ids = {hit['_id'] for hit in response['hits']['hits']}
+        
+        # Get all papers from bucket
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(GCS_BUCKET_NAME)
+        blobs = bucket.list_blobs(prefix="pdf-metadata/")
+        
+        pdf_files = {}
+        metadata_files = {}
+        
+        # Separate PDFs and metadata files
+        for blob in blobs:
+            filename = blob.name
+            if filename.endswith('.pdf'):
+                base_name = os.path.splitext(os.path.basename(filename))[0]
+                pdf_files[base_name] = filename
+            elif filename.endswith('.metadata.json'):
+                base_name = os.path.splitext(os.path.basename(filename))[0]
+                metadata_files[base_name] = filename
+        
+        # Find new papers to index
+        new_papers = []
+        skipped_count = 0
+        
+        for base_name, pdf_path in pdf_files.items():
+            if base_name in metadata_files:
+                if pdf_path in indexed_ids:
+                    skipped_count += 1
+                    continue
+                
+                metadata_path = metadata_files[base_name]
+                
+                # Download metadata
+                metadata_blob = bucket.blob(metadata_path)
+                metadata_content = metadata_blob.download_as_string()
+                metadata = json.loads(metadata_content)
+                
+                # Download PDF content
+                pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, pdf_path)
+                if not pdf_bytes:
+                    continue
+                
+                # Extract text content
+                pdf_content = read_pdf_content(pdf_bytes)
+                if not pdf_content:
+                    continue
+                
+                # Index to Elasticsearch
+                metadata['paper_id'] = pdf_path
+                es_manager.index_paper(
+                    paper_id=pdf_path,
+                    metadata=metadata,
+                    content=pdf_content,
+                    index_name="papers"
+                )
+                
+                new_papers.append(pdf_path)
+        
+        return {
+            "success": len(new_papers),
+            "errors": 0,
+            "skipped": skipped_count
+        }
+        
+    except Exception as e:
+        return {
+            "success": 0,
+            "errors": 1,
+            "skipped": 0,
+            "error_message": str(e)
+        }
+
 def reload_paper_metadata(papers: list) -> list:
     """
     Reloads metadata from .metadata.json files to get the actual links.
@@ -731,6 +819,24 @@ def main():
                     st.session_state.active_conversation_id = conv_id
                     st.rerun()
 
+        st.markdown("---")
+        
+        # Sync button for updating Elasticsearch with new papers from bucket
+        if st.button("🔄 Sync New Papers from Bucket", use_container_width=True):
+            with st.spinner("Checking for new papers to index..."):
+                result = sync_bucket_to_elasticsearch()
+            
+            if result["success"] > 0:
+                st.success(f"✅ Successfully indexed {result['success']} new papers!")
+            if result["skipped"] > 0:
+                st.info(f"⏭️ Skipped {result['skipped']} already indexed papers")
+            if result["errors"] > 0:
+                st.error(f"❌ {result['errors']} papers failed to index")
+                if "error_message" in result:
+                    st.error(f"Error: {result['error_message']}")
+            if result["success"] == 0 and result["skipped"] > 0:
+                st.info("✅ All papers are already indexed!")
+        
         st.markdown("---")
         with st.expander("Upload Documents"):
             display_paper_management()
