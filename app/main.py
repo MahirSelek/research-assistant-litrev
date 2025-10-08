@@ -820,24 +820,6 @@ def main():
                     st.rerun()
 
         st.markdown("---")
-        
-        # Sync button for updating Elasticsearch with new papers from bucket
-        if st.button("🔄 Sync New Papers from Bucket", use_container_width=True):
-            with st.spinner("Checking for new papers to index..."):
-                result = sync_bucket_to_elasticsearch()
-            
-            if result["success"] > 0:
-                st.success(f"✅ Successfully indexed {result['success']} new papers!")
-            if result["skipped"] > 0:
-                st.info(f"⏭️ Skipped {result['skipped']} already indexed papers")
-            if result["errors"] > 0:
-                st.error(f"❌ {result['errors']} papers failed to index")
-                if "error_message" in result:
-                    st.error(f"Error: {result['error_message']}")
-            if result["success"] == 0 and result["skipped"] > 0:
-                st.info("✅ All papers are already indexed!")
-        
-        st.markdown("---")
         with st.expander("Upload Documents"):
             display_paper_management()
 
