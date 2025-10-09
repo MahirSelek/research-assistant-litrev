@@ -753,7 +753,7 @@ def display_chat_history():
                     st.rerun()
 
 def main():
-    st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant")
+    st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant", page_icon="favicon.png")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     style_path = os.path.join(current_dir, "style.css")
     local_css(style_path)
@@ -844,7 +844,7 @@ def main():
     </style>
     """, unsafe_allow_html=True)
     
-    st.markdown("<h1>🧬 Polo GGB Research Assistant</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>🧬 POLO-GGB RESEARCH ASSISTANT</h1>", unsafe_allow_html=True)
 
     if st.session_state.active_conversation_id is None:
         st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
