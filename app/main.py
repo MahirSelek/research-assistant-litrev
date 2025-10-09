@@ -728,35 +728,28 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
         return analysis, papers_for_references, total_found
 
 def display_paper_management():
-    st.subheader("Add Papers to Database")
-    st.info("Upload PDF files. JSON metadata files are optional - basic metadata will be created if not provided.")
+    st.subheader("📄 Upload PDF Files for Custom Analysis")
+    st.success("✅ NEW: Only PDF files required - no metadata needed!")
+    st.info("Upload PDF files to generate custom analysis using only your papers.")
 
-    uploaded_pdfs = st.file_uploader("Upload PDF files", accept_multiple_files=True, type=['pdf'], key="db_pdf_uploader")
-    uploaded_jsons = st.file_uploader("Upload corresponding metadata JSON files", accept_multiple_files=True, type=['json'], key="db_json_uploader")
+    uploaded_pdfs = st.file_uploader("Choose PDF files", accept_multiple_files=True, type=['pdf'], key="pdf_uploader_v2")
     
-    if uploaded_pdfs and st.button("Add to Database"):
-        # Create a dictionary of available JSON metadata, keyed by their base filename (without path)
-        json_map = {os.path.splitext(os.path.basename(json_file.name))[0]: json.load(io.BytesIO(json_file.getvalue())) for json_file in uploaded_jsons or []}
-        
-        with st.spinner("Adding papers to databases..."):
+    if uploaded_pdfs and st.button("🚀 Add PDFs to Custom Search", type="primary"):
+        with st.spinner("Processing PDF files..."):
             for uploaded_file in uploaded_pdfs:
-                # Get the base name WITHOUT the directory path to ensure a match
+                # Get the base name without extension
                 pdf_base_name = os.path.splitext(os.path.basename(uploaded_file.name))[0]
                 
-                # Try to get metadata from JSON, or create basic metadata
-                metadata = json_map.get(pdf_base_name)
-                
-                if not metadata:
-                    # Create basic metadata if no JSON file provided
-                    metadata = {
-                        'title': pdf_base_name,
-                        'abstract': 'No abstract available',
-                        'publication_date': '2024-01-01',
-                        'authors': ['Unknown'],
-                        'url': '',
-                        'doi_url': '',
-                        'link': ''
-                    }
+                # Create basic metadata
+                metadata = {
+                    'title': pdf_base_name,
+                    'abstract': 'No abstract available',
+                    'publication_date': '2024-01-01',
+                    'authors': ['Unknown'],
+                    'url': '',
+                    'doi_url': '',
+                    'link': ''
+                }
                 
                 # Extract PDF content
                 pdf_content_bytes = io.BytesIO(uploaded_file.getvalue())
@@ -835,19 +828,22 @@ def main():
             st.subheader("Start a New Analysis")
             selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=st.session_state.get('selected_keywords', []))
             
-            # Custom search toggle
-            st.session_state.use_custom_search = st.checkbox(
-                "🔍 Use only uploaded papers", 
-                value=st.session_state.get('use_custom_search', False),
-                help="When enabled, analysis will only use papers you've uploaded, not the full database"
-            )
+            # Custom search button (only show if papers are uploaded)
+            if st.session_state.uploaded_papers:
+                st.markdown("---")
+                if st.button("🔍 ANALYZE UPLOADED PAPERS ONLY", use_container_width=True, type="primary"):
+                    st.session_state.use_custom_search = True
+                    st.rerun()
+                st.markdown("---")
             
-            if st.session_state.use_custom_search:
-                if not st.session_state.uploaded_papers:
-                    st.warning("⚠️ No uploaded papers found. Please upload papers first.")
-                    st.stop()
-                else:
-                    st.info(f"📄 Using {len(st.session_state.uploaded_papers)} uploaded papers for analysis")
+            # Show current search mode
+            if st.session_state.get('use_custom_search', False):
+                st.info(f"🔍 Custom Search Mode: Using {len(st.session_state.uploaded_papers)} uploaded papers")
+                if st.button("🔄 Switch to Full Database Search", use_container_width=True):
+                    st.session_state.use_custom_search = False
+                    st.rerun()
+            else:
+                st.info("🌐 Full Database Search Mode: Using all papers in the database")
             
             # Search mode selection (only show if not using custom search)
             if not st.session_state.use_custom_search:
@@ -899,8 +895,8 @@ def main():
         
         # Display uploaded papers count
         if st.session_state.uploaded_papers:
-            st.info(f"📄 {len(st.session_state.uploaded_papers)} papers uploaded")
-            with st.expander("View uploaded papers"):
+            st.success(f"📄 {len(st.session_state.uploaded_papers)} papers ready for custom analysis!")
+            with st.expander("📋 View uploaded papers"):
                 for i, paper in enumerate(st.session_state.uploaded_papers):
                     title = paper['metadata'].get('title', 'Unknown title')
                     st.write(f"{i+1}. {title}")
@@ -908,9 +904,9 @@ def main():
                 st.session_state.uploaded_papers = []
                 st.rerun()
         else:
-            st.caption("No papers uploaded yet")
+            st.caption("💡 Upload PDFs below to enable custom analysis")
         
-        with st.expander("Upload Documents"):
+        with st.expander("📁 Upload PDF Files for Custom Analysis"):
             display_paper_management()
 
     # CSS and JavaScript for clickable citations
