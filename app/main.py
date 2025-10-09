@@ -729,7 +729,7 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
 
 def display_paper_management():
     st.subheader("Add Papers to Database")
-    st.info("Ensure every uploaded PDF has a corresponding JSON file with the exact same name (before the extension), even if they are in different subfolders.")
+    st.info("Upload PDF files. JSON metadata files are optional - basic metadata will be created if not provided.")
 
     uploaded_pdfs = st.file_uploader("Upload PDF files", accept_multiple_files=True, type=['pdf'], key="db_pdf_uploader")
     uploaded_jsons = st.file_uploader("Upload corresponding metadata JSON files", accept_multiple_files=True, type=['json'], key="db_json_uploader")
@@ -740,32 +740,39 @@ def display_paper_management():
         
         with st.spinner("Adding papers to databases..."):
             for uploaded_file in uploaded_pdfs:
-                # <<< FIX: Get the base name WITHOUT the directory path to ensure a match >>>
-                # Example: "pdf-metadata/paper1.pdf" -> "paper1"
+                # Get the base name WITHOUT the directory path to ensure a match
                 pdf_base_name = os.path.splitext(os.path.basename(uploaded_file.name))[0]
                 
-                # Use the clean base name to look up the metadata
+                # Try to get metadata from JSON, or create basic metadata
                 metadata = json_map.get(pdf_base_name)
-
-                if metadata:
-                    # If metadata is found, proceed with adding the paper
-                    metadata['paper_id'] = uploaded_file.name
-                    pdf_content_bytes = io.BytesIO(uploaded_file.getvalue())
-                    paper_content = read_pdf_content(pdf_content_bytes)
-                    if paper_content:
-                        # Store in session state for custom search
-                        paper_data = {
-                            'paper_id': f"uploaded_{pdf_base_name}",
-                            'metadata': metadata,
-                            'content': paper_content
-                        }
-                        st.session_state.uploaded_papers.append(paper_data)
-                        st.success(f"✅ Successfully processed '{uploaded_file.name}' with full metadata.")
-                    else:
-                        st.error(f"❌ Could not read content from '{uploaded_file.name}'.")
+                
+                if not metadata:
+                    # Create basic metadata if no JSON file provided
+                    metadata = {
+                        'title': pdf_base_name,
+                        'abstract': 'No abstract available',
+                        'publication_date': '2024-01-01',
+                        'authors': ['Unknown'],
+                        'url': '',
+                        'doi_url': '',
+                        'link': ''
+                    }
+                
+                # Extract PDF content
+                pdf_content_bytes = io.BytesIO(uploaded_file.getvalue())
+                paper_content = read_pdf_content(pdf_content_bytes)
+                
+                if paper_content:
+                    # Store in session state for custom search
+                    paper_data = {
+                        'paper_id': f"uploaded_{pdf_base_name}",
+                        'metadata': metadata,
+                        'content': paper_content
+                    }
+                    st.session_state.uploaded_papers.append(paper_data)
+                    st.success(f"✅ Successfully processed '{uploaded_file.name}' (Content length: {len(paper_content)} chars)")
                 else:
-                    # If no matching JSON is found, skip this PDF and warn the user
-                    st.warning(f"⚠️ Skipped '{uploaded_file.name}' because a matching JSON metadata file was not found.")
+                    st.error(f"❌ Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
         st.rerun()
 
 
@@ -893,9 +900,15 @@ def main():
         # Display uploaded papers count
         if st.session_state.uploaded_papers:
             st.info(f"📄 {len(st.session_state.uploaded_papers)} papers uploaded")
+            with st.expander("View uploaded papers"):
+                for i, paper in enumerate(st.session_state.uploaded_papers):
+                    title = paper['metadata'].get('title', 'Unknown title')
+                    st.write(f"{i+1}. {title}")
             if st.button("🗑️ Clear uploaded papers"):
                 st.session_state.uploaded_papers = []
                 st.rerun()
+        else:
+            st.caption("No papers uploaded yet")
         
         with st.expander("Upload Documents"):
             display_paper_management()
