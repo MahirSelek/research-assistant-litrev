@@ -122,6 +122,10 @@ def initialize_session_state():
         st.session_state.selected_keywords = []
     if 'search_mode' not in st.session_state:
         st.session_state.search_mode = "all_keywords"
+    if 'uploaded_papers' not in st.session_state:
+        st.session_state.uploaded_papers = []
+    if 'use_custom_search' not in st.session_state:
+        st.session_state.use_custom_search = False
 
 def local_css(file_name):
     try:
@@ -473,6 +477,44 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
     return analysis_text + citations_section
 
 
+def perform_custom_search(keywords: list, uploaded_papers: list) -> tuple[list, int]:
+    """
+    Performs search only on uploaded papers using keyword matching.
+    """
+    if not uploaded_papers:
+        return [], 0
+    
+    # Filter uploaded papers based on keywords
+    matching_papers = []
+    
+    for paper in uploaded_papers:
+        # Combine all searchable text
+        searchable_text = ""
+        if 'metadata' in paper:
+            metadata = paper['metadata']
+            searchable_text += metadata.get('title', '').lower() + " "
+            searchable_text += metadata.get('abstract', '').lower() + " "
+        
+        if 'content' in paper:
+            searchable_text += paper['content'].lower()
+        
+        # Check if any keyword matches
+        keyword_matches = 0
+        for keyword in keywords:
+            if keyword.lower() in searchable_text:
+                keyword_matches += 1
+        
+        # Include paper if it matches at least one keyword
+        if keyword_matches > 0:
+            paper['keyword_matches'] = keyword_matches
+            paper['relevance_score'] = keyword_matches / len(keywords)  # Simple relevance score
+            matching_papers.append(paper)
+    
+    # Sort by relevance score (keyword matches / total keywords)
+    matching_papers.sort(key=lambda x: x.get('relevance_score', 0), reverse=True)
+    
+    return matching_papers, len(matching_papers)
+
 def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15, search_mode: str = "all_keywords") -> tuple[list, int]:
     """
     Performs a search with different strategies based on search_mode:
@@ -603,14 +645,18 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
             next_year = data_year + 1 if time_filter_type == "December" else data_year
             time_filter_dict = {"gte": f"01 {month_abbr} {data_year}", "lt": f"01 {next_month_abbr} {next_year}"}
         
-        # Skip Elasticsearch time filtering - we'll use GCS instead
-        all_papers, total_found = perform_hybrid_search(
-            keywords, 
-            time_filter_dict=None,  # No ES time filtering
-            n_results=100, 
-            max_final_results=15,
-            search_mode=search_mode
-        )
+        # Check if using custom search (uploaded papers only)
+        if st.session_state.get('use_custom_search', False):
+            all_papers, total_found = perform_custom_search(keywords, st.session_state.uploaded_papers)
+        else:
+            # Skip Elasticsearch time filtering - we'll use GCS instead
+            all_papers, total_found = perform_hybrid_search(
+                keywords, 
+                time_filter_dict=None,  # No ES time filtering
+                n_results=100, 
+                max_final_results=15,
+                search_mode=search_mode
+            )
         
         # Apply GCS-based time filtering if needed
         if time_filter_type != "All time" and all_papers:
@@ -707,7 +753,13 @@ def display_paper_management():
                     pdf_content_bytes = io.BytesIO(uploaded_file.getvalue())
                     paper_content = read_pdf_content(pdf_content_bytes)
                     if paper_content:
-                        # Vector database is disabled - papers are only stored in Elasticsearch
+                        # Store in session state for custom search
+                        paper_data = {
+                            'paper_id': f"uploaded_{pdf_base_name}",
+                            'metadata': metadata,
+                            'content': paper_content
+                        }
+                        st.session_state.uploaded_papers.append(paper_data)
                         st.success(f"✅ Successfully processed '{uploaded_file.name}' with full metadata.")
                     else:
                         st.error(f"❌ Could not read content from '{uploaded_file.name}'.")
@@ -776,17 +828,34 @@ def main():
             st.subheader("Start a New Analysis")
             selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=st.session_state.get('selected_keywords', []))
             
-            # Search mode selection
-            search_mode_options = {
-                "all_keywords": "Find papers containing ALL keywords",
-                "any_keyword": "Find papers containing AT LEAST ONE keyword"
-            }
-            search_mode_display = st.selectbox(
-                "Search Mode", 
-                options=list(search_mode_options.keys()),
-                format_func=lambda x: search_mode_options[x],
-                index=0 if st.session_state.get('search_mode', 'all_keywords') == 'all_keywords' else 1
+            # Custom search toggle
+            st.session_state.use_custom_search = st.checkbox(
+                "🔍 Use only uploaded papers", 
+                value=st.session_state.get('use_custom_search', False),
+                help="When enabled, analysis will only use papers you've uploaded, not the full database"
             )
+            
+            if st.session_state.use_custom_search:
+                if not st.session_state.uploaded_papers:
+                    st.warning("⚠️ No uploaded papers found. Please upload papers first.")
+                    st.stop()
+                else:
+                    st.info(f"📄 Using {len(st.session_state.uploaded_papers)} uploaded papers for analysis")
+            
+            # Search mode selection (only show if not using custom search)
+            if not st.session_state.use_custom_search:
+                search_mode_options = {
+                    "all_keywords": "Find papers containing ALL keywords",
+                    "any_keyword": "Find papers containing AT LEAST ONE keyword"
+                }
+                search_mode_display = st.selectbox(
+                    "Search Mode", 
+                    options=list(search_mode_options.keys()),
+                    format_func=lambda x: search_mode_options[x],
+                    index=0 if st.session_state.get('search_mode', 'all_keywords') == 'all_keywords' else 1
+                )
+            else:
+                search_mode_display = "custom"  # Set a default for custom search
             
             time_filter_type = st.selectbox("Filter by Time Window", [
                 "All time", 
@@ -820,6 +889,14 @@ def main():
                     st.rerun()
 
         st.markdown("---")
+        
+        # Display uploaded papers count
+        if st.session_state.uploaded_papers:
+            st.info(f"📄 {len(st.session_state.uploaded_papers)} papers uploaded")
+            if st.button("🗑️ Clear uploaded papers"):
+                st.session_state.uploaded_papers = []
+                st.rerun()
+        
         with st.expander("Upload Documents"):
             display_paper_management()
 
