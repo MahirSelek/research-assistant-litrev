@@ -753,7 +753,7 @@ def display_chat_history():
                     st.rerun()
 
 def main():
-    st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant", page_icon="polo-ggb-logo.png?v=2")
+    st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     style_path = os.path.join(current_dir, "style.css")
     local_css(style_path)
