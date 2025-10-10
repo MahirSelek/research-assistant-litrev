@@ -6,16 +6,16 @@ from auth import auth_manager
 
 def show_user_management():
     """Show user management interface for admin users"""
-    st.set_page_config(
-        page_title="User Management - Polo GGB",
-        page_icon="polo-ggb-logo.png",
-        layout="wide"
-    )
     
     # Check if user is admin
     if st.session_state.get('username') != 'admin':
         st.error("Access denied. Admin privileges required.")
         return
+    
+    # Back button
+    if st.button("← Back to Research Assistant"):
+        st.session_state.show_user_management = False
+        st.rerun()
     
     st.title("👥 User Management")
     st.markdown("Manage users and access to the Polo GGB Research Assistant")
