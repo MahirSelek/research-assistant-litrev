@@ -1099,11 +1099,11 @@ def main():
                 # Create title based on topics found
                 if topics:
                     topic_str = ', '.join(topics[:2])  # Max 2 topics
-                    return f"📄 Custom Summary ({paper_count} papers): {topic_str}"
+                    return topic_str
                 else:
-                    # Fallback to paper count and first few words of summary
+                    # Fallback to first few words of summary
                     first_words = ' '.join(summary_text.split()[:4])
-                    return f"📄 Custom Summary ({paper_count} papers): {first_words}..."
+                    return f"{first_words}..."
             
             title = generate_custom_summary_title(st.session_state.uploaded_papers, summary)
             
