@@ -855,7 +855,12 @@ def display_chat_history():
     sorted_conv_ids = sorted(st.session_state.conversations.keys(), reverse=True)
     for conv_id in sorted_conv_ids:
         try:
-            timestamp_str = conv_id.split('_')[1]
+            # Handle custom summary IDs differently
+            if conv_id.startswith('custom_summary_'):
+                timestamp_str = conv_id.split('_', 2)[2]  # Get the timestamp part
+            else:
+                timestamp_str = conv_id.split('_')[1]  # Regular conversation IDs
+            
             ts = float(timestamp_str)
             conv_date = datetime.datetime.fromtimestamp(ts)
             month_key = conv_date.strftime("%Y-%m")
