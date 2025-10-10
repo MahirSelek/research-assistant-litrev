@@ -893,6 +893,8 @@ def main():
             st.session_state.active_conversation_id = None
             st.session_state.selected_keywords = []
             st.session_state.search_mode = "all_keywords"
+            st.session_state.custom_summary_result = None  # Clear custom summary
+            st.session_state.custom_summary_chat = []  # Clear custom summary chat
             st.rerun()
 
         display_chat_history()
@@ -959,7 +961,10 @@ def main():
                     "retrieved_papers": retrieved_papers,
                     "total_papers_found": total_found # <<< MODIFICATION: Store the total count
                 }
+                # Clear any previous analysis and set new one
                 st.session_state.active_conversation_id = conv_id
+                st.session_state.custom_summary_result = None  # Clear custom summary
+                st.session_state.custom_summary_chat = []  # Clear custom summary chat
                 st.rerun()
             else:
                 st.error("Failed to generate analysis. Please try again.")
