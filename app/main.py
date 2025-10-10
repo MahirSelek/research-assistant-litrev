@@ -126,6 +126,10 @@ def initialize_session_state():
         st.session_state.uploaded_papers = []
     if 'use_custom_search' not in st.session_state:
         st.session_state.use_custom_search = False
+    if 'generate_custom_summary' not in st.session_state:
+        st.session_state.generate_custom_summary = False
+    if 'custom_summary_result' not in st.session_state:
+        st.session_state.custom_summary_result = None
 
 def local_css(file_name):
     try:
@@ -798,17 +802,6 @@ def display_paper_management():
                     st.error(f"❌ Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
         st.rerun()
     
-    # Custom summary button (only show if papers are uploaded)
-    if st.session_state.uploaded_papers:
-        st.markdown("---")
-        if st.button("📝 Generate Custom Summary", type="secondary", use_container_width=True):
-            with st.spinner("Generating summary of your uploaded papers..."):
-                summary = generate_custom_summary(st.session_state.uploaded_papers)
-                if summary:
-                    st.markdown("### 📋 Custom Summary")
-                    st.markdown(summary)
-                else:
-                    st.error("Failed to generate summary. Please try again.")
 
 
 def display_chat_history():
@@ -922,6 +915,18 @@ def main():
                 for i, paper in enumerate(st.session_state.uploaded_papers):
                     title = paper['metadata'].get('title', 'Unknown title')
                     st.write(f"{i+1}. {title}")
+            
+            # Custom summary button in sidebar
+            if st.button("📝 Generate Custom Summary", use_container_width=True, type="primary"):
+                st.session_state.generate_custom_summary = True
+                st.rerun()
+            
+            # Clear summary button if summary exists
+            if st.session_state.get('custom_summary_result'):
+                if st.button("🗑️ Clear Summary", use_container_width=True):
+                    st.session_state.custom_summary_result = None
+                    st.rerun()
+            
             if st.button("🗑️ Clear uploaded papers"):
                 st.session_state.uploaded_papers = []
                 st.rerun()
@@ -954,9 +959,32 @@ def main():
     
     st.markdown("<h1>🧬 POLO-GGB RESEARCH ASSISTANT</h1>", unsafe_allow_html=True)
 
-    if st.session_state.active_conversation_id is None:
+    # Handle custom summary generation
+    if st.session_state.get('generate_custom_summary', False):
+        st.session_state.generate_custom_summary = False  # Reset the flag
+        
+        with st.spinner("Generating summary of your uploaded papers..."):
+            summary = generate_custom_summary(st.session_state.uploaded_papers)
+            if summary:
+                st.session_state.custom_summary_result = summary
+            else:
+                st.error("Failed to generate summary. Please try again.")
+
+    # Display custom summary if available
+    if st.session_state.get('custom_summary_result'):
+        st.markdown("### 📋 Custom Summary of Your Uploaded Papers")
+        st.markdown(st.session_state.custom_summary_result)
+        
+        # Add a button to clear the summary
+        if st.button("🗑️ Clear Summary"):
+            st.session_state.custom_summary_result = None
+            st.rerun()
+        
+        st.markdown("---")
+
+    if st.session_state.active_conversation_id is None and not st.session_state.get('custom_summary_result'):
         st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
-    else:
+    elif st.session_state.active_conversation_id is not None:
         active_id = st.session_state.active_conversation_id
         active_conv = st.session_state.conversations[active_id]
         
