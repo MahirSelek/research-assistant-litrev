@@ -128,8 +128,7 @@ def initialize_session_state():
         st.session_state.use_custom_search = False
     if 'generate_custom_summary' not in st.session_state:
         st.session_state.generate_custom_summary = False
-    if 'custom_summary_result' not in st.session_state:
-        st.session_state.custom_summary_result = None
+    # Custom summaries are now handled through chat history
     if 'is_loading_analysis' not in st.session_state:
         st.session_state.is_loading_analysis = False
     if 'loading_message' not in st.session_state:
@@ -893,7 +892,7 @@ def main():
             st.session_state.active_conversation_id = None
             st.session_state.selected_keywords = []
             st.session_state.search_mode = "all_keywords"
-            st.session_state.custom_summary_result = None  # Clear custom summary
+            # Custom summaries are now in chat history
             st.session_state.custom_summary_chat = []  # Clear custom summary chat
             st.rerun()
 
@@ -963,7 +962,7 @@ def main():
                 }
                 # Clear any previous analysis and set new one
                 st.session_state.active_conversation_id = conv_id
-                st.session_state.custom_summary_result = None  # Clear custom summary
+                # Custom summaries are now in chat history
                 st.session_state.custom_summary_chat = []  # Clear custom summary chat
                 st.rerun()
             else:
@@ -986,12 +985,7 @@ def main():
                 st.session_state.generate_custom_summary = True
                 st.rerun()
             
-            # Clear summary button if summary exists
-            if st.session_state.get('custom_summary_result'):
-                if st.button("Clear Summary", use_container_width=True):
-                    st.session_state.custom_summary_result = None
-                    st.session_state.custom_summary_chat = []  # Also clear chat history
-                    st.rerun()
+            # Custom summaries are now in chat history - no clear button needed
             
             # Show chat history if exists
             if st.session_state.get('custom_summary_chat'):
@@ -1066,12 +1060,12 @@ def main():
         summary = generate_custom_summary(st.session_state.uploaded_papers)
         
         if summary:
-            st.session_state.custom_summary_result = summary
+            # Summary is now stored in chat history
             
-            # Add custom summary to chat history
+            # Add custom summary to chat history with better title and metadata
             conv_id = f"custom_summary_{time.time()}"
             paper_titles = [paper['metadata'].get('title', f'Paper {i+1}') for i, paper in enumerate(st.session_state.uploaded_papers)]
-            title = f"Custom Summary: {', '.join(paper_titles[:2])}{'...' if len(paper_titles) > 2 else ''}"
+            title = f"📄 Custom Summary ({len(st.session_state.uploaded_papers)} papers): {', '.join(paper_titles[:2])}{'...' if len(paper_titles) > 2 else ''}"
             
             initial_message = {
                 "role": "assistant", 
@@ -1084,110 +1078,25 @@ def main():
                 "keywords": ["Custom Summary"],
                 "search_mode": "custom",
                 "retrieved_papers": st.session_state.uploaded_papers,
-                "total_papers_found": len(st.session_state.uploaded_papers)
+                "total_papers_found": len(st.session_state.uploaded_papers),
+                "created_at": time.time(),
+                "paper_count": len(st.session_state.uploaded_papers)
             }
+            
+            # Set this as the active conversation so user can immediately interact
+            st.session_state.active_conversation_id = conv_id
+            
+            # Summary is now permanently stored in chat history
         else:
             st.error("Failed to generate summary. Please try again.")
         
         # Force rerun to show results immediately
         st.rerun()
 
-    # Display custom summary if available and no active conversation
-    if (st.session_state.get('custom_summary_result') and 
-        st.session_state.active_conversation_id is None):
-        st.markdown("### Custom Summary of Your Uploaded Papers")
-        st.markdown(st.session_state.custom_summary_result)
-        
-        # Add a button to clear the summary
-        if st.button("Clear Summary"):
-            st.session_state.custom_summary_result = None
-            st.rerun()
-        
-        st.markdown("---")
-        
-        # Chat interface for custom summary
-        st.markdown("### Ask Questions About Your Summary")
-        st.info("You can ask questions about the summary, specific papers, or request more details about any topic.")
-        
-        # Example questions
-        st.markdown("**Example questions you can ask:**")
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Tell me more about paper 1", use_container_width=True):
-                st.session_state.custom_summary_question = "Can you provide more details about paper 1?"
-        with col2:
-            if st.button("What are the main findings?", use_container_width=True):
-                st.session_state.custom_summary_question = "What are the main findings across all papers?"
-        
-        col3, col4 = st.columns(2)
-        with col3:
-            if st.button("Compare the methodologies", use_container_width=True):
-                st.session_state.custom_summary_question = "How do the methodologies differ between the papers?"
-        with col4:
-            if st.button("What are the implications?", use_container_width=True):
-                st.session_state.custom_summary_question = "What are the practical implications of these findings?"
-        
-        # Initialize chat history for custom summary if not exists
-        if 'custom_summary_chat' not in st.session_state:
-            st.session_state.custom_summary_chat = []
-        
-        # Display chat history
-        for message in st.session_state.custom_summary_chat:
-            if message["role"] == "user":
-                st.markdown(f"**You:** {message['content']}")
-            else:
-                st.markdown(f"**Assistant:** {message['content']}")
-        
-        # Chat input
-        user_question = st.text_input("Ask a question about your summary or papers:", key="custom_summary_question")
-        
-        if user_question and st.button("Ask Question"):
-            # Add user question to chat
-            st.session_state.custom_summary_chat.append({"role": "user", "content": user_question})
-            
-            # Generate response
-            with st.spinner("Thinking..."):
-                # Create context with summary and papers
-                context = f"""
-                Here is the custom summary of the uploaded papers:
-                
-                {st.session_state.custom_summary_result}
-                
-                Here are the individual papers that were analyzed:
-                """
-                
-                for i, paper in enumerate(st.session_state.uploaded_papers):
-                    title = paper['metadata'].get('title', f'Paper {i+1}')
-                    content = paper.get('content', '')[:2000]  # Limit content to avoid token overflow
-                    context += f"\n\nPaper {i+1}: {title}\nContent: {content}..."
-                
-                # Create prompt for answering questions
-                prompt = f"""
-                {context}
-                
-                User Question: {user_question}
-                
-                Please answer the user's question based on the provided summary and paper contents. Be specific and reference the relevant papers when possible. If the question is about a specific paper, focus on that paper's content.
-                """
-                
-                response = post_message_vertexai(prompt)
-                if response:
-                    st.session_state.custom_summary_chat.append({"role": "assistant", "content": response})
-                else:
-                    st.session_state.custom_summary_chat.append({"role": "assistant", "content": "Sorry, I couldn't generate a response. Please try again."})
-            
-            st.rerun()
-        
-        # Clear chat button
-        if st.session_state.custom_summary_chat and st.button("Clear Chat History"):
-            st.session_state.custom_summary_chat = []
-            st.rerun()
-        
-        st.markdown("---")
+    # Custom summaries are now handled through chat history - no separate display needed
 
-    # Show default message only if no custom summary and no active conversation
-    if (st.session_state.active_conversation_id is None and 
-        not st.session_state.get('custom_summary_result')):
+    # Show default message only if no active conversation
+    if st.session_state.active_conversation_id is None:
         st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
     elif st.session_state.active_conversation_id is not None:
         active_id = st.session_state.active_conversation_id
