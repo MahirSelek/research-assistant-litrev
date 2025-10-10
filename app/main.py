@@ -1013,6 +1013,9 @@ def main():
                 # Clear any active analysis and set custom summary generation
                 st.session_state.active_conversation_id = None
                 st.session_state.generate_custom_summary = True
+                # Set loading state for custom summary
+                st.session_state.is_loading_analysis = True
+                st.session_state.loading_message = "Generating summary of your uploaded papers..."
                 st.rerun()
             
             # Custom summaries are now in chat history - no clear button needed
@@ -1078,7 +1081,7 @@ def main():
     st.markdown("<h1>🧬 POLO-GGB RESEARCH ASSISTANT</h1>", unsafe_allow_html=True)
 
     # Show loading overlay if analysis is in progress (but not for custom summary)
-    if st.session_state.get('is_loading_analysis', False) and not st.session_state.get('generate_custom_summary', False):
+    if st.session_state.get('is_loading_analysis', False):
         show_loading_overlay(st.session_state.loading_message)
         return  # Don't render the rest of the page while loading
 
@@ -1155,7 +1158,8 @@ def main():
         else:
             st.error("Failed to generate summary. Please try again.")
         
-        # Force rerun to show results immediately
+        # Clear loading state and force rerun to show results immediately
+        st.session_state.is_loading_analysis = False
         st.rerun()
 
     # Custom summaries are now handled through chat history - no separate display needed
