@@ -938,11 +938,11 @@ def main():
         # Show user info for all users
         if st.session_state.get('authenticated', False):
             st.markdown("---")
-            st.markdown(f"👤 **Logged in as:** {st.session_state.username}")
+            st.markdown(f"**Logged in as:** {st.session_state.username}")
             if st.session_state.get('username') == 'admin':
-                st.markdown("🔑 **Role:** Administrator")
+                st.markdown("**Role:** Administrator")
             else:
-                st.markdown("👤 **Role:** User")
+                st.markdown("**Role:** User")
         
         if st.button("➕ New Analysis", use_container_width=True):
             st.session_state.active_conversation_id = None
