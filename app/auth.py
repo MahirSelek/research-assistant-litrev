@@ -215,19 +215,38 @@ def show_login_page():
         
         st.markdown("**Polo d'Innovazione di Genomica, Genetica e Biologia**")
         st.markdown("---")
-    # Login form
-    st.markdown("### Research Assistant Login")
-    st.info("Please login to access the Polo GGB Research Assistant")
+    # Login/Register tabs
+    tab1, tab2 = st.tabs(["🔐 Login", "📝 Register"])
     
-    with st.form("login_form"):
-        username = st.text_input("Username", placeholder="Enter your username")
-        password = st.text_input("Password", type="password", placeholder="Enter your password")
+    with tab1:
+        st.markdown("### Research Assistant Login")
+        st.info("Please login to access the Polo GGB Research Assistant")
         
-        # Show default credentials for first-time users
-        st.markdown("**Default Admin Credentials:**")
-        st.code("Username: admin\nPassword: pologgb2024")
+        with st.form("login_form"):
+            username = st.text_input("Username", placeholder="Enter your username", key="login_username")
+            password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
+            
+            # Show default credentials for first-time users
+            st.markdown("**Default Admin Credentials:**")
+            st.code("Username: admin\nPassword: pologgb2024")
+            
+            submitted = st.form_submit_button("Login", use_container_width=True)
+    
+    with tab2:
+        st.markdown("### Create New Account")
+        st.info("Register for access to the Polo GGB Research Assistant")
         
-        submitted = st.form_submit_button("Login", use_container_width=True)
+        with st.form("register_form"):
+            new_username = st.text_input("New Username", placeholder="Choose a username", key="register_username")
+            new_password = st.text_input("New Password", type="password", placeholder="Choose a password", key="register_password")
+            confirm_password = st.text_input("Confirm Password", type="password", placeholder="Confirm your password", key="confirm_password")
+            
+            # Password requirements
+            st.markdown("**Password Requirements:**")
+            st.markdown("- At least 8 characters long")
+            st.markdown("- Contains letters and numbers")
+            
+            register_submitted = st.form_submit_button("Create Account", use_container_width=True)
         
         if submitted:
             if username and password:
@@ -240,6 +259,28 @@ def show_login_page():
                     st.markdown(f'<div class="error-message">❌ {message}</div>', unsafe_allow_html=True)
             else:
                 st.markdown('<div class="error-message">❌ Please enter both username and password</div>', unsafe_allow_html=True)
+        
+        if register_submitted:
+            if new_username and new_password and confirm_password:
+                # Validate password
+                if len(new_password) < 8:
+                    st.markdown('<div class="error-message">❌ Password must be at least 8 characters long</div>', unsafe_allow_html=True)
+                elif not any(c.isalpha() for c in new_password) or not any(c.isdigit() for c in new_password):
+                    st.markdown('<div class="error-message">❌ Password must contain both letters and numbers</div>', unsafe_allow_html=True)
+                elif new_password != confirm_password:
+                    st.markdown('<div class="error-message">❌ Passwords do not match</div>', unsafe_allow_html=True)
+                else:
+                    # Create new user
+                    success = auth_manager.create_user(new_username, new_password)
+                    if success:
+                        st.markdown('<div class="success-message">✅ Account created successfully! You can now login.</div>', unsafe_allow_html=True)
+                        # Auto-login the new user
+                        auth_manager.login(new_username, new_password)
+                        st.rerun()
+                    else:
+                        st.markdown('<div class="error-message">❌ Username already exists. Please choose a different username.</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="error-message">❌ Please fill in all fields</div>', unsafe_allow_html=True)
     
     # Footer
     st.markdown("---")

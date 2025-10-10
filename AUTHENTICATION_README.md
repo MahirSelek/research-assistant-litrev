@@ -22,10 +22,11 @@ This application now includes a professional authentication system designed for 
 
 ### User Management
 - **Admin Panel**: Complete user management interface
-- **User Creation**: Secure user account creation
+- **User Registration**: Self-service user registration with password validation
+- **User Creation**: Secure user account creation (admin + self-registration)
 - **User Deletion**: Remove users (except admin)
 - **Login Monitoring**: Track failed login attempts and reset locks
-- **System Statistics**: Monitor active users and security metrics
+- **System Statistics**: Monitor active users, registrations, and security metrics
 
 ### Professional UI
 - **Polo GGB Branding**: Company logo and colors
@@ -54,16 +55,18 @@ app/
 ## 🛠️ Usage
 
 ### For Users
-1. **Login**: Enter username and password
-2. **Session**: Automatically logged out after 1 hour of inactivity
-3. **Logout**: Click the logout button in the sidebar
+1. **Registration**: Create new account with username and password
+2. **Login**: Enter username and password
+3. **Session**: Automatically logged out after 1 hour of inactivity
+4. **Logout**: Click the logout button in the sidebar
 
 ### For Administrators
 1. **Login**: Use admin credentials
 2. **User Management**: Click "👥 User Management" in sidebar
 3. **Create Users**: Add new users with secure passwords
-4. **Monitor**: View user activity and security statistics
+4. **Monitor**: View user activity, registrations, and security statistics
 5. **Manage**: Reset failed attempts or delete users
+6. **Track**: Monitor recent registrations and user growth
 
 ## 🔒 Security Implementation
 
