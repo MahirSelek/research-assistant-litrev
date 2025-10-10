@@ -645,18 +645,14 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
             next_year = data_year + 1 if time_filter_type == "December" else data_year
             time_filter_dict = {"gte": f"01 {month_abbr} {data_year}", "lt": f"01 {next_month_abbr} {next_year}"}
         
-        # Check if using custom search (uploaded papers only)
-        if st.session_state.get('use_custom_search', False):
-            all_papers, total_found = perform_custom_search(keywords, st.session_state.uploaded_papers)
-        else:
-            # Skip Elasticsearch time filtering - we'll use GCS instead
-            all_papers, total_found = perform_hybrid_search(
-                keywords, 
-                time_filter_dict=None,  # No ES time filtering
-                n_results=100, 
-                max_final_results=15,
-                search_mode=search_mode
-            )
+        # Skip Elasticsearch time filtering - we'll use GCS instead
+        all_papers, total_found = perform_hybrid_search(
+            keywords, 
+            time_filter_dict=None,  # No ES time filtering
+            n_results=100, 
+            max_final_results=15,
+            search_mode=search_mode
+        )
         
         # Apply GCS-based time filtering if needed
         if time_filter_type != "All time" and all_papers:
@@ -727,14 +723,48 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
         # <<< MODIFICATION: Return all three pieces of information >>>
         return analysis, papers_for_references, total_found
 
+def generate_custom_summary(uploaded_papers):
+    """Generate a summary of uploaded papers"""
+    if not uploaded_papers:
+        return "No papers uploaded."
+    
+    # Combine all paper content
+    all_content = ""
+    paper_titles = []
+    
+    for paper in uploaded_papers:
+        title = paper['metadata'].get('title', 'Unknown Title')
+        content = paper.get('content', '')
+        paper_titles.append(title)
+        all_content += f"\n\n--- {title} ---\n{content}"
+    
+    # Create summary prompt
+    prompt = f"""
+    Please provide a comprehensive summary of the following {len(uploaded_papers)} research paper(s):
+    
+    Papers: {', '.join(paper_titles)}
+    
+    Content:
+    {all_content}
+    
+    Please provide:
+    1. A brief overview of each paper
+    2. Key findings and methodologies
+    3. Common themes across the papers
+    4. Overall conclusions and implications
+    
+    Keep the summary concise but informative.
+    """
+    
+    return post_message_vertexai(prompt)
+
 def display_paper_management():
-    st.subheader("📄 Upload PDF Files for Custom Analysis")
-    st.success("✅ NEW: Only PDF files required - no metadata needed!")
-    st.info("Upload PDF files to generate custom analysis using only your papers.")
+    st.subheader("📄 Upload PDF Files")
+    st.info("Upload PDF files to generate custom summary of your documents.")
 
     uploaded_pdfs = st.file_uploader("Choose PDF files", accept_multiple_files=True, type=['pdf'], key="pdf_uploader_v2")
     
-    if uploaded_pdfs and st.button("🚀 Add PDFs to Custom Search", type="primary"):
+    if uploaded_pdfs and st.button("🚀 Add PDFs", type="primary"):
         with st.spinner("Processing PDF files..."):
             for uploaded_file in uploaded_pdfs:
                 # Get the base name without extension
@@ -767,6 +797,18 @@ def display_paper_management():
                 else:
                     st.error(f"❌ Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
         st.rerun()
+    
+    # Custom summary button (only show if papers are uploaded)
+    if st.session_state.uploaded_papers:
+        st.markdown("---")
+        if st.button("📝 Generate Custom Summary", type="secondary", use_container_width=True):
+            with st.spinner("Generating summary of your uploaded papers..."):
+                summary = generate_custom_summary(st.session_state.uploaded_papers)
+                if summary:
+                    st.markdown("### 📋 Custom Summary")
+                    st.markdown(summary)
+                else:
+                    st.error("Failed to generate summary. Please try again.")
 
 
 def display_chat_history():
@@ -824,53 +866,21 @@ def main():
 
 
         st.markdown("---")
-        
-        # Custom search buttons (outside form)
-        if st.session_state.uploaded_papers:
-            st.subheader("🔍 Custom Analysis Options")
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                if st.button("🔍 ANALYZE UPLOADED PAPERS ONLY", use_container_width=True, type="primary"):
-                    st.session_state.use_custom_search = True
-                    st.rerun()
-            
-            with col2:
-                if st.button("🔄 Switch to Full Database", use_container_width=True):
-                    st.session_state.use_custom_search = False
-                    st.rerun()
-            
-            # Show current search mode
-            if st.session_state.get('use_custom_search', False):
-                st.success(f"🔍 Custom Search Mode: Using {len(st.session_state.uploaded_papers)} uploaded papers")
-            else:
-                st.info("🌐 Full Database Search Mode: Using all papers in the database")
-            
-            st.markdown("---")
-        
-        # Main analysis form
         with st.form(key="new_analysis_form"):
-            if st.session_state.get('use_custom_search', False):
-                st.subheader("🔍 Generate Custom Analysis")
-                st.info(f"Analyzing {len(st.session_state.uploaded_papers)} uploaded papers only")
-            else:
-                st.subheader("Start a New Analysis")
+            st.subheader("Start a New Analysis")
             selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=st.session_state.get('selected_keywords', []))
             
-            # Search mode selection (only show if not using custom search)
-            if not st.session_state.get('use_custom_search', False):
-                search_mode_options = {
-                    "all_keywords": "Find papers containing ALL keywords",
-                    "any_keyword": "Find papers containing AT LEAST ONE keyword"
-                }
-                search_mode_display = st.selectbox(
-                    "Search Mode", 
-                    options=list(search_mode_options.keys()),
-                    format_func=lambda x: search_mode_options[x],
-                    index=0 if st.session_state.get('search_mode', 'all_keywords') == 'all_keywords' else 1
-                )
-            else:
-                search_mode_display = "custom"  # Set a default for custom search
+            # Search mode selection
+            search_mode_options = {
+                "all_keywords": "Find papers containing ALL keywords",
+                "any_keyword": "Find papers containing AT LEAST ONE keyword"
+            }
+            search_mode_display = st.selectbox(
+                "Search Mode", 
+                options=list(search_mode_options.keys()),
+                format_func=lambda x: search_mode_options[x],
+                index=0 if st.session_state.get('search_mode', 'all_keywords') == 'all_keywords' else 1
+            )
             
             time_filter_type = st.selectbox("Filter by Time Window", [
                 "All time", 
@@ -881,13 +891,7 @@ def main():
                 "July", "August", "September", "October", "November", "December"
             ])
             
-            # Dynamic button text based on search mode
-            if st.session_state.get('use_custom_search', False):
-                button_text = f"🔍 Generate Custom Analysis ({len(st.session_state.uploaded_papers)} papers)"
-            else:
-                button_text = "Search & Analyze"
-            
-            if st.form_submit_button(button_text):
+            if st.form_submit_button("Search & Analyze"):
                 # Store the selected search mode in session state
                 st.session_state.search_mode = search_mode_display
                 
@@ -913,18 +917,18 @@ def main():
         
         # Display uploaded papers count
         if st.session_state.uploaded_papers:
-            st.success(f"{len(st.session_state.uploaded_papers)} papers ready for custom analysis!")
-            with st.expander("View uploaded papers"):
+            st.info(f"📄 {len(st.session_state.uploaded_papers)} papers uploaded")
+            with st.expander("📋 View uploaded papers"):
                 for i, paper in enumerate(st.session_state.uploaded_papers):
                     title = paper['metadata'].get('title', 'Unknown title')
                     st.write(f"{i+1}. {title}")
-            if st.button("Clear uploaded papers"):
+            if st.button("🗑️ Clear uploaded papers"):
                 st.session_state.uploaded_papers = []
                 st.rerun()
         else:
-            st.caption("💡 Upload PDFs below to enable custom analysis")
+            st.caption("No papers uploaded yet")
         
-        with st.expander("📁 Upload PDF Files for Custom Analysis"):
+        with st.expander("📁 Upload PDF Files"):
             display_paper_management()
 
     # CSS and JavaScript for clickable citations
