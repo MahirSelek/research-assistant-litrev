@@ -824,29 +824,41 @@ def main():
 
 
         st.markdown("---")
-        with st.form(key="new_analysis_form"):
-            st.subheader("Start a New Analysis")
-            selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=st.session_state.get('selected_keywords', []))
+        
+        # Custom search buttons (outside form)
+        if st.session_state.uploaded_papers:
+            st.subheader("🔍 Custom Analysis Options")
+            col1, col2 = st.columns(2)
             
-            # Custom search button (only show if papers are uploaded)
-            if st.session_state.uploaded_papers:
-                st.markdown("---")
+            with col1:
                 if st.button("🔍 ANALYZE UPLOADED PAPERS ONLY", use_container_width=True, type="primary"):
                     st.session_state.use_custom_search = True
                     st.rerun()
-                st.markdown("---")
+            
+            with col2:
+                if st.button("🔄 Switch to Full Database", use_container_width=True):
+                    st.session_state.use_custom_search = False
+                    st.rerun()
             
             # Show current search mode
             if st.session_state.get('use_custom_search', False):
-                st.info(f"🔍 Custom Search Mode: Using {len(st.session_state.uploaded_papers)} uploaded papers")
-                if st.button("🔄 Switch to Full Database Search", use_container_width=True):
-                    st.session_state.use_custom_search = False
-                    st.rerun()
+                st.success(f"🔍 Custom Search Mode: Using {len(st.session_state.uploaded_papers)} uploaded papers")
             else:
                 st.info("🌐 Full Database Search Mode: Using all papers in the database")
             
+            st.markdown("---")
+        
+        # Main analysis form
+        with st.form(key="new_analysis_form"):
+            if st.session_state.get('use_custom_search', False):
+                st.subheader("🔍 Generate Custom Analysis")
+                st.info(f"Analyzing {len(st.session_state.uploaded_papers)} uploaded papers only")
+            else:
+                st.subheader("Start a New Analysis")
+            selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=st.session_state.get('selected_keywords', []))
+            
             # Search mode selection (only show if not using custom search)
-            if not st.session_state.use_custom_search:
+            if not st.session_state.get('use_custom_search', False):
                 search_mode_options = {
                     "all_keywords": "Find papers containing ALL keywords",
                     "any_keyword": "Find papers containing AT LEAST ONE keyword"
@@ -869,7 +881,13 @@ def main():
                 "July", "August", "September", "October", "November", "December"
             ])
             
-            if st.form_submit_button("Search & Analyze"):
+            # Dynamic button text based on search mode
+            if st.session_state.get('use_custom_search', False):
+                button_text = f"🔍 Generate Custom Analysis ({len(st.session_state.uploaded_papers)} papers)"
+            else:
+                button_text = "Search & Analyze"
+            
+            if st.form_submit_button(button_text):
                 # Store the selected search mode in session state
                 st.session_state.search_mode = search_mode_display
                 
@@ -895,12 +913,12 @@ def main():
         
         # Display uploaded papers count
         if st.session_state.uploaded_papers:
-            st.success(f"📄 {len(st.session_state.uploaded_papers)} papers ready for custom analysis!")
-            with st.expander("📋 View uploaded papers"):
+            st.success(f"{len(st.session_state.uploaded_papers)} papers ready for custom analysis!")
+            with st.expander("View uploaded papers"):
                 for i, paper in enumerate(st.session_state.uploaded_papers):
                     title = paper['metadata'].get('title', 'Unknown title')
                     st.write(f"{i+1}. {title}")
-            if st.button("🗑️ Clear uploaded papers"):
+            if st.button("Clear uploaded papers"):
                 st.session_state.uploaded_papers = []
                 st.rerun()
         else:
