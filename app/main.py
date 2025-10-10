@@ -968,6 +968,21 @@ def main():
         background-color: #e3f2fd;
         transform: scale(1.05);
     }
+    
+    /* Make sidebar wider */
+    .css-1d391kg {
+        width: 350px !important;
+    }
+    
+    /* Adjust main content area */
+    .css-1y0tads {
+        margin-left: 350px !important;
+    }
+    
+    /* Ensure sidebar content fits better */
+    .css-1lcbmhc .css-1y0tads {
+        padding-left: 1rem;
+    }
     </style>
     """, unsafe_allow_html=True)
     
