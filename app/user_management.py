@@ -20,6 +20,10 @@ def show_user_management():
     st.title("👥 User Management")
     st.markdown("Manage users and access to the Polo GGB Research Assistant")
     
+    # Show user count
+    total_users = len(auth_manager.load_users())
+    st.info(f"📊 Total registered users: **{total_users}**")
+    
     # Load current users
     users = auth_manager.load_users()
     
@@ -129,7 +133,26 @@ def show_user_management():
     
     with col4:
         total_attempts = sum(u.get('login_attempts', 0) for u in users.values())
-        st.metric("Total Failed Attempts", total_attempts)
+        st.metric("Failed Attempts", total_attempts)
+    
+    # Recent registrations
+    st.markdown("---")
+    st.subheader("🆕 Recent Registrations")
+    
+    recent_users = []
+    for username, user_info in users.items():
+        created_time = user_info.get('created_at', 0)
+        if created_time > time.time() - 7 * 86400:  # Last 7 days
+            recent_users.append((username, created_time))
+    
+    recent_users.sort(key=lambda x: x[1], reverse=True)
+    
+    if recent_users:
+        for username, created_time in recent_users[:5]:  # Show last 5
+            created_date = time.strftime('%Y-%m-%d %H:%M', time.localtime(created_time))
+            st.write(f"• **{username}** - {created_date}")
+    else:
+        st.info("No new registrations in the last 7 days")
     
     # Security settings
     st.markdown("---")
