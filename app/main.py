@@ -1241,8 +1241,8 @@ Assistant Response:"""
                 retrieved_papers = active_conv.get("retrieved_papers", [])
                 search_mode = active_conv.get("search_mode", "all_keywords")
                 
-                # For follow-up responses, we don't have separate analysis papers, so use all papers
-                response_text = display_citations_separately(response_text, retrieved_papers, None, search_mode)
+                # For follow-up responses, use all retrieved papers to make citations clickable
+                response_text = display_citations_separately(response_text, retrieved_papers, retrieved_papers, search_mode)
                 active_conv["messages"].append({"role": "assistant", "content": response_text})
                 # Update last interaction time for this conversation
                 active_conv['last_interaction_time'] = time.time()
