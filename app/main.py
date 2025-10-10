@@ -20,6 +20,7 @@ import vertexai
 from vertexai.generative_models import GenerativeModel
 from google.cloud import storage
 from google.api_core.exceptions import NotFound
+from auth import auth_manager, show_login_page, show_logout_button
 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -912,13 +913,26 @@ def display_chat_history():
                     st.rerun()
 
 def main():
-    st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant")
+    # Check authentication first
+    if not auth_manager.require_auth():
+        show_login_page()
+        return
+    
+    st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant", page_icon="polo-ggb-logo.png")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     style_path = os.path.join(current_dir, "style.css")
     local_css(style_path)
     initialize_session_state()
 
     with st.sidebar:
+        # Show logout button at the top
+        show_logout_button()
+        
+        # Show user management for admin
+        if st.session_state.get('username') == 'admin':
+            if st.button("👥 User Management", use_container_width=True):
+                st.switch_page("user_management.py")
+        
         if st.button("➕ New Analysis", use_container_width=True):
             st.session_state.active_conversation_id = None
             st.session_state.selected_keywords = []
