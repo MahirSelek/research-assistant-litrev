@@ -1107,7 +1107,9 @@ def main():
             with st.chat_message(message["role"], avatar=avatar):
                 st.markdown(message["content"], unsafe_allow_html=True)
 
-        if "retrieved_papers" in active_conv and active_conv["retrieved_papers"]:
+        # Show papers section only for regular analyses, not custom summaries
+        if ("retrieved_papers" in active_conv and active_conv["retrieved_papers"] and 
+            active_conv.get("search_mode") != "custom"):
             with st.expander("View and Download Retrieved Papers for this Analysis"):
                 # Display papers without the count message
                 
