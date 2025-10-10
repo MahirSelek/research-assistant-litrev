@@ -927,6 +927,9 @@ def main():
             ])
             
             if st.form_submit_button("Search & Analyze"):
+                # Clear custom summary when starting new analysis
+                st.session_state.custom_summary_result = None
+                st.session_state.custom_summary_chat = []
                 # Set loading state
                 st.session_state.is_loading_analysis = True
                 st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
@@ -1056,6 +1059,25 @@ def main():
             summary = generate_custom_summary(st.session_state.uploaded_papers)
             if summary:
                 st.session_state.custom_summary_result = summary
+                
+                # Add custom summary to chat history
+                conv_id = f"custom_summary_{time.time()}"
+                paper_titles = [paper['metadata'].get('title', f'Paper {i+1}') for i, paper in enumerate(st.session_state.uploaded_papers)]
+                title = f"Custom Summary: {', '.join(paper_titles[:2])}{'...' if len(paper_titles) > 2 else ''}"
+                
+                initial_message = {
+                    "role": "assistant", 
+                    "content": f"**Custom Summary of {len(st.session_state.uploaded_papers)} Uploaded Papers**\n\n{summary}"
+                }
+                
+                st.session_state.conversations[conv_id] = {
+                    "title": title,
+                    "messages": [initial_message],
+                    "keywords": ["Custom Summary"],
+                    "search_mode": "custom",
+                    "retrieved_papers": st.session_state.uploaded_papers,
+                    "total_papers_found": len(st.session_state.uploaded_papers)
+                }
             else:
                 st.error("Failed to generate summary. Please try again.")
 
