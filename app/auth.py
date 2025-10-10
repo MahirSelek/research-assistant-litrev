@@ -171,38 +171,9 @@ def show_login_page():
         layout="centered"
     )
     
-    # Custom CSS for login page
+    # Simple CSS for login page
     st.markdown("""
     <style>
-    .login-container {
-        max-width: 400px;
-        margin: 0 auto;
-        padding: 2rem;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    
-    .logo-container {
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    
-    .company-name {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #2E8B57;
-        margin-top: 1rem;
-    }
-    
-    .login-form {
-        background: rgba(255, 255, 255, 0.05);
-        padding: 1.5rem;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
     .stButton > button {
         width: 100%;
         background: linear-gradient(90deg, #2E8B57, #3CB371);
@@ -211,13 +182,6 @@ def show_login_page():
         border-radius: 5px;
         padding: 0.5rem 1rem;
         font-weight: bold;
-        transition: all 0.3s ease;
-    }
-    
-    .stButton > button:hover {
-        background: linear-gradient(90deg, #3CB371, #2E8B57);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
     
     .error-message {
@@ -240,26 +204,19 @@ def show_login_page():
     </style>
     """, unsafe_allow_html=True)
     
-    # Main container
-    st.markdown('<div class="login-container">', unsafe_allow_html=True)
-    
     # Logo and company name
-    st.markdown('<div class="logo-container">', unsafe_allow_html=True)
-    
-    # Try to display logo
-    try:
-        st.image("polo-ggb-logo.png", width=120)
-    except:
-        st.markdown("🧬 **Polo GGB**")
-    
-    st.markdown('<div class="company-name">Polo d\'Innovazione di Genomica, Genetica e Biologia</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        # Try to display logo
+        try:
+            st.image("polo-ggb-logo.png", width=120)
+        except:
+            st.markdown("🧬 **Polo GGB**")
+        
+        st.markdown("**Polo d'Innovazione di Genomica, Genetica e Biologia**")
+        st.markdown("---")
     # Login form
-    st.markdown('<div class="login-form">', unsafe_allow_html=True)
     st.markdown("### Research Assistant Login")
-    
-    # Debug info
     st.info("Please login to access the Polo GGB Research Assistant")
     
     with st.form("login_form"):
@@ -284,8 +241,6 @@ def show_login_page():
             else:
                 st.markdown('<div class="error-message">❌ Please enter both username and password</div>', unsafe_allow_html=True)
     
-    st.markdown('</div>', unsafe_allow_html=True)
-    
     # Footer
     st.markdown("---")
     st.markdown("""
@@ -294,8 +249,6 @@ def show_login_page():
         <p>Genomics, Genetics, Biology</p>
     </div>
     """, unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
     
     # Initialize default admin on first run
     initialize_default_admin()
