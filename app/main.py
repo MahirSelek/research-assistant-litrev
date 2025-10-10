@@ -1081,8 +1081,10 @@ def main():
             else:
                 st.error("Failed to generate summary. Please try again.")
 
-    # Display custom summary if available
-    if st.session_state.get('custom_summary_result'):
+    # Display custom summary ONLY if no active conversation and no loading
+    if (st.session_state.get('custom_summary_result') and 
+        st.session_state.active_conversation_id is None and 
+        not st.session_state.get('is_loading_analysis', False)):
         st.markdown("### Custom Summary of Your Uploaded Papers")
         st.markdown(st.session_state.custom_summary_result)
         
@@ -1173,7 +1175,10 @@ def main():
         
         st.markdown("---")
 
-    if st.session_state.active_conversation_id is None and not st.session_state.get('custom_summary_result'):
+    # Show default message only if no custom summary and no active conversation
+    if (st.session_state.active_conversation_id is None and 
+        not st.session_state.get('custom_summary_result') and
+        not st.session_state.get('is_loading_analysis', False)):
         st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
     elif st.session_state.active_conversation_id is not None:
         active_id = st.session_state.active_conversation_id
