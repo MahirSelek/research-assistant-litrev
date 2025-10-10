@@ -142,6 +142,10 @@ class AuthenticationManager:
     
     def require_auth(self) -> bool:
         """Require authentication - redirect to login if not authenticated"""
+        # Debug: Check session state
+        if 'authenticated' not in st.session_state:
+            return False
+        
         if not self.is_session_valid():
             self.logout()
             return False
@@ -157,7 +161,7 @@ def initialize_default_admin():
     if not users:
         # Create default admin user
         auth_manager.create_user("admin", "pologgb2024")
-        st.success("Default admin user created: username='admin', password='pologgb2024'")
+        # Don't show success message to avoid confusion
 
 def show_login_page():
     """Display the login page"""
@@ -253,11 +257,18 @@ def show_login_page():
     
     # Login form
     st.markdown('<div class="login-form">', unsafe_allow_html=True)
-    st.markdown("### 🔐 Research Assistant Login")
+    st.markdown("### Research Assistant Login")
+    
+    # Debug info
+    st.info("Please login to access the Polo GGB Research Assistant")
     
     with st.form("login_form"):
         username = st.text_input("Username", placeholder="Enter your username")
         password = st.text_input("Password", type="password", placeholder="Enter your password")
+        
+        # Show default credentials for first-time users
+        st.markdown("**Default Admin Credentials:**")
+        st.code("Username: admin\nPassword: pologgb2024")
         
         submitted = st.form_submit_button("Login", use_container_width=True)
         
