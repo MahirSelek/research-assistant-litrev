@@ -931,7 +931,7 @@ def main():
         
         # Show user management for admin
         if st.session_state.get('username') == 'admin':
-            if st.button("👥 User Management", use_container_width=True):
+            if st.button("User Management", use_container_width=True):
                 st.session_state.show_user_management = True
                 st.rerun()
         
