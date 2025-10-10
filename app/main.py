@@ -947,7 +947,7 @@ def main():
         show_login_page()
         return
     
-    st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant", page_icon="polo-ggb-logo.png")
+    st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant", page_icon="favicon.svg")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     style_path = os.path.join(current_dir, "style.css")
     local_css(style_path)
@@ -1107,11 +1107,38 @@ def main():
         with st.expander("Upload PDF Files"):
             display_paper_management()
 
-    # CSS and JavaScript for clickable citations
+    # CSS with dark/light mode support and cross-browser compatibility
     st.markdown("""
     <style>
+    :root {
+        /* Light mode colors */
+        --primary-color: #007bff;
+        --primary-hover: #0056b3;
+        --primary-bg: #e3f2fd;
+        --text-color: #333333;
+        --bg-color: #ffffff;
+        --border-color: #e0e0e0;
+        --card-bg: #f8f9fa;
+        --sidebar-bg: #f1f3f4;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+        :root {
+            /* Dark mode colors */
+            --primary-color: #4fc3f7;
+            --primary-hover: #29b6f6;
+            --primary-bg: #1a237e;
+            --text-color: #e0e0e0;
+            --bg-color: #121212;
+            --border-color: #424242;
+            --card-bg: #1e1e1e;
+            --sidebar-bg: #2d2d2d;
+        }
+    }
+    
+    /* Citation links with theme support */
     .citation-link {
-        color: #007bff;
+        color: var(--primary-color);
         cursor: pointer;
         text-decoration: underline;
         font-weight: bold;
@@ -1121,24 +1148,93 @@ def main():
         display: inline-block;
     }
     .citation-link:hover {
-        color: #0056b3;
-        background-color: #e3f2fd;
+        color: var(--primary-hover);
+        background-color: var(--primary-bg);
         transform: scale(1.05);
     }
     
-    /* Make sidebar wider */
+    /* Sidebar styling with theme support */
     .css-1d391kg {
         width: 350px !important;
+        background-color: var(--sidebar-bg) !important;
     }
     
-    /* Adjust main content area */
+    /* Main content area with theme support */
     .css-1y0tads {
         margin-left: 350px !important;
+        background-color: var(--bg-color) !important;
+        color: var(--text-color) !important;
     }
     
     /* Ensure sidebar content fits better */
     .css-1lcbmhc .css-1y0tads {
         padding-left: 1rem;
+    }
+    
+    /* Theme-aware text colors */
+    .stMarkdown, .stText, .stSelectbox, .stTextInput, .stTextArea {
+        color: var(--text-color) !important;
+    }
+    
+    /* Theme-aware background for expanders */
+    .streamlit-expanderHeader {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+    }
+    
+    /* Theme-aware buttons */
+    .stButton > button {
+        background-color: var(--primary-color) !important;
+        color: white !important;
+        border: 1px solid var(--primary-color) !important;
+    }
+    
+    .stButton > button:hover {
+        background-color: var(--primary-hover) !important;
+        border-color: var(--primary-hover) !important;
+    }
+    
+    /* Theme-aware form elements */
+    .stSelectbox > div > div {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+    }
+    
+    /* Theme-aware info boxes */
+    .stAlert {
+        background-color: var(--card-bg) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    /* Theme-aware success/error messages */
+    .stSuccess {
+        background-color: rgba(40, 167, 69, 0.1) !important;
+        border: 1px solid rgba(40, 167, 69, 0.3) !important;
+        color: var(--text-color) !important;
+    }
+    
+    .stError {
+        background-color: rgba(220, 53, 69, 0.1) !important;
+        border: 1px solid rgba(220, 53, 69, 0.3) !important;
+        color: var(--text-color) !important;
+    }
+    
+    /* Theme-aware chat messages */
+    .stChatMessage {
+        background-color: var(--card-bg) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    /* Cross-browser compatibility */
+    * {
+        box-sizing: border-box;
+    }
+    
+    /* Ensure consistent font rendering */
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
     }
     </style>
     """, unsafe_allow_html=True)
