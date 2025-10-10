@@ -130,6 +130,48 @@ def initialize_session_state():
         st.session_state.generate_custom_summary = False
     if 'custom_summary_result' not in st.session_state:
         st.session_state.custom_summary_result = None
+    if 'is_loading_analysis' not in st.session_state:
+        st.session_state.is_loading_analysis = False
+    if 'loading_message' not in st.session_state:
+        st.session_state.loading_message = ""
+
+def show_loading_overlay(message="Generating new analysis..."):
+    """Show a loading overlay with message"""
+    st.markdown(f"""
+    <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        color: white;
+        font-size: 18px;
+    ">
+        <div style="text-align: center;">
+            <div style="
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #3498db;
+                border-radius: 50%;
+                width: 50px;
+                height: 50px;
+                animation: spin 2s linear infinite;
+                margin: 0 auto 20px;
+            "></div>
+            <p>{message}</p>
+        </div>
+    </div>
+    <style>
+    @keyframes spin {{
+        0% {{ transform: rotate(0deg); }}
+        100% {{ transform: rotate(360deg); }}
+    }}
+    </style>
+    """, unsafe_allow_html=True)
 
 def local_css(file_name):
     try:
@@ -612,86 +654,86 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
         st.error("Please select at least one keyword.")
         return None, [], 0
 
-    with st.spinner("Searching for highly relevant papers and generating a comprehensive, in-depth report..."):
-        time_filter_dict = None
-        now = datetime.datetime.now()
-        # Use 2025 since that's the year of your papers
-        data_year = 2025
-        
-        if time_filter_type == "All time":
-            time_filter_dict = None  # No time filter
-        elif time_filter_type == "All year":
-            # Search for 2025 papers in the format "dd MMM yyyy" (e.g., "07 Aug 2025")
-            time_filter_dict = {"gte": f"01 Jan {data_year}", "lte": f"31 Dec {data_year}"}
-        elif time_filter_type == "Last 3 months":
-            # For last 3 months, go back 90 days from current date but use 2025 year
-            three_months_ago = now - datetime.timedelta(days=90)
-            time_filter_dict = {"gte": f"01 Jan {data_year}"}  # From start of 2025
-        elif time_filter_type == "Last 6 months":
-            # For last 6 months, go back 180 days from current date but use 2025 year
-            six_months_ago = now - datetime.timedelta(days=180)
-            time_filter_dict = {"gte": f"01 Jan {data_year}"}  # From start of 2025
-        elif time_filter_type in ["January", "February", "March", "April", "May", "June", 
-                                 "July", "August", "September", "October", "November", "December"]:
-            # Map month names to abbreviations and create date range in "dd MMM yyyy" format
-            month_map = {
-                "January": "Jan", "February": "Feb", "March": "Mar", "April": "Apr", 
-                "May": "May", "June": "Jun", "July": "Jul", "August": "Aug", 
-                "September": "Sep", "October": "Oct", "November": "Nov", "December": "Dec"
-            }
-            next_month_map = {
-                "January": "Feb", "February": "Mar", "March": "Apr", "April": "May", 
-                "May": "Jun", "June": "Jul", "July": "Aug", "August": "Sep", 
-                "September": "Oct", "October": "Nov", "November": "Dec", "December": "Jan"
-            }
-            month_abbr = month_map[time_filter_type]
-            next_month_abbr = next_month_map[time_filter_type]
-            next_year = data_year + 1 if time_filter_type == "December" else data_year
-            time_filter_dict = {"gte": f"01 {month_abbr} {data_year}", "lt": f"01 {next_month_abbr} {next_year}"}
-        
-        # Skip Elasticsearch time filtering - we'll use GCS instead
-        all_papers, total_found = perform_hybrid_search(
-            keywords, 
-            time_filter_dict=None,  # No ES time filtering
-            n_results=100, 
-            max_final_results=15,
-            search_mode=search_mode
-        )
-        
-        # Apply GCS-based time filtering if needed
-        if time_filter_type != "All time" and all_papers:
-            all_papers = filter_papers_by_gcs_dates(all_papers, time_filter_type)
-            total_found = len(all_papers) 
-        
-        if not all_papers:
-            search_mode_text = "ALL of the selected keywords" if search_mode == "all_keywords" else "AT LEAST ONE of the selected keywords"
-            st.error(f"No papers found that contain {search_mode_text} within the specified time window. Please try a different combination of keywords.")
-            return None, [], 0
+    # Loading is now handled at the UI level
+    time_filter_dict = None
+    now = datetime.datetime.now()
+    # Use 2025 since that's the year of your papers
+    data_year = 2025
+    
+    if time_filter_type == "All time":
+        time_filter_dict = None  # No time filter
+    elif time_filter_type == "All year":
+        # Search for 2025 papers in the format "dd MMM yyyy" (e.g., "07 Aug 2025")
+        time_filter_dict = {"gte": f"01 Jan {data_year}", "lte": f"31 Dec {data_year}"}
+    elif time_filter_type == "Last 3 months":
+        # For last 3 months, go back 90 days from current date but use 2025 year
+        three_months_ago = now - datetime.timedelta(days=90)
+        time_filter_dict = {"gte": f"01 Jan {data_year}"}  # From start of 2025
+    elif time_filter_type == "Last 6 months":
+        # For last 6 months, go back 180 days from current date but use 2025 year
+        six_months_ago = now - datetime.timedelta(days=180)
+        time_filter_dict = {"gte": f"01 Jan {data_year}"}  # From start of 2025
+    elif time_filter_type in ["January", "February", "March", "April", "May", "June", 
+                             "July", "August", "September", "October", "November", "December"]:
+        # Map month names to abbreviations and create date range in "dd MMM yyyy" format
+        month_map = {
+            "January": "Jan", "February": "Feb", "March": "Mar", "April": "Apr", 
+            "May": "May", "June": "Jun", "July": "Jul", "August": "Aug", 
+            "September": "Sep", "October": "Oct", "November": "Nov", "December": "Dec"
+        }
+        next_month_map = {
+            "January": "Feb", "February": "Mar", "March": "Apr", "April": "May", 
+            "May": "Jun", "June": "Jul", "July": "Aug", "August": "Sep", 
+            "September": "Oct", "October": "Nov", "November": "Dec", "December": "Jan"
+        }
+        month_abbr = month_map[time_filter_type]
+        next_month_abbr = next_month_map[time_filter_type]
+        next_year = data_year + 1 if time_filter_type == "December" else data_year
+        time_filter_dict = {"gte": f"01 {month_abbr} {data_year}", "lt": f"01 {next_month_abbr} {next_year}"}
+    
+    # Skip Elasticsearch time filtering - we'll use GCS instead
+    all_papers, total_found = perform_hybrid_search(
+        keywords, 
+        time_filter_dict=None,  # No ES time filtering
+        n_results=100, 
+        max_final_results=15,
+        search_mode=search_mode
+    )
+    
+    # Apply GCS-based time filtering if needed
+    if time_filter_type != "All time" and all_papers:
+        all_papers = filter_papers_by_gcs_dates(all_papers, time_filter_type)
+        total_found = len(all_papers)
+    
+    if not all_papers:
+        search_mode_text = "ALL of the selected keywords" if search_mode == "all_keywords" else "AT LEAST ONE of the selected keywords"
+        st.error(f"No papers found that contain {search_mode_text} within the specified time window. Please try a different combination of keywords.")
+        return None, [], 0
 
-        # For OR queries: Use top 15 for analysis, but keep ALL papers for references
-        # For AND queries: Use the already filtered top papers
-        if search_mode == "any_keyword":
-            # Papers are already sorted by relevance score from perform_or_search
-            top_papers_for_analysis = all_papers[:15]  # Use top 15 most relevant papers for analysis
-            papers_for_references = all_papers  # Use ALL papers for references
-        else:
-            # For AND queries, use the same papers for both analysis and references
-            top_papers_for_analysis = all_papers
-            papers_for_references = all_papers
+    # For OR queries: Use top 15 for analysis, but keep ALL papers for references
+    # For AND queries: Use the already filtered top papers
+    if search_mode == "any_keyword":
+        # Papers are already sorted by relevance score from perform_or_search
+        top_papers_for_analysis = all_papers[:15]  # Use top 15 most relevant papers for analysis
+        papers_for_references = all_papers  # Use ALL papers for references
+    else:
+        # For AND queries, use the same papers for both analysis and references
+        top_papers_for_analysis = all_papers
+        papers_for_references = all_papers
 
-        context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
-        # <<< MODIFICATION: Build the context for the LLM using only the top 15 papers >>>
-        for i, result in enumerate(top_papers_for_analysis):
-            meta = result.get('metadata', {})
-            title = meta.get('title', 'N/A')
-            link = get_paper_link(meta)
-            content_preview = (meta.get('abstract') or result.get('content') or '')[:4000]
-            context += f"SOURCE [{i+1}]:\n"
-            context += f"Title: {title}\n"
-            context += f"Link: {link}\n"
-            context += f"Content: {content_preview}\n---\n\n"
-        
-        prompt = f"""{context}
+    context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
+    # <<< MODIFICATION: Build the context for the LLM using only the top 15 papers >>>
+    for i, result in enumerate(top_papers_for_analysis):
+        meta = result.get('metadata', {})
+        title = meta.get('title', 'N/A')
+        link = get_paper_link(meta)
+        content_preview = (meta.get('abstract') or result.get('content') or '')[:4000]
+        context += f"SOURCE [{i+1}]:\n"
+        context += f"Title: {title}\n"
+        context += f"Link: {link}\n"
+        context += f"Content: {content_preview}\n---\n\n"
+    
+    prompt = f"""{context}
 ---
 **CRITICAL TASK:**
 
@@ -715,17 +757,17 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
 
 **CRITICAL INSTRUCTION FOR CITATIONS:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].` **IMPORTANT:** Always separate multiple citations with individual brackets, like `[2][3][4]` NOT `[234]`. **CRUCIAL:** In the Key Paper Summaries section, do NOT add citation numbers to the paper titles - only add citations at the end of the summary paragraphs. **FORMATTING RULE:** All citations MUST be in square brackets [1], [2], [3], etc. - never use unbracketed numbers for citations. **CITATION LIMIT:** Maximum 3 citations per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
 """
-        analysis = post_message_vertexai(prompt)
-        
-        # Make citations clickable
-        if analysis:
-            # First, reload metadata from .metadata.json files to get the links
-            papers_for_references = reload_paper_metadata(papers_for_references)
-            top_papers_for_analysis = reload_paper_metadata(top_papers_for_analysis)
-            analysis = display_citations_separately(analysis, papers_for_references, top_papers_for_analysis, search_mode)
-        
-        # <<< MODIFICATION: Return all three pieces of information >>>
-        return analysis, papers_for_references, total_found
+    analysis = post_message_vertexai(prompt)
+    
+    # Make citations clickable
+    if analysis:
+        # First, reload metadata from .metadata.json files to get the links
+        papers_for_references = reload_paper_metadata(papers_for_references)
+        top_papers_for_analysis = reload_paper_metadata(top_papers_for_analysis)
+        analysis = display_citations_separately(analysis, papers_for_references, top_papers_for_analysis, search_mode)
+    
+    # <<< MODIFICATION: Return all three pieces of information >>>
+    return analysis, papers_for_references, total_found
 
 def generate_custom_summary(uploaded_papers):
     """Generate a summary of uploaded papers"""
@@ -885,26 +927,39 @@ def main():
             ])
             
             if st.form_submit_button("Search & Analyze"):
-                # Store the selected search mode in session state
-                st.session_state.search_mode = search_mode_display
-                
-                # <<< MODIFICATION: Handle the new three-part return from the processing function >>>
-                analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type, search_mode_display)
-                if analysis_result:
-                    conv_id = f"conv_{time.time()}"
-                    search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
-                    initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)} (Search Mode: {search_mode_text})**\n\n{analysis_result}"}
-                    title = generate_conversation_title(analysis_result)
-                    st.session_state.conversations[conv_id] = {
-                        "title": title, 
-                        "messages": [initial_message], 
-                        "keywords": selected_keywords,
-                        "search_mode": search_mode_display,
-                        "retrieved_papers": retrieved_papers,
-                        "total_papers_found": total_found # <<< MODIFICATION: Store the total count
-                    }
-                    st.session_state.active_conversation_id = conv_id
-                    st.rerun()
+                # Set loading state
+                st.session_state.is_loading_analysis = True
+                st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
+                st.rerun()
+        
+        # Handle loading state and process analysis
+        if st.session_state.get('is_loading_analysis', False):
+            # Show loading overlay
+            show_loading_overlay(st.session_state.loading_message)
+            
+            # Process the analysis
+            analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type, search_mode_display)
+            
+            # Clear loading state
+            st.session_state.is_loading_analysis = False
+            
+            if analysis_result:
+                conv_id = f"conv_{time.time()}"
+                search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
+                initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)} (Search Mode: {search_mode_text})**\n\n{analysis_result}"}
+                title = generate_conversation_title(analysis_result)
+                st.session_state.conversations[conv_id] = {
+                    "title": title, 
+                    "messages": [initial_message], 
+                    "keywords": selected_keywords,
+                    "search_mode": search_mode_display,
+                    "retrieved_papers": retrieved_papers,
+                    "total_papers_found": total_found # <<< MODIFICATION: Store the total count
+                }
+                st.session_state.active_conversation_id = conv_id
+                st.rerun()
+            else:
+                st.error("Failed to generate analysis. Please try again.")
 
         st.markdown("---")
         
@@ -987,6 +1042,11 @@ def main():
     """, unsafe_allow_html=True)
     
     st.markdown("<h1>🧬 POLO-GGB RESEARCH ASSISTANT</h1>", unsafe_allow_html=True)
+
+    # Show loading overlay if analysis is in progress
+    if st.session_state.get('is_loading_analysis', False):
+        show_loading_overlay(st.session_state.loading_message)
+        return  # Don't render the rest of the page while loading
 
     # Handle custom summary generation
     if st.session_state.get('generate_custom_summary', False):
