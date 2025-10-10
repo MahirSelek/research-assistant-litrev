@@ -1062,10 +1062,7 @@ def main():
     if st.session_state.get('generate_custom_summary', False):
         st.session_state.generate_custom_summary = False  # Reset the flag
         
-        # Show loading overlay for custom summary
-        show_loading_overlay("Generating summary of your uploaded papers...")
-        
-        # Generate the summary
+        # Generate the summary immediately
         summary = generate_custom_summary(st.session_state.uploaded_papers)
         
         if summary:
@@ -1091,6 +1088,9 @@ def main():
             }
         else:
             st.error("Failed to generate summary. Please try again.")
+        
+        # Force rerun to show results immediately
+        st.rerun()
 
     # Display custom summary if available and no active conversation
     if (st.session_state.get('custom_summary_result') and 
