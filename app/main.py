@@ -852,14 +852,36 @@ def display_chat_history():
         return
 
     grouped_convs = defaultdict(list)
-    sorted_conv_ids = sorted(st.session_state.conversations.keys(), reverse=True)
+    
+    # Sort conversations by last interaction time (most recent first)
+    def get_last_interaction_time(conv_id, conv_data):
+        # Use last_interaction_time if available, otherwise fall back to creation time
+        if 'last_interaction_time' in conv_data:
+            return conv_data['last_interaction_time']
+        
+        # Fallback to creation time from conversation ID
+        try:
+            if conv_id.startswith('custom_summary_'):
+                timestamp_str = conv_id.split('_', 2)[2]
+            else:
+                timestamp_str = conv_id.split('_')[1]
+            return float(timestamp_str)
+        except (IndexError, ValueError):
+            return 0
+    
+    sorted_conv_ids = sorted(
+        st.session_state.conversations.keys(), 
+        key=lambda conv_id: get_last_interaction_time(conv_id, st.session_state.conversations[conv_id]),
+        reverse=True
+    )
+    
     for conv_id in sorted_conv_ids:
         try:
-            # Handle custom summary IDs differently
+            # Get creation date for grouping by month
             if conv_id.startswith('custom_summary_'):
-                timestamp_str = conv_id.split('_', 2)[2]  # Get the timestamp part
+                timestamp_str = conv_id.split('_', 2)[2]
             else:
-                timestamp_str = conv_id.split('_')[1]  # Regular conversation IDs
+                timestamp_str = conv_id.split('_')[1]
             
             ts = float(timestamp_str)
             conv_date = datetime.datetime.fromtimestamp(ts)
@@ -883,6 +905,8 @@ def display_chat_history():
             if st.button(title, key=f"btn_{conv_id}", use_container_width=True):
                 if st.session_state.active_conversation_id != conv_id:
                     st.session_state.active_conversation_id = conv_id
+                    # Update last interaction time for this conversation
+                    st.session_state.conversations[conv_id]['last_interaction_time'] = time.time()
                     st.rerun()
 
 def main():
@@ -1178,6 +1202,8 @@ def main():
 
         if prompt := st.chat_input("Ask a follow-up question..."):
             active_conv["messages"].append({"role": "user", "content": prompt})
+            # Update last interaction time for this conversation
+            active_conv['last_interaction_time'] = time.time()
             st.rerun()
 
     if st.session_state.active_conversation_id and st.session_state.conversations[st.session_state.active_conversation_id]["messages"][-1]["role"] == "user":
@@ -1218,6 +1244,8 @@ Assistant Response:"""
                 # For follow-up responses, we don't have separate analysis papers, so use all papers
                 response_text = display_citations_separately(response_text, retrieved_papers, None, search_mode)
                 active_conv["messages"].append({"role": "assistant", "content": response_text})
+                # Update last interaction time for this conversation
+                active_conv['last_interaction_time'] = time.time()
                 st.rerun()
 
 if __name__ == "__main__":
