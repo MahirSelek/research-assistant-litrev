@@ -464,7 +464,7 @@ def make_inline_citations_clickable(analysis_text: str, analysis_papers: list) -
     
     return clickable_text
 
-def display_citations_separately(analysis_text: str, papers: list, analysis_papers: list = None, search_mode: str = "all_keywords") -> str:
+def display_citations_separately(analysis_text: str, papers: list, analysis_papers: list = None, search_mode: str = "all_keywords", include_references: bool = True) -> str:
     """
     Display citations separately at the end, with different sections for OR queries.
     """
@@ -474,6 +474,10 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
     # Make inline citations clickable for analysis papers
     if analysis_papers:
         analysis_text = make_inline_citations_clickable(analysis_text, analysis_papers)
+    
+    # Only add references section if requested
+    if not include_references:
+        return analysis_text
     
     citations_section = "\n\n---\n\n### References\n\n"
     
@@ -1166,36 +1170,37 @@ def main():
         active_id = st.session_state.active_conversation_id
         active_conv = st.session_state.conversations[active_id]
         
-        for message in active_conv["messages"]:
+        for message_index, message in enumerate(active_conv["messages"]):
             avatar = BOT_AVATAR if message["role"] == "assistant" else USER_AVATAR
             with st.chat_message(message["role"], avatar=avatar):
                 st.markdown(message["content"], unsafe_allow_html=True)
-
-        # Show papers section only for regular analyses, not custom summaries
-        if ("retrieved_papers" in active_conv and active_conv["retrieved_papers"] and 
-            active_conv.get("search_mode") != "custom"):
-            with st.expander("View and Download Retrieved Papers for this Analysis"):
-                # Display papers without the count message
                 
-                for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
-                    meta = paper.get('metadata', {})
-                    title = meta.get('title', 'N/A')
-                    paper_id = paper.get('paper_id')
+                # Show papers section only for the first assistant message and regular analyses, not custom summaries
+                if (message["role"] == "assistant" and message_index == 0 and 
+                    "retrieved_papers" in active_conv and active_conv["retrieved_papers"] and 
+                    active_conv.get("search_mode") != "custom"):
+                    with st.expander("View and Download Retrieved Papers for this Analysis"):
+                        # Display papers without the count message
+                        
+                        for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
+                            meta = paper.get('metadata', {})
+                            title = meta.get('title', 'N/A')
+                            paper_id = paper.get('paper_id')
 
-                    col1, col2 = st.columns([4, 1])
-                    with col1:
-                        st.markdown(f"**{paper_index+1}. {title}**")
-                    with col2:
-                        if paper_id:
-                            pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
-                            if pdf_bytes:
-                                st.download_button(
-                                    label="Download PDF",
-                                    data=pdf_bytes,
-                                    file_name=paper_id,
-                                    mime="application/pdf",
-                                    key=f"download_{active_id}_{paper_id}"
-                                )
+                            col1, col2 = st.columns([4, 1])
+                            with col1:
+                                st.markdown(f"**{paper_index+1}. {title}**")
+                            with col2:
+                                if paper_id:
+                                    pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
+                                    if pdf_bytes:
+                                        st.download_button(
+                                            label="Download PDF",
+                                            data=pdf_bytes,
+                                            file_name=paper_id,
+                                            mime="application/pdf",
+                                            key=f"download_{active_id}_{paper_id}"
+                                        )
 
 
 
@@ -1241,8 +1246,8 @@ Assistant Response:"""
                 retrieved_papers = active_conv.get("retrieved_papers", [])
                 search_mode = active_conv.get("search_mode", "all_keywords")
                 
-                # For follow-up responses, use all retrieved papers to make citations clickable
-                response_text = display_citations_separately(response_text, retrieved_papers, retrieved_papers, search_mode)
+                # For follow-up responses, use all retrieved papers to make citations clickable but don't include references section
+                response_text = display_citations_separately(response_text, retrieved_papers, retrieved_papers, search_mode, include_references=False)
                 active_conv["messages"].append({"role": "assistant", "content": response_text})
                 # Update last interaction time for this conversation
                 active_conv['last_interaction_time'] = time.time()
