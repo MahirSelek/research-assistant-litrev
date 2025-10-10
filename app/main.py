@@ -763,7 +763,7 @@ def generate_custom_summary(uploaded_papers):
     return post_message_vertexai(prompt)
 
 def display_paper_management():
-    st.subheader("📄 Upload PDF Files")
+    st.subheader("Upload PDF Files")
     st.info("Upload PDF files to generate custom summary of your documents.")
 
     uploaded_pdfs = st.file_uploader("Choose PDF files", accept_multiple_files=True, type=['pdf'], key="pdf_uploader_v2")
@@ -797,9 +797,9 @@ def display_paper_management():
                         'content': paper_content
                     }
                     st.session_state.uploaded_papers.append(paper_data)
-                    st.success(f"✅ Successfully processed '{uploaded_file.name}' (Content length: {len(paper_content)} chars)")
+                    st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_content)} chars)")
                 else:
-                    st.error(f"❌ Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
+                    st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
         st.rerun()
     
 
@@ -910,20 +910,20 @@ def main():
         
         # Display uploaded papers count
         if st.session_state.uploaded_papers:
-            st.info(f"📄 {len(st.session_state.uploaded_papers)} papers uploaded")
-            with st.expander("📋 View uploaded papers"):
+            st.info(f"{len(st.session_state.uploaded_papers)} papers uploaded")
+            with st.expander("View uploaded papers"):
                 for i, paper in enumerate(st.session_state.uploaded_papers):
                     title = paper['metadata'].get('title', 'Unknown title')
                     st.write(f"{i+1}. {title}")
             
             # Custom summary button in sidebar
-            if st.button("📝 Generate Custom Summary", use_container_width=True, type="primary"):
+            if st.button("Generate Custom Summary", use_container_width=True, type="primary"):
                 st.session_state.generate_custom_summary = True
                 st.rerun()
             
             # Clear summary button if summary exists
             if st.session_state.get('custom_summary_result'):
-                if st.button("🗑️ Clear Summary", use_container_width=True):
+                if st.button("Clear Summary", use_container_width=True):
                     st.session_state.custom_summary_result = None
                     st.session_state.custom_summary_chat = []  # Also clear chat history
                     st.rerun()
@@ -931,7 +931,7 @@ def main():
             # Show chat history if exists
             if st.session_state.get('custom_summary_chat'):
                 st.markdown("---")
-                st.markdown("**💬 Chat History:**")
+                st.markdown("**Chat History:**")
                 for i, message in enumerate(st.session_state.custom_summary_chat[-3:]):  # Show last 3 messages
                     if message["role"] == "user":
                         st.caption(f"**You:** {message['content'][:50]}...")
@@ -941,13 +941,13 @@ def main():
                 if len(st.session_state.custom_summary_chat) > 3:
                     st.caption(f"... and {len(st.session_state.custom_summary_chat) - 3} more messages")
             
-            if st.button("🗑️ Clear uploaded papers"):
+            if st.button("Clear uploaded papers"):
                 st.session_state.uploaded_papers = []
                 st.rerun()
         else:
             st.caption("No papers uploaded yet")
         
-        with st.expander("📁 Upload PDF Files"):
+        with st.expander("Upload PDF Files"):
             display_paper_management()
 
     # CSS and JavaScript for clickable citations
@@ -998,7 +998,7 @@ def main():
         
         # Chat interface for custom summary
         st.markdown("### Ask Questions About Your Summary")
-        st.info("💡 You can ask questions about the summary, specific papers, or request more details about any topic.")
+        st.info("You can ask questions about the summary, specific papers, or request more details about any topic.")
         
         # Example questions
         st.markdown("**Example questions you can ask:**")
