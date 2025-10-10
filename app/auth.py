@@ -226,10 +226,6 @@ def show_login_page():
             username = st.text_input("Username", placeholder="Enter your username", key="login_username")
             password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
             
-            # Show default credentials for first-time users
-            st.markdown("**Default Admin Credentials:**")
-            st.code("Username: admin\nPassword: pologgb2024")
-            
             submitted = st.form_submit_button("Login", use_container_width=True)
     
     with tab2:
