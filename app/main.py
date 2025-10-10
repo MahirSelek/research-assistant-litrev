@@ -113,24 +113,46 @@ def get_pdf_bytes_from_gcs(bucket_name: str, blob_name: str) -> bytes | None:
         st.error(f"Failed to download from GCS: {e}")
         return None
 
+def get_user_key(key):
+    """Get user-specific session key"""
+    current_user = st.session_state.get('username', 'default')
+    return f"{key}_{current_user}"
+
+def get_user_session(key, default=None):
+    """Get user-specific session value"""
+    user_key = get_user_key(key)
+    return st.session_state.get(user_key, default)
+
+def set_user_session(key, value):
+    """Set user-specific session value"""
+    user_key = get_user_key(key)
+    st.session_state[user_key] = value
+
 def initialize_session_state():
+    # Get current username for user-specific data
+    current_user = st.session_state.get('username', 'default')
+    
+    # Initialize user-specific session state
+    if get_user_key('conversations') not in st.session_state:
+        set_user_session('conversations', {})
+    if get_user_key('active_conversation_id') not in st.session_state:
+        set_user_session('active_conversation_id', None)
+    if get_user_key('selected_keywords') not in st.session_state:
+        set_user_session('selected_keywords', [])
+    if get_user_key('search_mode') not in st.session_state:
+        set_user_session('search_mode', "all_keywords")
+    if get_user_key('uploaded_papers') not in st.session_state:
+        set_user_session('uploaded_papers', [])
+    if get_user_key('custom_summary_chat') not in st.session_state:
+        set_user_session('custom_summary_chat', [])
+    
+    # Global session state (shared across users)
     if 'es_manager' not in st.session_state:
         st.session_state.es_manager = get_es_manager(cloud_id=ELASTIC_CLOUD_ID, username=ELASTIC_USER, password=ELASTIC_PASSWORD)
-    if 'conversations' not in st.session_state:
-        st.session_state.conversations = {}
-    if 'active_conversation_id' not in st.session_state:
-        st.session_state.active_conversation_id = None
-    if 'selected_keywords' not in st.session_state:
-        st.session_state.selected_keywords = []
-    if 'search_mode' not in st.session_state:
-        st.session_state.search_mode = "all_keywords"
-    if 'uploaded_papers' not in st.session_state:
-        st.session_state.uploaded_papers = []
     if 'use_custom_search' not in st.session_state:
         st.session_state.use_custom_search = False
     if 'generate_custom_summary' not in st.session_state:
         st.session_state.generate_custom_summary = False
-    # Custom summaries are now handled through chat history
     if 'is_loading_analysis' not in st.session_state:
         st.session_state.is_loading_analysis = False
     if 'loading_message' not in st.session_state:
@@ -835,13 +857,15 @@ def display_paper_management():
                 paper_content = read_pdf_content(pdf_content_bytes)
                 
                 if paper_content:
-                    # Store in session state for custom search
+                    # Store in user-specific session state for custom search
                     paper_data = {
                         'paper_id': f"uploaded_{pdf_base_name}",
                         'metadata': metadata,
                         'content': paper_content
                     }
-                    st.session_state.uploaded_papers.append(paper_data)
+                    uploaded_papers = get_user_session('uploaded_papers', [])
+                    uploaded_papers.append(paper_data)
+                    set_user_session('uploaded_papers', uploaded_papers)
                     st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_content)} chars)")
                 else:
                     st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
@@ -851,7 +875,10 @@ def display_paper_management():
 
 def display_chat_history():
     st.markdown("<h3>Chat History</h3>", unsafe_allow_html=True)
-    if not st.session_state.conversations:
+    
+    # Get user-specific conversations
+    conversations = get_user_session('conversations', {})
+    if not conversations:
         st.caption("No past analyses found.")
         return
 
@@ -874,8 +901,8 @@ def display_chat_history():
             return 0
     
     sorted_conv_ids = sorted(
-        st.session_state.conversations.keys(), 
-        key=lambda conv_id: get_last_interaction_time(conv_id, st.session_state.conversations[conv_id]),
+        conversations.keys(), 
+        key=lambda conv_id: get_last_interaction_time(conv_id, conversations[conv_id]),
         reverse=True
     )
     
@@ -890,7 +917,7 @@ def display_chat_history():
             ts = float(timestamp_str)
             conv_date = datetime.datetime.fromtimestamp(ts)
             month_key = conv_date.strftime("%Y-%m")
-            title = st.session_state.conversations[conv_id].get("title", "Chat...")
+            title = conversations[conv_id].get("title", "Chat...")
             grouped_convs[month_key].append((conv_id, title))
         except (IndexError, ValueError):
             continue
@@ -907,10 +934,11 @@ def display_chat_history():
 
         for conv_id, title in grouped_convs[month_key]:
             if st.button(title, key=f"btn_{conv_id}", use_container_width=True):
-                if st.session_state.active_conversation_id != conv_id:
-                    st.session_state.active_conversation_id = conv_id
+                if get_user_session('active_conversation_id') != conv_id:
+                    set_user_session('active_conversation_id', conv_id)
                     # Update last interaction time for this conversation
-                    st.session_state.conversations[conv_id]['last_interaction_time'] = time.time()
+                    conversations[conv_id]['last_interaction_time'] = time.time()
+                    set_user_session('conversations', conversations)
                     st.rerun()
 
 def main():
@@ -945,11 +973,11 @@ def main():
                 st.markdown("**Role:** User")
         
         if st.button("➕ New Analysis", use_container_width=True):
-            st.session_state.active_conversation_id = None
-            st.session_state.selected_keywords = []
-            st.session_state.search_mode = "all_keywords"
+            set_user_session('active_conversation_id', None)
+            set_user_session('selected_keywords', [])
+            set_user_session('search_mode', "all_keywords")
             # Custom summaries are now in chat history
-            st.session_state.custom_summary_chat = []  # Clear custom summary chat
+            set_user_session('custom_summary_chat', [])  # Clear custom summary chat
             st.rerun()
 
         display_chat_history()
@@ -960,7 +988,7 @@ def main():
         st.markdown("---")
         with st.form(key="new_analysis_form"):
             st.subheader("Start a New Analysis")
-            selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=st.session_state.get('selected_keywords', []))
+            selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=get_user_session('selected_keywords', []))
             
             # Search mode selection
             search_mode_options = {
@@ -971,7 +999,7 @@ def main():
                 "Search Mode", 
                 options=list(search_mode_options.keys()),
                 format_func=lambda x: search_mode_options[x],
-                index=0 if st.session_state.get('search_mode', 'all_keywords') == 'all_keywords' else 1
+                index=0 if get_user_session('search_mode', 'all_keywords') == 'all_keywords' else 1
             )
             
             time_filter_type = st.selectbox("Filter by Time Window", [
@@ -983,9 +1011,11 @@ def main():
             ])
             
             if st.form_submit_button("Search & Analyze"):
+                # Store user-specific form data
+                set_user_session('selected_keywords', selected_keywords)
+                set_user_session('search_mode', search_mode_display)
                 # Clear custom summary when starting new analysis
-                st.session_state.custom_summary_result = None
-                st.session_state.custom_summary_chat = []
+                set_user_session('custom_summary_chat', [])
                 # Set loading state
                 st.session_state.is_loading_analysis = True
                 st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
@@ -997,28 +1027,36 @@ def main():
             show_loading_overlay(st.session_state.loading_message)
             
             # Process the analysis
-            analysis_result, retrieved_papers, total_found = process_keyword_search(selected_keywords, time_filter_type, search_mode_display)
+            analysis_result, retrieved_papers, total_found = process_keyword_search(get_user_session('selected_keywords', []), time_filter_type, get_user_session('search_mode', 'all_keywords'))
             
             # Clear loading state
             st.session_state.is_loading_analysis = False
             
             if analysis_result:
                 conv_id = f"conv_{time.time()}"
+                search_mode_display = get_user_session('search_mode', 'all_keywords')
+                selected_keywords = get_user_session('selected_keywords', [])
                 search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
                 initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)} (Search Mode: {search_mode_text})**\n\n{analysis_result}"}
                 title = generate_conversation_title(analysis_result)
-                st.session_state.conversations[conv_id] = {
+                
+                # Get user-specific conversations and add new one
+                conversations = get_user_session('conversations', {})
+                conversations[conv_id] = {
                     "title": title, 
                     "messages": [initial_message], 
                     "keywords": selected_keywords,
                     "search_mode": search_mode_display,
                     "retrieved_papers": retrieved_papers,
-                    "total_papers_found": total_found # <<< MODIFICATION: Store the total count
+                    "total_papers_found": total_found,
+                    "created_at": time.time(),
+                    "last_interaction_time": time.time()
                 }
+                set_user_session('conversations', conversations)
                 # Clear any previous analysis and set new one
-                st.session_state.active_conversation_id = conv_id
+                set_user_session('active_conversation_id', conv_id)
                 # Custom summaries are now in chat history
-                st.session_state.custom_summary_chat = []  # Clear custom summary chat
+                set_user_session('custom_summary_chat', [])  # Clear custom summary chat
                 st.rerun()
             else:
                 st.error("Failed to generate analysis. Please try again.")
@@ -1026,17 +1064,18 @@ def main():
         st.markdown("---")
         
         # Display uploaded papers count
-        if st.session_state.uploaded_papers:
-            st.info(f"{len(st.session_state.uploaded_papers)} papers uploaded")
+        uploaded_papers = get_user_session('uploaded_papers', [])
+        if uploaded_papers:
+            st.info(f"{len(uploaded_papers)} papers uploaded")
             with st.expander("View uploaded papers"):
-                for i, paper in enumerate(st.session_state.uploaded_papers):
+                for i, paper in enumerate(uploaded_papers):
                     title = paper['metadata'].get('title', 'Unknown title')
                     st.write(f"{i+1}. {title}")
             
             # Custom summary button in sidebar
             if st.button("Generate Custom Summary", use_container_width=True, type="primary"):
                 # Clear any active analysis and set custom summary generation
-                st.session_state.active_conversation_id = None
+                set_user_session('active_conversation_id', None)
                 st.session_state.generate_custom_summary = True
                 # Set loading state for custom summary
                 st.session_state.is_loading_analysis = True
@@ -1046,20 +1085,21 @@ def main():
             # Custom summaries are now in chat history - no clear button needed
             
             # Show chat history if exists
-            if st.session_state.get('custom_summary_chat'):
+            custom_summary_chat = get_user_session('custom_summary_chat', [])
+            if custom_summary_chat:
                 st.markdown("---")
                 st.markdown("**Chat History:**")
-                for i, message in enumerate(st.session_state.custom_summary_chat[-3:]):  # Show last 3 messages
+                for i, message in enumerate(custom_summary_chat[-3:]):  # Show last 3 messages
                     if message["role"] == "user":
                         st.caption(f"**You:** {message['content'][:50]}...")
                     else:
                         st.caption(f"**Assistant:** {message['content'][:50]}...")
                 
-                if len(st.session_state.custom_summary_chat) > 3:
-                    st.caption(f"... and {len(st.session_state.custom_summary_chat) - 3} more messages")
+                if len(custom_summary_chat) > 3:
+                    st.caption(f"... and {len(custom_summary_chat) - 3} more messages")
             
             if st.button("Clear uploaded papers"):
-                st.session_state.uploaded_papers = []
+                set_user_session('uploaded_papers', [])
                 st.rerun()
         else:
             st.caption("No papers uploaded yet")
@@ -1120,7 +1160,7 @@ def main():
         st.session_state.generate_custom_summary = False  # Reset the flag
         
         # Generate the summary immediately
-        summary = generate_custom_summary(st.session_state.uploaded_papers)
+        summary = generate_custom_summary(get_user_session('uploaded_papers', []))
         
         if summary:
             # Summary is now stored in chat history
@@ -1163,26 +1203,31 @@ def main():
                     first_words = ' '.join(summary_text.split()[:4])
                     return f"{first_words}..."
             
-            title = generate_custom_summary_title(st.session_state.uploaded_papers, summary)
+            uploaded_papers = get_user_session('uploaded_papers', [])
+            title = generate_custom_summary_title(uploaded_papers, summary)
             
             initial_message = {
                 "role": "assistant", 
-                "content": f"**Custom Summary of {len(st.session_state.uploaded_papers)} Uploaded Papers**\n\n{summary}"
+                "content": f"**Custom Summary of {len(uploaded_papers)} Uploaded Papers**\n\n{summary}"
             }
             
-            st.session_state.conversations[conv_id] = {
+            # Get user-specific conversations and add new one
+            conversations = get_user_session('conversations', {})
+            conversations[conv_id] = {
                 "title": title,
                 "messages": [initial_message],
                 "keywords": ["Custom Summary"],
                 "search_mode": "custom",
-                "retrieved_papers": st.session_state.uploaded_papers,
-                "total_papers_found": len(st.session_state.uploaded_papers),
+                "retrieved_papers": uploaded_papers,
+                "total_papers_found": len(uploaded_papers),
                 "created_at": time.time(),
-                "paper_count": len(st.session_state.uploaded_papers)
+                "last_interaction_time": time.time(),
+                "paper_count": len(uploaded_papers)
             }
+            set_user_session('conversations', conversations)
             
             # Set this as the active conversation so user can immediately interact
-            st.session_state.active_conversation_id = conv_id
+            set_user_session('active_conversation_id', conv_id)
             
             # Summary is now permanently stored in chat history
         else:
@@ -1195,11 +1240,13 @@ def main():
     # Custom summaries are now handled through chat history - no separate display needed
 
     # Show default message only if no active conversation
-    if st.session_state.active_conversation_id is None:
+    active_conversation_id = get_user_session('active_conversation_id')
+    if active_conversation_id is None:
         st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
-    elif st.session_state.active_conversation_id is not None:
-        active_id = st.session_state.active_conversation_id
-        active_conv = st.session_state.conversations[active_id]
+    elif active_conversation_id is not None:
+        active_id = active_conversation_id
+        conversations = get_user_session('conversations', {})
+        active_conv = conversations[active_id]
         
         for message_index, message in enumerate(active_conv["messages"]):
             avatar = BOT_AVATAR if message["role"] == "assistant" else USER_AVATAR
@@ -1240,10 +1287,14 @@ def main():
             active_conv["messages"].append({"role": "user", "content": prompt})
             # Update last interaction time for this conversation
             active_conv['last_interaction_time'] = time.time()
+            # Save updated conversations
+            set_user_session('conversations', conversations)
             st.rerun()
 
-    if st.session_state.active_conversation_id and st.session_state.conversations[st.session_state.active_conversation_id]["messages"][-1]["role"] == "user":
-        active_conv = st.session_state.conversations[st.session_state.active_conversation_id]
+    active_conversation_id = get_user_session('active_conversation_id')
+    conversations = get_user_session('conversations', {})
+    if active_conversation_id and conversations[active_conversation_id]["messages"][-1]["role"] == "user":
+        active_conv = conversations[active_conversation_id]
         with st.spinner("Thinking..."):
             chat_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in active_conv["messages"]])
             full_context = ""
@@ -1282,6 +1333,8 @@ Assistant Response:"""
                 active_conv["messages"].append({"role": "assistant", "content": response_text})
                 # Update last interaction time for this conversation
                 active_conv['last_interaction_time'] = time.time()
+                # Save updated conversations
+                set_user_session('conversations', conversations)
                 st.rerun()
 
 if __name__ == "__main__":
