@@ -167,39 +167,112 @@ def show_login_page():
     """Display the login page"""
     st.set_page_config(
         page_title="Polo GGB Research Assistant - Login",
-        page_icon="polo-ggb-logo.png",
+        page_icon="favicon.svg",
         layout="centered"
     )
     
-    # Simple CSS for login page
+    # CSS with dark/light mode support for login page
     st.markdown("""
     <style>
+    :root {
+        /* Light mode colors */
+        --primary-color: #2E8B57;
+        --primary-hover: #3CB371;
+        --text-color: #333333;
+        --bg-color: #ffffff;
+        --card-bg: #f8f9fa;
+        --border-color: #e0e0e0;
+        --error-color: #dc3545;
+        --success-color: #28a745;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+        :root {
+            /* Dark mode colors */
+            --primary-color: #4fc3f7;
+            --primary-hover: #29b6f6;
+            --text-color: #e0e0e0;
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --border-color: #424242;
+            --error-color: #f44336;
+            --success-color: #4caf50;
+        }
+    }
+    
+    /* Theme-aware buttons */
     .stButton > button {
         width: 100%;
-        background: linear-gradient(90deg, #2E8B57, #3CB371);
+        background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
         color: white;
         border: none;
         border-radius: 5px;
         padding: 0.5rem 1rem;
         font-weight: bold;
+        transition: all 0.2s ease;
     }
     
+    .stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    /* Theme-aware form elements */
+    .stTextInput > div > div > input,
+    .stSelectbox > div > div > div {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    /* Theme-aware labels */
+    .stTextInput label,
+    .stSelectbox label {
+        color: var(--text-color) !important;
+    }
+    
+    /* Theme-aware error messages */
     .error-message {
         background: rgba(220, 53, 69, 0.1);
         border: 1px solid rgba(220, 53, 69, 0.3);
         border-radius: 5px;
         padding: 0.75rem;
         margin: 1rem 0;
-        color: #dc3545;
+        color: var(--error-color);
     }
     
+    /* Theme-aware success messages */
     .success-message {
         background: rgba(40, 167, 69, 0.1);
         border: 1px solid rgba(40, 167, 69, 0.3);
         border-radius: 5px;
         padding: 0.75rem;
         margin: 1rem 0;
-        color: #28a745;
+        color: var(--success-color);
+    }
+    
+    /* Theme-aware info boxes */
+    .stAlert {
+        background-color: var(--card-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        color: var(--text-color) !important;
+    }
+    
+    /* Theme-aware main content */
+    .main .block-container {
+        background-color: var(--bg-color) !important;
+        color: var(--text-color) !important;
+    }
+    
+    /* Cross-browser compatibility */
+    * {
+        box-sizing: border-box;
+    }
+    
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
     }
     </style>
     """, unsafe_allow_html=True)

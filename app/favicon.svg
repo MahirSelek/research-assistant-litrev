@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <style>
+      @media (prefers-color-scheme: dark) {
+        .logo-text { fill: #ffffff; }
+        .logo-bg { fill: #2E8B57; }
+      }
+      @media (prefers-color-scheme: light) {
+        .logo-text { fill: #2E8B57; }
+        .logo-bg { fill: #ffffff; }
+      }
+    </style>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="15" class="logo-bg" stroke="#2E8B57" stroke-width="2"/>
+  
+  <!-- DNA helix representation -->
+  <path d="M8 8 Q12 12, 16 8 Q20 4, 24 8 Q20 12, 16 16 Q12 20, 8 16 Q12 12, 16 8" 
+        fill="none" stroke="#2E8B57" stroke-width="2"/>
+  <path d="M8 16 Q12 20, 16 16 Q20 12, 24 16 Q20 20, 16 24 Q12 28, 8 24 Q12 20, 16 16" 
+        fill="none" stroke="#2E8B57" stroke-width="2"/>
+  
+  <!-- Text -->
+  <text x="16" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="6" font-weight="bold" class="logo-text">P</text>
+</svg>
