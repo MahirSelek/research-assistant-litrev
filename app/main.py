@@ -981,6 +981,8 @@ def main():
             
             # Custom summary button in sidebar
             if st.button("Generate Custom Summary", use_container_width=True, type="primary"):
+                # Clear any active analysis and set custom summary generation
+                st.session_state.active_conversation_id = None
                 st.session_state.generate_custom_summary = True
                 st.rerun()
             
@@ -1060,31 +1062,35 @@ def main():
     if st.session_state.get('generate_custom_summary', False):
         st.session_state.generate_custom_summary = False  # Reset the flag
         
-        with st.spinner("Generating summary of your uploaded papers..."):
-            summary = generate_custom_summary(st.session_state.uploaded_papers)
-            if summary:
-                st.session_state.custom_summary_result = summary
-                
-                # Add custom summary to chat history
-                conv_id = f"custom_summary_{time.time()}"
-                paper_titles = [paper['metadata'].get('title', f'Paper {i+1}') for i, paper in enumerate(st.session_state.uploaded_papers)]
-                title = f"Custom Summary: {', '.join(paper_titles[:2])}{'...' if len(paper_titles) > 2 else ''}"
-                
-                initial_message = {
-                    "role": "assistant", 
-                    "content": f"**Custom Summary of {len(st.session_state.uploaded_papers)} Uploaded Papers**\n\n{summary}"
-                }
-                
-                st.session_state.conversations[conv_id] = {
-                    "title": title,
-                    "messages": [initial_message],
-                    "keywords": ["Custom Summary"],
-                    "search_mode": "custom",
-                    "retrieved_papers": st.session_state.uploaded_papers,
-                    "total_papers_found": len(st.session_state.uploaded_papers)
-                }
-            else:
-                st.error("Failed to generate summary. Please try again.")
+        # Show loading overlay for custom summary
+        show_loading_overlay("Generating summary of your uploaded papers...")
+        
+        # Generate the summary
+        summary = generate_custom_summary(st.session_state.uploaded_papers)
+        
+        if summary:
+            st.session_state.custom_summary_result = summary
+            
+            # Add custom summary to chat history
+            conv_id = f"custom_summary_{time.time()}"
+            paper_titles = [paper['metadata'].get('title', f'Paper {i+1}') for i, paper in enumerate(st.session_state.uploaded_papers)]
+            title = f"Custom Summary: {', '.join(paper_titles[:2])}{'...' if len(paper_titles) > 2 else ''}"
+            
+            initial_message = {
+                "role": "assistant", 
+                "content": f"**Custom Summary of {len(st.session_state.uploaded_papers)} Uploaded Papers**\n\n{summary}"
+            }
+            
+            st.session_state.conversations[conv_id] = {
+                "title": title,
+                "messages": [initial_message],
+                "keywords": ["Custom Summary"],
+                "search_mode": "custom",
+                "retrieved_papers": st.session_state.uploaded_papers,
+                "total_papers_found": len(st.session_state.uploaded_papers)
+            }
+        else:
+            st.error("Failed to generate summary. Please try again.")
 
     # Display custom summary if available and no active conversation
     if (st.session_state.get('custom_summary_result') and 
