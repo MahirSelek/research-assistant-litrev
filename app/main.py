@@ -925,7 +925,21 @@ def main():
             if st.session_state.get('custom_summary_result'):
                 if st.button("🗑️ Clear Summary", use_container_width=True):
                     st.session_state.custom_summary_result = None
+                    st.session_state.custom_summary_chat = []  # Also clear chat history
                     st.rerun()
+            
+            # Show chat history if exists
+            if st.session_state.get('custom_summary_chat'):
+                st.markdown("---")
+                st.markdown("**💬 Chat History:**")
+                for i, message in enumerate(st.session_state.custom_summary_chat[-3:]):  # Show last 3 messages
+                    if message["role"] == "user":
+                        st.caption(f"**You:** {message['content'][:50]}...")
+                    else:
+                        st.caption(f"**Assistant:** {message['content'][:50]}...")
+                
+                if len(st.session_state.custom_summary_chat) > 3:
+                    st.caption(f"... and {len(st.session_state.custom_summary_chat) - 3} more messages")
             
             if st.button("🗑️ Clear uploaded papers"):
                 st.session_state.uploaded_papers = []
@@ -972,12 +986,92 @@ def main():
 
     # Display custom summary if available
     if st.session_state.get('custom_summary_result'):
-        st.markdown("### 📋 Custom Summary of Your Uploaded Papers")
+        st.markdown("### Custom Summary of Your Uploaded Papers")
         st.markdown(st.session_state.custom_summary_result)
         
         # Add a button to clear the summary
-        if st.button("🗑️ Clear Summary"):
+        if st.button("Clear Summary"):
             st.session_state.custom_summary_result = None
+            st.rerun()
+        
+        st.markdown("---")
+        
+        # Chat interface for custom summary
+        st.markdown("### Ask Questions About Your Summary")
+        st.info("💡 You can ask questions about the summary, specific papers, or request more details about any topic.")
+        
+        # Example questions
+        st.markdown("**Example questions you can ask:**")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Tell me more about paper 1", use_container_width=True):
+                st.session_state.custom_summary_question = "Can you provide more details about paper 1?"
+        with col2:
+            if st.button("What are the main findings?", use_container_width=True):
+                st.session_state.custom_summary_question = "What are the main findings across all papers?"
+        
+        col3, col4 = st.columns(2)
+        with col3:
+            if st.button("Compare the methodologies", use_container_width=True):
+                st.session_state.custom_summary_question = "How do the methodologies differ between the papers?"
+        with col4:
+            if st.button("What are the implications?", use_container_width=True):
+                st.session_state.custom_summary_question = "What are the practical implications of these findings?"
+        
+        # Initialize chat history for custom summary if not exists
+        if 'custom_summary_chat' not in st.session_state:
+            st.session_state.custom_summary_chat = []
+        
+        # Display chat history
+        for message in st.session_state.custom_summary_chat:
+            if message["role"] == "user":
+                st.markdown(f"**You:** {message['content']}")
+            else:
+                st.markdown(f"**Assistant:** {message['content']}")
+        
+        # Chat input
+        user_question = st.text_input("Ask a question about your summary or papers:", key="custom_summary_question")
+        
+        if user_question and st.button("Ask Question"):
+            # Add user question to chat
+            st.session_state.custom_summary_chat.append({"role": "user", "content": user_question})
+            
+            # Generate response
+            with st.spinner("Thinking..."):
+                # Create context with summary and papers
+                context = f"""
+                Here is the custom summary of the uploaded papers:
+                
+                {st.session_state.custom_summary_result}
+                
+                Here are the individual papers that were analyzed:
+                """
+                
+                for i, paper in enumerate(st.session_state.uploaded_papers):
+                    title = paper['metadata'].get('title', f'Paper {i+1}')
+                    content = paper.get('content', '')[:2000]  # Limit content to avoid token overflow
+                    context += f"\n\nPaper {i+1}: {title}\nContent: {content}..."
+                
+                # Create prompt for answering questions
+                prompt = f"""
+                {context}
+                
+                User Question: {user_question}
+                
+                Please answer the user's question based on the provided summary and paper contents. Be specific and reference the relevant papers when possible. If the question is about a specific paper, focus on that paper's content.
+                """
+                
+                response = post_message_vertexai(prompt)
+                if response:
+                    st.session_state.custom_summary_chat.append({"role": "assistant", "content": response})
+                else:
+                    st.session_state.custom_summary_chat.append({"role": "assistant", "content": "Sorry, I couldn't generate a response. Please try again."})
+            
+            st.rerun()
+        
+        # Clear chat button
+        if st.session_state.custom_summary_chat and st.button("Clear Chat History"):
+            st.session_state.custom_summary_chat = []
             st.rerun()
         
         st.markdown("---")
