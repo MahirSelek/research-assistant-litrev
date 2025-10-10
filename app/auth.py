@@ -216,11 +216,11 @@ def show_login_page():
         st.markdown("**Polo d'Innovazione di Genomica, Genetica e Biologia**")
         st.markdown("---")
     # Login/Register tabs
-    tab1, tab2 = st.tabs(["🔐 Login", "📝 Register"])
+    tab1, tab2 = st.tabs(["Log in", "Sign in"])
     
     with tab1:
-        st.markdown("### Research Assistant Login")
-        st.info("Please login to access the Polo GGB Research Assistant")
+        st.markdown("### Research Assistant Log in")
+        st.info("Please log in to access the Polo GGB Research Assistant")
         
         with st.form("login_form"):
             username = st.text_input("Username", placeholder="Enter your username", key="login_username")
