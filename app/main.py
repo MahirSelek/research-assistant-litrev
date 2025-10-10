@@ -1069,8 +1069,43 @@ def main():
             
             # Add custom summary to chat history with better title and metadata
             conv_id = f"custom_summary_{time.time()}"
-            paper_titles = [paper['metadata'].get('title', f'Paper {i+1}') for i, paper in enumerate(st.session_state.uploaded_papers)]
-            title = f"📄 Custom Summary ({len(st.session_state.uploaded_papers)} papers): {', '.join(paper_titles[:2])}{'...' if len(paper_titles) > 2 else ''}"
+            
+            # Generate a brief, descriptive title
+            def generate_custom_summary_title(papers, summary_text):
+                paper_count = len(papers)
+                
+                # Try to extract key topics from the summary
+                summary_lower = summary_text.lower()
+                topics = []
+                
+                # Common research topics
+                if any(word in summary_lower for word in ['sustainability', 'sustainable', 'environment']):
+                    topics.append('Sustainability')
+                if any(word in summary_lower for word in ['machine learning', 'ai', 'artificial intelligence', 'ml']):
+                    topics.append('AI/ML')
+                if any(word in summary_lower for word in ['genetics', 'genetic', 'dna', 'genome']):
+                    topics.append('Genetics')
+                if any(word in summary_lower for word in ['disease', 'medical', 'health', 'clinical']):
+                    topics.append('Medical')
+                if any(word in summary_lower for word in ['prediction', 'predictive', 'modeling']):
+                    topics.append('Prediction')
+                if any(word in summary_lower for word in ['risk', 'risk assessment']):
+                    topics.append('Risk Analysis')
+                if any(word in summary_lower for word in ['leather', 'industry', 'manufacturing']):
+                    topics.append('Industry')
+                if any(word in summary_lower for word in ['reporting', 'disclosure', 'transparency']):
+                    topics.append('Reporting')
+                
+                # Create title based on topics found
+                if topics:
+                    topic_str = ', '.join(topics[:2])  # Max 2 topics
+                    return f"📄 Custom Summary ({paper_count} papers): {topic_str}"
+                else:
+                    # Fallback to paper count and first few words of summary
+                    first_words = ' '.join(summary_text.split()[:4])
+                    return f"📄 Custom Summary ({paper_count} papers): {first_words}..."
+            
+            title = generate_custom_summary_title(st.session_state.uploaded_papers, summary)
             
             initial_message = {
                 "role": "assistant", 
