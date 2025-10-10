@@ -261,7 +261,7 @@ def matches_time_filter(publication_date: str, time_filter_type: str) -> bool:
         from dateutil import parser as date_parser
         parsed_date = date_parser.parse(publication_date)
         
-        if time_filter_type == "All year":
+        if time_filter_type == "Current year":
             return parsed_date.year == 2025
         elif time_filter_type == "Last 3 months":
             # Check if paper is from recent months (simplified to 2025)
@@ -663,9 +663,7 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
     # Use 2025 since that's the year of your papers
     data_year = 2025
     
-    if time_filter_type == "All time":
-        time_filter_dict = None  # No time filter
-    elif time_filter_type == "All year":
+    if time_filter_type == "Current year":
         # Search for 2025 papers in the format "dd MMM yyyy" (e.g., "07 Aug 2025")
         time_filter_dict = {"gte": f"01 Jan {data_year}", "lte": f"31 Dec {data_year}"}
     elif time_filter_type == "Last 3 months":
@@ -813,7 +811,7 @@ def display_paper_management():
 
     uploaded_pdfs = st.file_uploader("Choose PDF files", accept_multiple_files=True, type=['pdf'], key="pdf_uploader_v2")
     
-    if uploaded_pdfs and st.button("🚀 Add PDFs", type="primary"):
+    if uploaded_pdfs and st.button("Add PDFs", type="primary"):
         with st.spinner("Processing PDF files..."):
             for uploaded_file in uploaded_pdfs:
                 # Get the base name without extension
@@ -952,8 +950,7 @@ def main():
             )
             
             time_filter_type = st.selectbox("Filter by Time Window", [
-                "All time", 
-                "All year", 
+                "Current year", 
                 "Last 3 months", 
                 "Last 6 months", 
                 "January", "February", "March", "April", "May", "June",
