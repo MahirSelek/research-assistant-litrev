@@ -1046,8 +1046,8 @@ def main():
     
     st.markdown("<h1>🧬 POLO-GGB RESEARCH ASSISTANT</h1>", unsafe_allow_html=True)
 
-    # Show loading overlay if analysis is in progress
-    if st.session_state.get('is_loading_analysis', False):
+    # Show loading overlay if analysis is in progress (but not for custom summary)
+    if st.session_state.get('is_loading_analysis', False) and not st.session_state.get('generate_custom_summary', False):
         show_loading_overlay(st.session_state.loading_message)
         return  # Don't render the rest of the page while loading
 
@@ -1081,10 +1081,9 @@ def main():
             else:
                 st.error("Failed to generate summary. Please try again.")
 
-    # Display custom summary ONLY if no active conversation and no loading
+    # Display custom summary if available and no active conversation
     if (st.session_state.get('custom_summary_result') and 
-        st.session_state.active_conversation_id is None and 
-        not st.session_state.get('is_loading_analysis', False)):
+        st.session_state.active_conversation_id is None):
         st.markdown("### Custom Summary of Your Uploaded Papers")
         st.markdown(st.session_state.custom_summary_result)
         
@@ -1177,8 +1176,7 @@ def main():
 
     # Show default message only if no custom summary and no active conversation
     if (st.session_state.active_conversation_id is None and 
-        not st.session_state.get('custom_summary_result') and
-        not st.session_state.get('is_loading_analysis', False)):
+        not st.session_state.get('custom_summary_result')):
         st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
     elif st.session_state.active_conversation_id is not None:
         active_id = st.session_state.active_conversation_id
