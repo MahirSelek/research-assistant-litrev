@@ -2,9 +2,6 @@
 # main.py v2
 
 import streamlit as st
-
-# Set page config at the very beginning - this must be first!
-st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant", page_icon="favicon.svg")
 import platform
 import requests
 import time
@@ -27,13 +24,12 @@ from auth import auth_manager, show_login_page, show_logout_button
 from user_management import show_user_management
 
 
-# Add current directory to path for local imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     from elasticsearch_utils import get_es_manager
 except ImportError as e:
-    st.error(f"Failed to import elasticsearch_utils: {e}. Ensure elasticsearch_utils.py is in the 'app/' directory.")
+    st.error(f"Failed to import a local module: {e}. Ensure all .py files are in the 'app/' directory.")
     st.stop()
 
 # App Configuration & Constants
@@ -951,6 +947,7 @@ def main():
         show_login_page()
         return
     
+    st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant", page_icon="favicon.svg")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     style_path = os.path.join(current_dir, "style.css")
     local_css(style_path)
