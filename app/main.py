@@ -996,7 +996,7 @@ def main():
             st.subheader("Start a New Analysis")
             
             # Add data availability note - simplified version
-            st.info("📅 **Data available until:** end of September 2025")
+            st.info("**Data available until:** end of September 2025")
             
             selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=get_user_session('selected_keywords', []))
             
