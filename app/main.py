@@ -947,7 +947,7 @@ def main():
         show_login_page()
         return
     
-    st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant", page_icon="polo-ggb-logo.png")
+    st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant", page_icon="favicon.svg")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     style_path = os.path.join(current_dir, "style.css")
     local_css(style_path)
@@ -1107,11 +1107,84 @@ def main():
         with st.expander("Upload PDF Files"):
             display_paper_management()
 
-    # CSS and JavaScript for clickable citations
+    # CSS with dark/light mode support and cross-browser compatibility
     st.markdown("""
     <style>
+    /* Hide Streamlit default header bars and top elements */
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+    
+    .stApp > header {
+        display: none !important;
+    }
+    
+    /* Hide Streamlit's top navigation bar */
+    .css-1rs6os,
+    .css-1d391kg,
+    .css-1y0tads {
+        display: none !important;
+    }
+    
+    /* Hide any remaining top bars */
+    div[data-testid="stToolbar"],
+    div[data-testid="stDecoration"],
+    .stApp > div:first-child {
+        display: none !important;
+    }
+    
+    /* Ensure full viewport usage */
+    .stApp {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+        height: 100vh !important;
+    }
+    
+    /* Remove top margins from main content */
+    .main .block-container {
+        margin-top: 0 !important;
+        padding-top: 1rem !important;
+    }
+    
+    /* Hide Streamlit's hamburger menu and other UI elements */
+    .css-1rs6os .css-1d391kg,
+    .css-1rs6os .css-1y0tads {
+        display: none !important;
+    }
+    
+    :root {
+        /* Light mode colors */
+        --primary-color: #2E8B57;
+        --primary-hover: #3CB371;
+        --primary-bg: #e8f5e8;
+        --text-color: #333333;
+        --bg-color: #ffffff;
+        --border-color: #e0e0e0;
+        --card-bg: #f8f9fa;
+        --sidebar-bg: #f1f3f4;
+        --input-bg: #ffffff;
+        --input-border: #d0d0d0;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+        :root {
+            /* Dark mode colors */
+            --primary-color: #4fc3f7;
+            --primary-hover: #29b6f6;
+            --primary-bg: #1a237e;
+            --text-color: #e0e0e0;
+            --bg-color: #121212;
+            --border-color: #424242;
+            --card-bg: #1e1e1e;
+            --sidebar-bg: #2d2d2d;
+            --input-bg: #2d2d2d;
+            --input-border: #555555;
+        }
+    }
+    
+    /* Citation links with theme support */
     .citation-link {
-        color: #007bff;
+        color: var(--primary-color);
         cursor: pointer;
         text-decoration: underline;
         font-weight: bold;
@@ -1121,26 +1194,139 @@ def main():
         display: inline-block;
     }
     .citation-link:hover {
-        color: #0056b3;
-        background-color: #e3f2fd;
+        color: var(--primary-hover);
+        background-color: var(--primary-bg);
         transform: scale(1.05);
     }
     
-    /* Make sidebar wider */
+    /* Sidebar styling with theme support */
     .css-1d391kg {
         width: 350px !important;
+        background-color: var(--sidebar-bg) !important;
     }
     
-    /* Adjust main content area */
+    /* Main content area with theme support */
     .css-1y0tads {
         margin-left: 350px !important;
+        background-color: var(--bg-color) !important;
+        color: var(--text-color) !important;
     }
     
     /* Ensure sidebar content fits better */
     .css-1lcbmhc .css-1y0tads {
         padding-left: 1rem;
     }
+    
+    /* Theme-aware text colors */
+    .stMarkdown, .stText, .stSelectbox, .stTextInput, .stTextArea {
+        color: var(--text-color) !important;
+    }
+    
+    /* Theme-aware background for expanders */
+    .streamlit-expanderHeader {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+    }
+    
+    /* Theme-aware buttons */
+    .stButton > button {
+        background-color: var(--primary-color) !important;
+        color: white !important;
+        border: 1px solid var(--primary-color) !important;
+    }
+    
+    .stButton > button:hover {
+        background-color: var(--primary-hover) !important;
+        border-color: var(--primary-hover) !important;
+    }
+    
+    /* Theme-aware form elements */
+    .stSelectbox > div > div,
+    .stSelectbox > div > div > div,
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea {
+        background-color: var(--input-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--input-border) !important;
+    }
+    
+    /* Theme-aware multiselect */
+    .stMultiSelect > div > div {
+        background-color: var(--input-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--input-border) !important;
+    }
+    
+    /* Theme-aware form labels */
+    .stSelectbox label,
+    .stTextInput label,
+    .stTextArea label,
+    .stMultiSelect label {
+        color: var(--text-color) !important;
+    }
+    
+    /* Theme-aware info boxes */
+    .stAlert {
+        background-color: var(--card-bg) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    /* Theme-aware success/error messages */
+    .stSuccess {
+        background-color: rgba(40, 167, 69, 0.1) !important;
+        border: 1px solid rgba(40, 167, 69, 0.3) !important;
+        color: var(--text-color) !important;
+    }
+    
+    .stError {
+        background-color: rgba(220, 53, 69, 0.1) !important;
+        border: 1px solid rgba(220, 53, 69, 0.3) !important;
+        color: var(--text-color) !important;
+    }
+    
+    /* Theme-aware chat messages */
+    .stChatMessage {
+        background-color: var(--card-bg) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    /* Cross-browser compatibility */
+    * {
+        box-sizing: border-box;
+    }
+    
+    /* Ensure consistent font rendering */
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
     </style>
+    
+    <script>
+    // Additional JavaScript to ensure headers are hidden
+    document.addEventListener('DOMContentLoaded', function() {
+        // Hide any remaining Streamlit headers
+        const headers = document.querySelectorAll('header, .css-1rs6os, .css-1d391kg, .css-1y0tads');
+        headers.forEach(header => {
+            if (header) {
+                header.style.display = 'none';
+                header.remove();
+            }
+        });
+        
+        // Remove top margins from body
+        document.body.style.marginTop = '0';
+        document.body.style.paddingTop = '0';
+        
+        // Ensure main content starts at the top
+        const mainContent = document.querySelector('.main .block-container');
+        if (mainContent) {
+            mainContent.style.marginTop = '0';
+            mainContent.style.paddingTop = '1rem';
+        }
+    });
+    </script>
     """, unsafe_allow_html=True)
     
     st.markdown("<h1>🧬 POLO-GGB RESEARCH ASSISTANT</h1>", unsafe_allow_html=True)
