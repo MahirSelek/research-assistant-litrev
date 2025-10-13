@@ -1,5 +1,5 @@
 # app/main.py
-# main.py v2
+# main.py v2 - Fixed import issues
 
 import streamlit as st
 import platform
