@@ -24,7 +24,7 @@ from auth import auth_manager, show_login_page, show_logout_button
 from user_management import show_user_management
 
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(_file_))))
 
 try:
     from elasticsearch_utils import get_es_manager
@@ -34,7 +34,7 @@ except ImportError as e:
 
 # App Configuration & Constants
 try:
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'config', 'config.yaml')
+    config_path = os.path.join(os.path.dirname(os.path.abspath(_file_)), '..', 'config', 'config.yaml')
     with open(config_path, 'r') as file:
         config = yaml.safe_load(file)
 except FileNotFoundError:
@@ -55,7 +55,7 @@ try:
     # Reading lowercase keys to match secrets.toml best practice
     VERTEXAI_PROJECT = st.secrets["vertex_ai"]["VERTEXAI_PROJECT"]
     VERTEXAI_LOCATION = st.secrets["vertex_ai"]["VERTEXAI_LOCATION"]
-    VERTEXAI_MODEL_ID = "gemini-2.0-flash-001"
+    VERTEXAI_MODEL_ID = "gemini-1.5-flash"
 
     # GCS Configuration
     GCS_BUCKET_NAME = st.secrets["app_config"]["gcs_bucket_name"]
@@ -92,7 +92,13 @@ def post_message_vertexai(input_text: str) -> str | None:
         model = GenerativeModel(VERTEXAI_MODEL_ID)
         generation_config = {"temperature": 0.2, "max_output_tokens": 8192}
         response = model.generate_content([input_text], generation_config=generation_config)
-        return response.text
+        
+        if response and response.text:
+            return response.text
+        else:
+            st.error("Vertex AI returned an empty response. Please try again.")
+            return None
+            
     except Exception as e:
         st.error(f"An error occurred with the Vertex AI API: {e}")
         import traceback
@@ -228,6 +234,7 @@ def get_paper_link(metadata: dict) -> str:
         if link and isinstance(link, str) and link.startswith('http'):
             return link
     return "Not available"
+
 
 def filter_papers_by_gcs_dates(papers: list, time_filter_type: str) -> list:
     """
@@ -446,6 +453,7 @@ def make_inline_citations_clickable(analysis_text: str, analysis_papers: list) -
     """
     Make inline citations clickable by converting [1], [2][3] etc. to clickable links.
     Only citations that correspond to papers in analysis_papers will be made clickable.
+    Limits citations to maximum 3 per sentence for better readability.
     """
     if not analysis_papers:
         return analysis_text
@@ -466,6 +474,10 @@ def make_inline_citations_clickable(analysis_text: str, analysis_papers: list) -
         
         # Extract individual citation numbers
         citation_numbers = re.findall(r'\[(\d+)\]', citation_text)
+        
+        # Limit to maximum 3 citations per sentence
+        if len(citation_numbers) > 3:
+            citation_numbers = citation_numbers[:3]
         
         # Replace each citation number with a clickable link if it exists in our mapping
         result_parts = []
@@ -516,9 +528,9 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
             link = get_paper_link(meta)
             
             if link != "Not available":
-                citations_section += f"**[{i+1}]** [{title}]({link})\n\n"
+                citations_section += f"*[{i+1}]* [{title}]({link})\n\n"
             else:
-                citations_section += f"**[{i+1}]** {title}\n\n"
+                citations_section += f"*[{i+1}]* {title}\n\n"
         
         # Show additional papers found in search
         additional_papers = [p for p in papers if p not in analysis_papers]
@@ -532,9 +544,9 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
                 link = get_paper_link(meta)
                 
                 if link != "Not available":
-                    citations_section += f"**[{start_num + i}]** [{title}]({link})\n\n"
+                    citations_section += f"*[{start_num + i}]* [{title}]({link})\n\n"
                 else:
-                    citations_section += f"**[{start_num + i}]** {title}\n\n"
+                    citations_section += f"*[{start_num + i}]* {title}\n\n"
     else:
         # For AND queries or when no analysis_papers specified: Show all papers normally
         for i, paper in enumerate(papers):
@@ -543,9 +555,9 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
             link = get_paper_link(meta)
             
             if link != "Not available":
-                citations_section += f"**[{i+1}]** [{title}]({link})\n\n"
+                citations_section += f"*[{i+1}]* [{title}]({link})\n\n"
             else:
-                citations_section += f"**[{i+1}]** {title}\n\n"
+                citations_section += f"*[{i+1}]* {title}\n\n"
     
     return analysis_text + citations_section
 
@@ -760,27 +772,27 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
     
     prompt = f"""{context}
 ---
-**CRITICAL TASK:**
+*CRITICAL TASK:*
 
-You are a world-class scientific analyst. Your task is to generate an exceptionally detailed and extensive multi-part report based *only* on the provided paper sources. The final report should be substantial in length, reflecting a deep synthesis of information from all provided papers.
+You are a world-class scientific analyst. Your task is to generate an exceptionally detailed and extensive multi-part report based only on the provided paper sources. The final report should be substantial in length, reflecting a deep synthesis of information from all provided papers.
 
-**Part 1: Thematic Analysis**
-For the sections "Key Methodological Advances," "Emerging Trends," and "Overall Summary," your analysis **MUST** be exhaustive. Generate at least **three long and detailed paragraphs** or a comprehensive multi-level bulleted list for each of these sections. Do not just list findings; you must deeply synthesize information across multiple sources, explain the significance, compare and contrast approaches, and build a compelling narrative about the state of the research.
+*Part 1: Thematic Analysis*
+For the sections "Key Methodological Advances," "Emerging Trends," and "Overall Summary," your analysis *MUST* be exhaustive. Generate at least *three long and detailed paragraphs* or a comprehensive multi-level bulleted list for each of these sections. Do not just list findings; you must deeply synthesize information across multiple sources, explain the significance, compare and contrast approaches, and build a compelling narrative about the state of the research.
 
    ### Diseases: List the specific diseases, conditions, or traits studied.
    ### Sample Size & Genetic Ancestry: Summarize sample sizes and genetic ancestries mentioned across the papers.
-   ### Key Methodological Advances: Provide an in-depth description of significant methods, pipelines, or statistical approaches. Explain *why* they are important advances, how they differ from previous methods, and what new possibilities they unlock.
+   ### Key Methodological Advances: Provide an in-depth description of significant methods, pipelines, or statistical approaches. Explain why they are important advances, how they differ from previous methods, and what new possibilities they unlock.
    ### Emerging Trends: Identify future directions and new research areas. Synthesize recurring themes to explain what trends are emerging in the field. Discuss the implications of these trends for science and medicine.
    ### Overall Summary: Provide a comprehensive, multi-paragraph textual summary of the key findings and clinical implications. This should be a full executive summary, not a brief conclusion.
 
-**CRITICAL INSTRUCTION FOR PART 1:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].` **IMPORTANT:** Limit citations to a maximum of 3 per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
+*CRITICAL INSTRUCTION FOR PART 1:* At the end of every sentence or key finding that you derive from a source, you *MUST* include a citation marker referencing the source's number in brackets. For example: This new method improves risk prediction [1]. Multiple sources can be cited like This was observed in several cohorts [2][3]. *IMPORTANT:* Limit citations to a maximum of 3 per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
 
-**Part 2: Key Paper Summaries**
+*Part 2: Key Paper Summaries*
 Create a new section titled ### Key Paper Summaries. Under this heading, identify the top 3-5 most impactful papers from the sources and provide a detailed, one-paragraph summary for each.
 
-**IMPORTANT:** Do NOT create a "References" section. Focus only on the thematic analysis and key paper summaries.
+*IMPORTANT:* Do NOT create a "References" section. Focus only on the thematic analysis and key paper summaries.
 
-**CRITICAL INSTRUCTION FOR CITATIONS:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].` **IMPORTANT:** Always separate multiple citations with individual brackets, like `[2][3][4]` NOT `[234]`. **CRUCIAL:** In the Key Paper Summaries section, do NOT add citation numbers to the paper titles - only add citations at the end of the summary paragraphs. **FORMATTING RULE:** All citations MUST be in square brackets [1], [2], [3], etc. - never use unbracketed numbers for citations. **CITATION LIMIT:** Maximum 3 citations per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
+*CRITICAL INSTRUCTION FOR CITATIONS:* At the end of every sentence or key finding that you derive from a source, you *MUST* include a citation marker referencing the source's number in brackets. For example: This new method improves risk prediction [1]. Multiple sources can be cited like This was observed in several cohorts [2][3]. *IMPORTANT:* Always separate multiple citations with individual brackets, like [2][3][4] NOT [234]. *CRUCIAL:* In the Key Paper Summaries section, do NOT add citation numbers to the paper titles - only add citations at the end of the summary paragraphs. *FORMATTING RULE:* All citations MUST be in square brackets [1], [2], [3], etc. - never use unbracketed numbers for citations. *CITATION LIMIT:* Maximum 3 citations per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
 """
     analysis = post_message_vertexai(prompt)
     
@@ -948,7 +960,7 @@ def main():
         return
     
     st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant", page_icon="polo-ggb-logo.png")
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+    current_dir = os.path.dirname(os.path.abspath(_file_))
     style_path = os.path.join(current_dir, "style.css")
     local_css(style_path)
     initialize_session_state()
@@ -966,11 +978,11 @@ def main():
         # Show user info for all users
         if st.session_state.get('authenticated', False):
             st.markdown("---")
-            st.markdown(f"**Logged in as:** {st.session_state.username}")
+            st.markdown(f"*Logged in as:* {st.session_state.username}")
             if st.session_state.get('username') == 'admin':
-                st.markdown("**Role:** Administrator")
+                st.markdown("*Role:* Administrator")
             else:
-                st.markdown("**Role:** User")
+                st.markdown("*Role:* User")
         
         if st.button("➕ New Analysis", use_container_width=True):
             set_user_session('active_conversation_id', None)
@@ -988,6 +1000,10 @@ def main():
         st.markdown("---")
         with st.form(key="new_analysis_form"):
             st.subheader("Start a New Analysis")
+            
+            # Add data availability note - simplified version
+            st.info("*Data available until:* end of September 2025")
+            
             selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=get_user_session('selected_keywords', []))
             
             # Search mode selection
@@ -1037,7 +1053,19 @@ def main():
                 search_mode_display = get_user_session('search_mode', 'all_keywords')
                 selected_keywords = get_user_session('selected_keywords', [])
                 search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
-                initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)} (Search Mode: {search_mode_text})**\n\n{analysis_result}"}
+                initial_message = {"role": "assistant", "content": f"""
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+    <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px; font-weight: 600;">Analysis Report</h2>
+    <div style="color: #f0f0f0; font-size: 16px; margin-bottom: 8px;">
+        <strong>Keywords:</strong> {', '.join(selected_keywords)}
+    </div>
+    <div style="color: #e0e0e0; font-size: 14px;">
+        <strong>Search Mode:</strong> {search_mode_text}
+    </div>
+</div>
+
+{analysis_result}
+"""}
                 title = generate_conversation_title(analysis_result)
                 
                 # Get user-specific conversations and add new one
@@ -1088,12 +1116,12 @@ def main():
             custom_summary_chat = get_user_session('custom_summary_chat', [])
             if custom_summary_chat:
                 st.markdown("---")
-                st.markdown("**Chat History:**")
+                st.markdown("*Chat History:*")
                 for i, message in enumerate(custom_summary_chat[-3:]):  # Show last 3 messages
                     if message["role"] == "user":
-                        st.caption(f"**You:** {message['content'][:50]}...")
+                        st.caption(f"*You:* {message['content'][:50]}...")
                     else:
-                        st.caption(f"**Assistant:** {message['content'][:50]}...")
+                        st.caption(f"*Assistant:* {message['content'][:50]}...")
                 
                 if len(custom_summary_chat) > 3:
                     st.caption(f"... and {len(custom_summary_chat) - 3} more messages")
@@ -1139,6 +1167,33 @@ def main():
     /* Ensure sidebar content fits better */
     .css-1lcbmhc .css-1y0tads {
         padding-left: 1rem;
+    }
+    
+    /* Style for analysis header gradient */
+    .analysis-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .analysis-header h2 {
+        color: white;
+        margin: 0 0 10px 0;
+        font-size: 24px;
+        font-weight: 600;
+    }
+    
+    .analysis-header .keywords {
+        color: #f0f0f0;
+        font-size: 16px;
+        margin-bottom: 8px;
+    }
+    
+    .analysis-header .search-mode {
+        color: #e0e0e0;
+        font-size: 14px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -1208,7 +1263,7 @@ def main():
             
             initial_message = {
                 "role": "assistant", 
-                "content": f"**Custom Summary of {len(uploaded_papers)} Uploaded Papers**\n\n{summary}"
+                "content": f"*Custom Summary of {len(uploaded_papers)} Uploaded Papers*\n\n{summary}"
             }
             
             # Get user-specific conversations and add new one
@@ -1267,7 +1322,7 @@ def main():
 
                             col1, col2 = st.columns([4, 1])
                             with col1:
-                                st.markdown(f"**{paper_index+1}. {title}**")
+                                st.markdown(f"*{paper_index+1}. {title}*")
                             with col2:
                                 if paper_id:
                                     pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
@@ -1310,7 +1365,7 @@ def main():
             full_prompt = f"""Continue our conversation. You are the Polo-GGB Research Assistant.
 Your task is to answer the user's last message based on the chat history and the full context from the paper sources provided below.
 
-**CITATION INSTRUCTIONS:** When referencing sources, use citation markers in square brackets like [1], [2], [3], etc. Separate multiple citations with individual brackets like [2][3][4]. **IMPORTANT:** Limit citations to a maximum of 3 per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
+*CITATION INSTRUCTIONS:* When referencing sources, use citation markers in square brackets like [1], [2], [3], etc. Separate multiple citations with individual brackets like [2][3][4]. *IMPORTANT:* Limit citations to a maximum of 3 per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
 
 --- CHAT HISTORY ---
 {chat_history}
@@ -1337,5 +1392,5 @@ Assistant Response:"""
                 set_user_session('conversations', conversations)
                 st.rerun()
 
-if __name__ == "__main__":
+if _name_ == "_main_":
     main()
