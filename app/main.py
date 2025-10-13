@@ -959,9 +959,6 @@ def main():
     initialize_session_state()
 
     with st.sidebar:
-        # Show logout button at the top
-        show_logout_button()
-        
         # Show user management for admin
         if st.session_state.get('username') == 'admin':
             if st.button("User Management", use_container_width=True):
@@ -1127,6 +1124,10 @@ def main():
         
         with st.expander("Upload PDF Files"):
             display_paper_management()
+        
+        # Logout button at the bottom
+        st.markdown("---")
+        show_logout_button()
 
     # CSS and JavaScript for clickable citations
     st.markdown("""

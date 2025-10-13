@@ -293,12 +293,6 @@ def show_login_page():
 def show_logout_button():
     """Show logout button in sidebar"""
     if st.session_state.get('authenticated', False):
-        with st.sidebar:
-            st.markdown("---")
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.markdown(f"👤 **{st.session_state.username}**")
-            with col2:
-                if st.button("🚪", help="Logout", key="logout_btn"):
-                    auth_manager.logout()
-                    st.rerun()
+        if st.button("Logout", use_container_width=True, key="logout_btn"):
+            auth_manager.logout()
+            st.rerun()
