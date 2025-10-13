@@ -55,7 +55,7 @@ try:
     # Reading lowercase keys to match secrets.toml best practice
     VERTEXAI_PROJECT = st.secrets["vertex_ai"]["VERTEXAI_PROJECT"]
     VERTEXAI_LOCATION = st.secrets["vertex_ai"]["VERTEXAI_LOCATION"]
-    VERTEXAI_MODEL_ID = "gemini-2.0-flash-001"
+    VERTEXAI_MODEL_ID = "gemini-2.5-flash"
 
     # GCS Configuration
     GCS_BUCKET_NAME = st.secrets["app_config"]["gcs_bucket_name"]
@@ -92,7 +92,13 @@ def post_message_vertexai(input_text: str) -> str | None:
         model = GenerativeModel(VERTEXAI_MODEL_ID)
         generation_config = {"temperature": 0.2, "max_output_tokens": 8192}
         response = model.generate_content([input_text], generation_config=generation_config)
-        return response.text
+        
+        if response and response.text:
+            return response.text
+        else:
+            st.error("Vertex AI returned an empty response. Please try again.")
+            return None
+            
     except Exception as e:
         st.error(f"An error occurred with the Vertex AI API: {e}")
         import traceback
