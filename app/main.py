@@ -446,6 +446,7 @@ def make_inline_citations_clickable(analysis_text: str, analysis_papers: list) -
     """
     Make inline citations clickable by converting [1], [2][3] etc. to clickable links.
     Only citations that correspond to papers in analysis_papers will be made clickable.
+    Limits citations to maximum 3 per sentence for better readability.
     """
     if not analysis_papers:
         return analysis_text
@@ -466,6 +467,10 @@ def make_inline_citations_clickable(analysis_text: str, analysis_papers: list) -
         
         # Extract individual citation numbers
         citation_numbers = re.findall(r'\[(\d+)\]', citation_text)
+        
+        # Limit to maximum 3 citations per sentence
+        if len(citation_numbers) > 3:
+            citation_numbers = citation_numbers[:3]
         
         # Replace each citation number with a clickable link if it exists in our mapping
         result_parts = []
@@ -988,6 +993,10 @@ def main():
         st.markdown("---")
         with st.form(key="new_analysis_form"):
             st.subheader("Start a New Analysis")
+            
+            # Add data availability note - simple static version
+            st.info("📅 **Data available until:** end of September 2025")
+            
             selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=get_user_session('selected_keywords', []))
             
             # Search mode selection
@@ -1037,7 +1046,19 @@ def main():
                 search_mode_display = get_user_session('search_mode', 'all_keywords')
                 selected_keywords = get_user_session('selected_keywords', [])
                 search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
-                initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)} (Search Mode: {search_mode_text})**\n\n{analysis_result}"}
+                initial_message = {"role": "assistant", "content": f"""
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+    <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px; font-weight: 600;">Analysis Report</h2>
+    <div style="color: #f0f0f0; font-size: 16px; margin-bottom: 8px;">
+        <strong>Keywords:</strong> {', '.join(selected_keywords)}
+    </div>
+    <div style="color: #e0e0e0; font-size: 14px;">
+        <strong>Search Mode:</strong> {search_mode_text}
+    </div>
+</div>
+
+{analysis_result}
+"""}
                 title = generate_conversation_title(analysis_result)
                 
                 # Get user-specific conversations and add new one
