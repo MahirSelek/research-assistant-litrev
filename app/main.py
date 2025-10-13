@@ -55,7 +55,7 @@ try:
     # Reading lowercase keys to match secrets.toml best practice
     VERTEXAI_PROJECT = st.secrets["vertex_ai"]["VERTEXAI_PROJECT"]
     VERTEXAI_LOCATION = st.secrets["vertex_ai"]["VERTEXAI_LOCATION"]
-    VERTEXAI_MODEL_ID = "gemini-1.5-flash"
+    VERTEXAI_MODEL_ID = "gemini-2.0-flash-001"
 
     # GCS Configuration
     GCS_BUCKET_NAME = st.secrets["app_config"]["gcs_bucket_name"]
@@ -92,13 +92,7 @@ def post_message_vertexai(input_text: str) -> str | None:
         model = GenerativeModel(VERTEXAI_MODEL_ID)
         generation_config = {"temperature": 0.2, "max_output_tokens": 8192}
         response = model.generate_content([input_text], generation_config=generation_config)
-        
-        if response and response.text:
-            return response.text
-        else:
-            st.error("Vertex AI returned an empty response. Please try again.")
-            return None
-            
+        return response.text
     except Exception as e:
         st.error(f"An error occurred with the Vertex AI API: {e}")
         import traceback
@@ -234,7 +228,6 @@ def get_paper_link(metadata: dict) -> str:
         if link and isinstance(link, str) and link.startswith('http'):
             return link
     return "Not available"
-
 
 def filter_papers_by_gcs_dates(papers: list, time_filter_type: str) -> list:
     """
@@ -453,7 +446,6 @@ def make_inline_citations_clickable(analysis_text: str, analysis_papers: list) -
     """
     Make inline citations clickable by converting [1], [2][3] etc. to clickable links.
     Only citations that correspond to papers in analysis_papers will be made clickable.
-    Limits citations to maximum 3 per sentence for better readability.
     """
     if not analysis_papers:
         return analysis_text
@@ -474,10 +466,6 @@ def make_inline_citations_clickable(analysis_text: str, analysis_papers: list) -
         
         # Extract individual citation numbers
         citation_numbers = re.findall(r'\[(\d+)\]', citation_text)
-        
-        # Limit to maximum 3 citations per sentence
-        if len(citation_numbers) > 3:
-            citation_numbers = citation_numbers[:3]
         
         # Replace each citation number with a clickable link if it exists in our mapping
         result_parts = []
@@ -1000,10 +988,6 @@ def main():
         st.markdown("---")
         with st.form(key="new_analysis_form"):
             st.subheader("Start a New Analysis")
-            
-            # Add data availability note - simplified version
-            st.info("**Data available until:** end of September 2025")
-            
             selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=get_user_session('selected_keywords', []))
             
             # Search mode selection
@@ -1053,19 +1037,7 @@ def main():
                 search_mode_display = get_user_session('search_mode', 'all_keywords')
                 selected_keywords = get_user_session('selected_keywords', [])
                 search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
-                initial_message = {"role": "assistant", "content": f"""
-<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-    <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px; font-weight: 600;">Analysis Report</h2>
-    <div style="color: #f0f0f0; font-size: 16px; margin-bottom: 8px;">
-        <strong>Keywords:</strong> {', '.join(selected_keywords)}
-    </div>
-    <div style="color: #e0e0e0; font-size: 14px;">
-        <strong>Search Mode:</strong> {search_mode_text}
-    </div>
-</div>
-
-{analysis_result}
-"""}
+                initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)} (Search Mode: {search_mode_text})**\n\n{analysis_result}"}
                 title = generate_conversation_title(analysis_result)
                 
                 # Get user-specific conversations and add new one
@@ -1167,33 +1139,6 @@ def main():
     /* Ensure sidebar content fits better */
     .css-1lcbmhc .css-1y0tads {
         padding-left: 1rem;
-    }
-    
-    /* Style for analysis header gradient */
-    .analysis-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 20px;
-        border-radius: 12px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    
-    .analysis-header h2 {
-        color: white;
-        margin: 0 0 10px 0;
-        font-size: 24px;
-        font-weight: 600;
-    }
-    
-    .analysis-header .keywords {
-        color: #f0f0f0;
-        font-size: 16px;
-        margin-bottom: 8px;
-    }
-    
-    .analysis-header .search-mode {
-        color: #e0e0e0;
-        font-size: 14px;
     }
     </style>
     """, unsafe_allow_html=True)
