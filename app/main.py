@@ -2,9 +2,6 @@
 # main.py v2
 
 import streamlit as st
-
-# Set page config at the very beginning
-st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant", page_icon="favicon.svg")
 import platform
 import requests
 import time
@@ -950,6 +947,7 @@ def main():
         show_login_page()
         return
     
+    st.set_page_config(layout="wide", page_title="Polo GGB Research Assistant", page_icon="favicon.svg")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     style_path = os.path.join(current_dir, "style.css")
     local_css(style_path)
