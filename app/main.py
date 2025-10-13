@@ -769,7 +769,7 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
 
 You are a world-class scientific analyst. Your task is to generate an exceptionally detailed and extensive multi-part report based *only* on the provided paper sources. The final report should be substantial in length, reflecting a deep synthesis of information from all provided papers.
 
-**Part 1: Thematic Analysis**
+# Part 1: Thematic Analysis
 For the sections "Key Methodological Advances," "Emerging Trends," and "Overall Summary," your analysis **MUST** be exhaustive. Generate at least **three long and detailed paragraphs** or a comprehensive multi-level bulleted list for each of these sections. Do not just list findings; you must deeply synthesize information across multiple sources, explain the significance, compare and contrast approaches, and build a compelling narrative about the state of the research.
 
    ### Diseases: List the specific diseases, conditions, or traits studied.
@@ -780,8 +780,8 @@ For the sections "Key Methodological Advances," "Emerging Trends," and "Overall 
 
 **CRITICAL INSTRUCTION FOR PART 1:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].` **IMPORTANT:** Limit citations to a maximum of 3 per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
 
-**Part 2: Key Paper Summaries**
-Create a new section titled ### Key Paper Summaries. Under this heading, identify the top 3-5 most impactful papers from the sources and provide a detailed, one-paragraph summary for each.
+# Part 2: Key Paper Summaries
+Identify the top 3-5 most impactful papers from the sources and provide a detailed, one-paragraph summary for each.
 
 **IMPORTANT:** Do NOT create a "References" section. Focus only on the thematic analysis and key paper summaries.
 
