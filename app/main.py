@@ -1049,7 +1049,7 @@ def main():
                 search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
                 initial_message = {"role": "assistant", "content": f"""
 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-    <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px; font-weight: 600;">📊 Analysis Report</h2>
+    <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px; font-weight: 600;">Analysis Report</h2>
     <div style="color: #f0f0f0; font-size: 16px; margin-bottom: 8px;">
         <strong>Keywords:</strong> {', '.join(selected_keywords)}
     </div>
