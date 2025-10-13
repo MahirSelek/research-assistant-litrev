@@ -488,7 +488,7 @@ def make_inline_citations_clickable(analysis_text: str, analysis_papers: list) -
     
     return clickable_text
 
-def display_citations_separately(analysis_text: str, papers: list, analysis_papers: list = None, search_mode: str = "all_keywords", include_references: bool = True) -> str:
+def display_citations_separately(analysis_text: str, papers: list, analysis_papers: list = None, search_mode: str = "all_keywords", include_references: bool = True, total_papers_found: int = None) -> str:
     """
     Display citations separately at the end, with different sections for OR queries.
     """
@@ -504,6 +504,10 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
         return analysis_text
     
     citations_section = "\n\n---\n\n### References\n\n"
+    
+    # Add total papers found count if provided
+    if total_papers_found is not None:
+        citations_section += f"**Total papers found: {total_papers_found}**\n\n"
     
     if search_mode == "any_keyword" and analysis_papers:
         # For OR queries: Separate analysis papers from additional papers
@@ -603,7 +607,7 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
         return perform_and_search(keywords, time_filter_dict, n_results, score_threshold, max_final_results)
     else:
         # For OR queries: Return ALL papers found, no filtering
-        return perform_or_search(keywords, time_filter_dict, n_results)
+        return perform_or_search(keywords, time_filter_dict, n_results=10000)
 
 def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15) -> tuple[list, int]:
     """
@@ -646,7 +650,7 @@ def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_r
 
     return final_paper_list, total_papers_found
 
-def perform_or_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100) -> tuple[list, int]:
+def perform_or_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 10000) -> tuple[list, int]:
     """
     Performs an OR search returning ALL papers found, sorted by Elasticsearch relevance score.
     """
@@ -789,7 +793,7 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
         # First, reload metadata from .metadata.json files to get the links
         papers_for_references = reload_paper_metadata(papers_for_references)
         top_papers_for_analysis = reload_paper_metadata(top_papers_for_analysis)
-        analysis = display_citations_separately(analysis, papers_for_references, top_papers_for_analysis, search_mode)
+        analysis = display_citations_separately(analysis, papers_for_references, top_papers_for_analysis, search_mode, include_references=True, total_papers_found=total_found)
     
     # <<< MODIFICATION: Return all three pieces of information >>>
     return analysis, papers_for_references, total_found
