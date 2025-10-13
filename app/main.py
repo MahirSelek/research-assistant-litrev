@@ -446,7 +446,7 @@ def make_inline_citations_clickable(analysis_text: str, analysis_papers: list) -
     """
     Make inline citations clickable by converting [1], [2][3] etc. to clickable links.
     Only citations that correspond to papers in analysis_papers will be made clickable.
-    Limits citations to maximum 1 per sentence and reduces repetitive citations for better readability.
+    Limits citations to maximum 3 per sentence for better readability.
     """
     if not analysis_papers:
         return analysis_text
@@ -468,9 +468,9 @@ def make_inline_citations_clickable(analysis_text: str, analysis_papers: list) -
         # Extract individual citation numbers
         citation_numbers = re.findall(r'\[(\d+)\]', citation_text)
         
-        # Limit to maximum 1 citation per sentence for cleaner look
-        if len(citation_numbers) > 1:
-            citation_numbers = citation_numbers[:1]
+        # Limit to maximum 3 citations per sentence
+        if len(citation_numbers) > 3:
+            citation_numbers = citation_numbers[:3]
         
         # Replace each citation number with a clickable link if it exists in our mapping
         result_parts = []
@@ -778,14 +778,14 @@ For the sections "Key Methodological Advances," "Emerging Trends," and "Overall 
    ### Emerging Trends: Identify future directions and new research areas. Synthesize recurring themes to explain what trends are emerging in the field. Discuss the implications of these trends for science and medicine.
    ### Overall Summary: Provide a comprehensive, multi-paragraph textual summary of the key findings and clinical implications. This should be a full executive summary, not a brief conclusion.
 
-**CRITICAL INSTRUCTION FOR PART 1:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` **IMPORTANT:** Use only ONE citation per sentence. Avoid repeating the same citation number multiple times in the same paragraph. Choose the most relevant or representative source for each finding.
+**CRITICAL INSTRUCTION FOR PART 1:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].` **IMPORTANT:** Limit citations to a maximum of 3 per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
 
 # Part 2: Key Paper Summaries
 Identify the top 3-5 most impactful papers from the sources and provide a detailed, one-paragraph summary for each.
 
 **IMPORTANT:** Do NOT create a "References" section. Focus only on the thematic analysis and key paper summaries.
 
-**CRITICAL INSTRUCTION FOR CITATIONS:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` **IMPORTANT:** Use only ONE citation per sentence. **CRUCIAL:** In the Key Paper Summaries section, do NOT add citation numbers to the paper titles - only add citations at the end of the summary paragraphs. **FORMATTING RULE:** All citations MUST be in square brackets [1], [2], [3], etc. - never use unbracketed numbers for citations. **CITATION LIMIT:** Maximum 1 citation per sentence. Avoid repeating the same citation multiple times within a single paper summary.
+**CRITICAL INSTRUCTION FOR CITATIONS:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].` **IMPORTANT:** Always separate multiple citations with individual brackets, like `[2][3][4]` NOT `[234]`. **CRUCIAL:** In the Key Paper Summaries section, do NOT add citation numbers to the paper titles - only add citations at the end of the summary paragraphs. **FORMATTING RULE:** All citations MUST be in square brackets [1], [2], [3], etc. - never use unbracketed numbers for citations. **CITATION LIMIT:** Maximum 3 citations per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
 """
     analysis = post_message_vertexai(prompt)
     
@@ -1331,7 +1331,7 @@ def main():
             full_prompt = f"""Continue our conversation. You are the Polo-GGB Research Assistant.
 Your task is to answer the user's last message based on the chat history and the full context from the paper sources provided below.
 
-**CITATION INSTRUCTIONS:** When referencing sources, use citation markers in square brackets like [1], [2], [3], etc. **IMPORTANT:** Use only ONE citation per sentence. Avoid repeating the same citation multiple times in the same response. Choose the most relevant source for each finding.
+**CITATION INSTRUCTIONS:** When referencing sources, use citation markers in square brackets like [1], [2], [3], etc. Separate multiple citations with individual brackets like [2][3][4]. **IMPORTANT:** Limit citations to a maximum of 3 per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
 
 --- CHAT HISTORY ---
 {chat_history}
