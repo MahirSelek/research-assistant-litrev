@@ -55,7 +55,7 @@ try:
     # Reading lowercase keys to match secrets.toml best practice
     VERTEXAI_PROJECT = st.secrets["vertex_ai"]["VERTEXAI_PROJECT"]
     VERTEXAI_LOCATION = st.secrets["vertex_ai"]["VERTEXAI_LOCATION"]
-    VERTEXAI_MODEL_ID = "gemini-2.5-flash"
+    VERTEXAI_MODEL_ID = "gemini-1.5-flash"
 
     # GCS Configuration
     GCS_BUCKET_NAME = st.secrets["app_config"]["gcs_bucket_name"]
