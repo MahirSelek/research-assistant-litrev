@@ -229,6 +229,57 @@ def get_paper_link(metadata: dict) -> str:
             return link
     return "Not available"
 
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def get_latest_data_availability_date() -> str:
+    """
+    Get the latest publication date from GCS metadata files to determine data availability.
+    Returns a formatted string like "end of September 2025".
+    """
+    try:
+        from google.cloud import storage
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(GCS_BUCKET_NAME)
+        blobs = bucket.list_blobs(prefix="pdf-metadata/")
+        
+        latest_date = None
+        latest_month_year = None
+        
+        for blob in blobs:
+            if blob.name.endswith('.metadata.json'):
+                try:
+                    json_content = blob.download_as_string()
+                    metadata = json.loads(json_content)
+                    publication_date = metadata.get('publication_date', '')
+                    
+                    if publication_date:
+                        # Parse the date
+                        parsed_date = date_parser.parse(publication_date)
+                        
+                        # Track the latest month and year
+                        month_year = (parsed_date.year, parsed_date.month)
+                        if latest_month_year is None or month_year > latest_month_year:
+                            latest_month_year = month_year
+                            latest_date = parsed_date
+                            
+                except Exception:
+                    continue
+        
+        if latest_date:
+            # Format as "end of [Month] [Year]"
+            month_names = [
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
+            ]
+            month_name = month_names[latest_date.month - 1]
+            return f"end of {month_name} {latest_date.year}"
+        else:
+            # Fallback if no dates found
+            return "end of September 2025"
+            
+    except Exception as e:
+        # Fallback if there's any error
+        return "end of September 2025"
+
 def filter_papers_by_gcs_dates(papers: list, time_filter_type: str) -> list:
     """
     Filter papers based on publication dates stored in GCS metadata.
@@ -446,6 +497,7 @@ def make_inline_citations_clickable(analysis_text: str, analysis_papers: list) -
     """
     Make inline citations clickable by converting [1], [2][3] etc. to clickable links.
     Only citations that correspond to papers in analysis_papers will be made clickable.
+    Limits citations to maximum 3 per sentence for better readability.
     """
     if not analysis_papers:
         return analysis_text
@@ -466,6 +518,10 @@ def make_inline_citations_clickable(analysis_text: str, analysis_papers: list) -
         
         # Extract individual citation numbers
         citation_numbers = re.findall(r'\[(\d+)\]', citation_text)
+        
+        # Limit to maximum 3 citations per sentence
+        if len(citation_numbers) > 3:
+            citation_numbers = citation_numbers[:3]
         
         # Replace each citation number with a clickable link if it exists in our mapping
         result_parts = []
@@ -988,6 +1044,14 @@ def main():
         st.markdown("---")
         with st.form(key="new_analysis_form"):
             st.subheader("Start a New Analysis")
+            
+            # Add data availability note
+            try:
+                data_availability = get_latest_data_availability_date()
+                st.info(f"📅 **Data available until:** {data_availability}")
+            except Exception:
+                st.info("📅 **Data available until:** end of September 2025")
+            
             selected_keywords = st.multiselect("Select keywords", GENETICS_KEYWORDS, default=get_user_session('selected_keywords', []))
             
             # Search mode selection
@@ -1037,7 +1101,19 @@ def main():
                 search_mode_display = get_user_session('search_mode', 'all_keywords')
                 selected_keywords = get_user_session('selected_keywords', [])
                 search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
-                initial_message = {"role": "assistant", "content": f"**Analysis for: {', '.join(selected_keywords)} (Search Mode: {search_mode_text})**\n\n{analysis_result}"}
+                initial_message = {"role": "assistant", "content": f"""
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+    <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px; font-weight: 600;">📊 Analysis Report</h2>
+    <div style="color: #f0f0f0; font-size: 16px; margin-bottom: 8px;">
+        <strong>Keywords:</strong> {', '.join(selected_keywords)}
+    </div>
+    <div style="color: #e0e0e0; font-size: 14px;">
+        <strong>Search Mode:</strong> {search_mode_text}
+    </div>
+</div>
+
+{analysis_result}
+"""}
                 title = generate_conversation_title(analysis_result)
                 
                 # Get user-specific conversations and add new one
@@ -1139,6 +1215,33 @@ def main():
     /* Ensure sidebar content fits better */
     .css-1lcbmhc .css-1y0tads {
         padding-left: 1rem;
+    }
+    
+    /* Style for analysis header gradient */
+    .analysis-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .analysis-header h2 {
+        color: white;
+        margin: 0 0 10px 0;
+        font-size: 24px;
+        font-weight: 600;
+    }
+    
+    .analysis-header .keywords {
+        color: #f0f0f0;
+        font-size: 16px;
+        margin-bottom: 8px;
+    }
+    
+    .analysis-header .search-mode {
+        color: #e0e0e0;
+        font-size: 14px;
     }
     </style>
     """, unsafe_allow_html=True)
