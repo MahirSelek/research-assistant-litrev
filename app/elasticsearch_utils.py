@@ -64,49 +64,18 @@ class ElasticsearchManager:
             return []
         bool_operator = "must" if operator.upper() == "AND" else "should"
         
-        # Enhanced query structure with better precision
+        # The base query structure
         query = {
             "query": {
                 "bool": {
                     bool_operator: [
-                        # Multi-match with different field weights for better precision
-                        {
-                            "multi_match": {
-                                "query": keyword,
-                                "fields": [
-                                    "title^3",      # Title has highest weight
-                                    "abstract^2",  # Abstract has medium weight
-                                    "content^1"     # Content has lowest weight
-                                ],
-                                "type": "best_fields",  # Use best_fields for better precision
-                                "fuzziness": "AUTO",   # Allow fuzzy matching for typos
-                                "minimum_should_match": "75%"  # Require 75% of terms to match
-                            }
-                        } for keyword in keywords
+                        # Search across title, abstract, and content for better results.
+                        {"multi_match": {"query": keyword, "fields": ["title", "abstract", "content"]}} for keyword in keywords
                     ],
-                    "filter": [],
-                    # Boost exact phrase matches
-                    "should": [
-                        {
-                            "multi_match": {
-                                "query": keyword,
-                                "fields": ["title^5", "abstract^3", "content^1"],
-                                "type": "phrase",
-                                "boost": 2.0
-                            }
-                        } for keyword in keywords
-                    ]
+                    "filter": []
                 }
             },
-            "size": size,
-            # Add highlighting to see which parts matched
-            "highlight": {
-                "fields": {
-                    "title": {"fragment_size": 150},
-                    "abstract": {"fragment_size": 150},
-                    "content": {"fragment_size": 150}
-                }
-            }
+            "size": size
         }
         
         # For OR queries, we need to specify minimum_should_match to ensure at least one keyword matches
