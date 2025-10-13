@@ -20,11 +20,12 @@ import vertexai
 from vertexai.generative_models import GenerativeModel
 from google.cloud import storage
 from google.api_core.exceptions import NotFound
+
+# Add current directory to path for local imports
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from auth import auth_manager, show_login_page, show_logout_button
 from user_management import show_user_management
-
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     from elasticsearch_utils import get_es_manager
