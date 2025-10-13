@@ -1110,16 +1110,60 @@ def main():
     # CSS with dark/light mode support and cross-browser compatibility
     st.markdown("""
     <style>
+    /* Hide Streamlit default header bars and top elements */
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+    
+    .stApp > header {
+        display: none !important;
+    }
+    
+    /* Hide Streamlit's top navigation bar */
+    .css-1rs6os,
+    .css-1d391kg,
+    .css-1y0tads {
+        display: none !important;
+    }
+    
+    /* Hide any remaining top bars */
+    div[data-testid="stToolbar"],
+    div[data-testid="stDecoration"],
+    .stApp > div:first-child {
+        display: none !important;
+    }
+    
+    /* Ensure full viewport usage */
+    .stApp {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+        height: 100vh !important;
+    }
+    
+    /* Remove top margins from main content */
+    .main .block-container {
+        margin-top: 0 !important;
+        padding-top: 1rem !important;
+    }
+    
+    /* Hide Streamlit's hamburger menu and other UI elements */
+    .css-1rs6os .css-1d391kg,
+    .css-1rs6os .css-1y0tads {
+        display: none !important;
+    }
+    
     :root {
         /* Light mode colors */
-        --primary-color: #007bff;
-        --primary-hover: #0056b3;
-        --primary-bg: #e3f2fd;
+        --primary-color: #2E8B57;
+        --primary-hover: #3CB371;
+        --primary-bg: #e8f5e8;
         --text-color: #333333;
         --bg-color: #ffffff;
         --border-color: #e0e0e0;
         --card-bg: #f8f9fa;
         --sidebar-bg: #f1f3f4;
+        --input-bg: #ffffff;
+        --input-border: #d0d0d0;
     }
     
     @media (prefers-color-scheme: dark) {
@@ -1133,6 +1177,8 @@ def main():
             --border-color: #424242;
             --card-bg: #1e1e1e;
             --sidebar-bg: #2d2d2d;
+            --input-bg: #2d2d2d;
+            --input-border: #555555;
         }
     }
     
@@ -1195,8 +1241,27 @@ def main():
     }
     
     /* Theme-aware form elements */
-    .stSelectbox > div > div {
-        background-color: var(--card-bg) !important;
+    .stSelectbox > div > div,
+    .stSelectbox > div > div > div,
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea {
+        background-color: var(--input-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--input-border) !important;
+    }
+    
+    /* Theme-aware multiselect */
+    .stMultiSelect > div > div {
+        background-color: var(--input-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--input-border) !important;
+    }
+    
+    /* Theme-aware form labels */
+    .stSelectbox label,
+    .stTextInput label,
+    .stTextArea label,
+    .stMultiSelect label {
         color: var(--text-color) !important;
     }
     
@@ -1237,6 +1302,31 @@ def main():
         -moz-osx-font-smoothing: grayscale;
     }
     </style>
+    
+    <script>
+    // Additional JavaScript to ensure headers are hidden
+    document.addEventListener('DOMContentLoaded', function() {
+        // Hide any remaining Streamlit headers
+        const headers = document.querySelectorAll('header, .css-1rs6os, .css-1d391kg, .css-1y0tads');
+        headers.forEach(header => {
+            if (header) {
+                header.style.display = 'none';
+                header.remove();
+            }
+        });
+        
+        // Remove top margins from body
+        document.body.style.marginTop = '0';
+        document.body.style.paddingTop = '0';
+        
+        // Ensure main content starts at the top
+        const mainContent = document.querySelector('.main .block-container');
+        if (mainContent) {
+            mainContent.style.marginTop = '0';
+            mainContent.style.paddingTop = '1rem';
+        }
+    });
+    </script>
     """, unsafe_allow_html=True)
     
     st.markdown("<h1>🧬 POLO-GGB RESEARCH ASSISTANT</h1>", unsafe_allow_html=True)

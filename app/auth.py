@@ -174,6 +174,48 @@ def show_login_page():
     # CSS with dark/light mode support for login page
     st.markdown("""
     <style>
+    /* Hide Streamlit default header bars and top elements */
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+    
+    .stApp > header {
+        display: none !important;
+    }
+    
+    /* Hide Streamlit's top navigation bar */
+    .css-1rs6os,
+    .css-1d391kg,
+    .css-1y0tads {
+        display: none !important;
+    }
+    
+    /* Hide any remaining top bars */
+    div[data-testid="stToolbar"],
+    div[data-testid="stDecoration"],
+    .stApp > div:first-child {
+        display: none !important;
+    }
+    
+    /* Ensure full viewport usage */
+    .stApp {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+        height: 100vh !important;
+    }
+    
+    /* Remove top margins from main content */
+    .main .block-container {
+        margin-top: 0 !important;
+        padding-top: 1rem !important;
+    }
+    
+    /* Hide Streamlit's hamburger menu and other UI elements */
+    .css-1rs6os .css-1d391kg,
+    .css-1rs6os .css-1y0tads {
+        display: none !important;
+    }
+    
     :root {
         /* Light mode colors */
         --primary-color: #2E8B57;
@@ -184,6 +226,8 @@ def show_login_page():
         --border-color: #e0e0e0;
         --error-color: #dc3545;
         --success-color: #28a745;
+        --input-bg: #ffffff;
+        --input-border: #d0d0d0;
     }
     
     @media (prefers-color-scheme: dark) {
@@ -197,6 +241,8 @@ def show_login_page():
             --border-color: #424242;
             --error-color: #f44336;
             --success-color: #4caf50;
+            --input-bg: #2d2d2d;
+            --input-border: #555555;
         }
     }
     
@@ -220,15 +266,30 @@ def show_login_page():
     /* Theme-aware form elements */
     .stTextInput > div > div > input,
     .stSelectbox > div > div > div {
-        background-color: var(--card-bg) !important;
+        background-color: var(--input-bg) !important;
         color: var(--text-color) !important;
-        border: 1px solid var(--border-color) !important;
+        border: 1px solid var(--input-border) !important;
     }
     
     /* Theme-aware labels */
     .stTextInput label,
     .stSelectbox label {
         color: var(--text-color) !important;
+    }
+    
+    /* Theme-aware tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: var(--card-bg) !important;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background-color: var(--primary-color) !important;
+        color: white !important;
     }
     
     /* Theme-aware error messages */
@@ -275,6 +336,31 @@ def show_login_page():
         -moz-osx-font-smoothing: grayscale;
     }
     </style>
+    
+    <script>
+    // Additional JavaScript to ensure headers are hidden
+    document.addEventListener('DOMContentLoaded', function() {
+        // Hide any remaining Streamlit headers
+        const headers = document.querySelectorAll('header, .css-1rs6os, .css-1d391kg, .css-1y0tads');
+        headers.forEach(header => {
+            if (header) {
+                header.style.display = 'none';
+                header.remove();
+            }
+        });
+        
+        // Remove top margins from body
+        document.body.style.marginTop = '0';
+        document.body.style.paddingTop = '0';
+        
+        // Ensure main content starts at the top
+        const mainContent = document.querySelector('.main .block-container');
+        if (mainContent) {
+            mainContent.style.marginTop = '0';
+            mainContent.style.paddingTop = '1rem';
+        }
+    });
+    </script>
     """, unsafe_allow_html=True)
     
     # Logo and company name
