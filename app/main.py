@@ -607,8 +607,8 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
         # For AND queries: Use the original two-stage hybrid approach
         return perform_and_search(keywords, time_filter_dict, n_results, score_threshold, max_final_results)
     else:
-        # For OR queries: Return ALL papers found, no filtering - use large size to get all results
-        return perform_or_search(keywords, time_filter_dict, 10000)
+        # For OR queries: Return ALL papers found, no filtering
+        return perform_or_search(keywords, time_filter_dict, n_results)
 
 def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15) -> tuple[list, int]:
     """
@@ -655,8 +655,8 @@ def perform_or_search(keywords: list, time_filter_dict: dict | None = None, n_re
     """
     Performs an OR search returning ALL papers found, sorted by Elasticsearch relevance score.
     """
-    # Get ALL papers that contain at least one keyword - use large number to get all results
-    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=10000, operator="OR")
+    # Get ALL papers that contain at least one keyword
+    es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="OR")
     
     # Convert to the expected format and preserve relevance scores
     all_papers = []
@@ -722,12 +722,10 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
         time_filter_dict = {"gte": f"01 {month_abbr} {data_year}", "lt": f"01 {next_month_abbr} {next_year}"}
     
     # Skip Elasticsearch time filtering - we'll use GCS instead
-    # For OR queries, use larger n_results to get all papers
-    n_results_size = 10000 if search_mode == "any_keyword" else 100
     all_papers, total_found = perform_hybrid_search(
         keywords, 
         time_filter_dict=None,  # No ES time filtering
-        n_results=n_results_size, 
+        n_results=100, 
         max_final_results=15,
         search_mode=search_mode
     )
