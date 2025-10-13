@@ -113,6 +113,63 @@ def get_pdf_bytes_from_gcs(bucket_name: str, blob_name: str) -> bytes | None:
         st.error(f"Failed to download from GCS: {e}")
         return None
 
+def preprocess_keywords(keywords: list) -> list:
+    """
+    Preprocess keywords to improve search precision by:
+    1. Removing common stop words
+    2. Expanding abbreviations
+    3. Adding synonyms for better matching
+    """
+    if not keywords:
+        return keywords
+    
+    # Common stop words to remove
+    stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'must'}
+    
+    # Abbreviation expansions
+    abbreviations = {
+        'PRS': ['polygenic risk score', 'polygenic risk scores'],
+        'GWAS': ['genome-wide association study', 'genome-wide association studies'],
+        'PGS': ['polygenic score', 'polygenic scores'],
+        'SNP': ['single nucleotide polymorphism', 'single nucleotide polymorphisms'],
+        'DNA': ['deoxyribonucleic acid'],
+        'RNA': ['ribonucleic acid'],
+        'AI': ['artificial intelligence'],
+        'ML': ['machine learning'],
+        'UK': ['United Kingdom'],
+        'US': ['United States', 'USA']
+    }
+    
+    processed_keywords = []
+    
+    for keyword in keywords:
+        # Convert to lowercase and split into words
+        words = keyword.lower().split()
+        
+        # Remove stop words but keep the keyword if it becomes empty
+        filtered_words = [word for word in words if word not in stop_words]
+        if not filtered_words:
+            filtered_words = words  # Keep original if all words were stop words
+        
+        # Reconstruct the keyword
+        processed_keyword = ' '.join(filtered_words)
+        processed_keywords.append(processed_keyword)
+        
+        # Add expanded forms for abbreviations
+        for abbr, expansions in abbreviations.items():
+            if abbr.lower() in processed_keyword.lower():
+                processed_keywords.extend(expansions)
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_keywords = []
+    for keyword in processed_keywords:
+        if keyword not in seen:
+            seen.add(keyword)
+            unique_keywords.append(keyword)
+    
+    return unique_keywords
+
 def get_user_key(key):
     """Get user-specific session key"""
     current_user = st.session_state.get('username', 'default')
@@ -488,7 +545,7 @@ def make_inline_citations_clickable(analysis_text: str, analysis_papers: list) -
     
     return clickable_text
 
-def display_citations_separately(analysis_text: str, papers: list, analysis_papers: list = None, search_mode: str = "all_keywords", include_references: bool = True) -> str:
+def display_citations_separately(analysis_text: str, papers: list, analysis_papers: list = None, search_mode: str = "all_keywords", include_references: bool = True, total_papers_found: int = None) -> str:
     """
     Display citations separately at the end, with different sections for OR queries.
     """
@@ -504,6 +561,10 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
         return analysis_text
     
     citations_section = "\n\n---\n\n### References\n\n"
+    
+    # Add total papers found count if provided
+    if total_papers_found is not None:
+        citations_section += f"**Total papers found: {total_papers_found}**\n\n"
     
     if search_mode == "any_keyword" and analysis_papers:
         # For OR queries: Separate analysis papers from additional papers
@@ -595,19 +656,93 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
     2. "any_keyword": Single-stage search (Elasticsearch OR only, return ALL papers)
     Returns a tuple: (list of papers, total number of papers found).
     """
+    # Preprocess keywords for better search precision
+    processed_keywords = preprocess_keywords(keywords)
+    
     # Determine the operator based on search mode
     operator = "AND" if search_mode == "all_keywords" else "OR"
     
     if search_mode == "all_keywords":
         # For AND queries: Use the original two-stage hybrid approach
-        return perform_and_search(keywords, time_filter_dict, n_results, score_threshold, max_final_results)
+        return perform_and_search(processed_keywords, time_filter_dict, n_results, score_threshold, max_final_results)
     else:
-        # For OR queries: Return ALL papers found, no filtering
-        return perform_or_search(keywords, time_filter_dict, n_results)
+        # For OR queries: Return ALL papers found, no filtering (increased limit)
+        return perform_or_search(processed_keywords, time_filter_dict, n_results=10000)
+
+def calculate_enhanced_relevance_score(paper: dict, keywords: list, es_score: float) -> float:
+    """
+    Calculate enhanced relevance score based on multiple factors:
+    1. Elasticsearch score
+    2. Keyword density in title/abstract
+    3. Keyword position in title
+    4. Recent publication date bonus
+    """
+    metadata = paper.get('metadata', {})
+    title = metadata.get('title', '').lower()
+    abstract = metadata.get('abstract', '').lower()
+    content = paper.get('content', '').lower()
+    
+    # Base score from Elasticsearch
+    base_score = es_score
+    
+    # Keyword density scoring
+    title_density = 0
+    abstract_density = 0
+    
+    for keyword in keywords:
+        keyword_lower = keyword.lower()
+        # Title matches get higher weight
+        title_matches = title.count(keyword_lower)
+        title_density += title_matches * 3
+        
+        # Abstract matches get medium weight
+        abstract_matches = abstract.count(keyword_lower)
+        abstract_density += abstract_matches * 2
+        
+        # Content matches get lower weight
+        content_matches = content.count(keyword_lower)
+        abstract_density += content_matches * 1
+    
+    # Normalize density scores
+    total_text_length = len(title) + len(abstract) + len(content)
+    if total_text_length > 0:
+        density_score = (title_density + abstract_density) / total_text_length * 1000
+    else:
+        density_score = 0
+    
+    # Position bonus for keywords in title
+    position_bonus = 0
+    for keyword in keywords:
+        keyword_lower = keyword.lower()
+        if keyword_lower in title:
+            # Bonus for keywords appearing early in title
+            position = title.find(keyword_lower)
+            if position < len(title) * 0.3:  # First 30% of title
+                position_bonus += 2
+            elif position < len(title) * 0.6:  # First 60% of title
+                position_bonus += 1
+    
+    # Recent publication bonus
+    recency_bonus = 0
+    try:
+        pub_date = metadata.get('publication_date', '')
+        if pub_date:
+            from dateutil import parser as date_parser
+            parsed_date = date_parser.parse(pub_date)
+            # Bonus for papers from 2024-2025
+            if parsed_date.year >= 2024:
+                recency_bonus = 1
+    except:
+        pass
+    
+    # Combine all scores
+    enhanced_score = base_score + density_score + position_bonus + recency_bonus
+    
+    return enhanced_score
 
 def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15) -> tuple[list, int]:
     """
-    Performs Elasticsearch AND search with relevance scoring for AND queries.
+    Performs Elasticsearch AND search with enhanced relevance scoring for AND queries.
     """
     # Stage 1: The Hard Filter. This is the most important step.
     es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
@@ -620,58 +755,67 @@ def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_r
     if not valid_paper_ids:
         return [], 0 # Return an empty list and a count of 0
 
-    # Process Elasticsearch results and create relevance scores
-    fused_scores = defaultdict(lambda: {'score': 0, 'doc': None})
-    k = 60 # Relevance scoring constant
+    # Process Elasticsearch results with enhanced scoring
+    enhanced_scores = defaultdict(lambda: {'score': 0, 'doc': None})
 
     # Process Elasticsearch results (all of these are guaranteed to be valid).
     for i, hit in enumerate(es_results):
         rank = i + 1
         paper_id = hit['_id']
-        fused_scores[paper_id]['score'] += 1 / (k + rank)
+        es_score = hit.get('_score', 0.0)
+        
         doc_content = {'paper_id': paper_id, 'metadata': hit['_source'], 'content': hit['_source'].get('content', '')}
-        fused_scores[paper_id]['doc'] = doc_content
+        
+        # Calculate enhanced relevance score
+        enhanced_score = calculate_enhanced_relevance_score(doc_content, keywords, es_score)
+        
+        enhanced_scores[paper_id]['score'] = enhanced_score
+        enhanced_scores[paper_id]['doc'] = doc_content
 
     # Filter out any entries that somehow didn't get a 'doc' object.
-    valid_fused_results = [item for item in fused_scores.values() if item['doc'] is not None]
+    valid_enhanced_results = [item for item in enhanced_scores.values() if item['doc'] is not None]
 
-    # Sort the combined results by the fused relevance score.
-    sorted_fused_results = sorted(valid_fused_results, key=lambda x: x['score'], reverse=True)
+    # Sort the combined results by the enhanced relevance score.
+    sorted_enhanced_results = sorted(valid_enhanced_results, key=lambda x: x['score'], reverse=True)
     
     # Create the final list, filtered by a minimum score and limited by the max_final_results parameter (now 15).
     final_paper_list = [
-        item['doc'] for item in sorted_fused_results 
+        item['doc'] for item in sorted_enhanced_results 
         if item['score'] >= score_threshold
     ][:max_final_results]
 
     return final_paper_list, total_papers_found
 
-def perform_or_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100) -> tuple[list, int]:
+def perform_or_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 10000) -> tuple[list, int]:
     """
-    Performs an OR search returning ALL papers found, sorted by Elasticsearch relevance score.
+    Performs an OR search returning ALL papers found, sorted by enhanced relevance score.
     """
-    # Get ALL papers that contain at least one keyword
+    # Get ALL papers that contain at least one keyword (increased limit to 10000)
     es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="OR")
     
-    # Convert to the expected format and preserve relevance scores
+    # Convert to the expected format and calculate enhanced relevance scores
     all_papers = []
     for hit in es_results:
         paper_id = hit['_id']
-        relevance_score = hit.get('_score', 0.0)  # Get Elasticsearch relevance score
+        es_score = hit.get('_score', 0.0)
         doc_content = {
             'paper_id': paper_id, 
             'metadata': hit['_source'], 
-            'content': hit['_source'].get('content', ''),
-            'relevance_score': relevance_score  # Store the relevance score
+            'content': hit['_source'].get('content', '')
         }
+        
+        # Calculate enhanced relevance score
+        enhanced_score = calculate_enhanced_relevance_score(doc_content, keywords, es_score)
+        doc_content['relevance_score'] = enhanced_score
+        
         all_papers.append(doc_content)
     
-    # Sort papers by relevance score (highest first)
+    # Sort papers by enhanced relevance score (highest first)
     all_papers.sort(key=lambda x: x.get('relevance_score', 0.0), reverse=True)
     
     total_papers_found = len(all_papers)
     
-    # Return ALL papers found, sorted by relevance
+    # Return ALL papers found, sorted by enhanced relevance
     return all_papers, total_papers_found
 
 
@@ -789,7 +933,7 @@ Create a new section titled ### Key Paper Summaries. Under this heading, identif
         # First, reload metadata from .metadata.json files to get the links
         papers_for_references = reload_paper_metadata(papers_for_references)
         top_papers_for_analysis = reload_paper_metadata(top_papers_for_analysis)
-        analysis = display_citations_separately(analysis, papers_for_references, top_papers_for_analysis, search_mode)
+        analysis = display_citations_separately(analysis, papers_for_references, top_papers_for_analysis, search_mode, include_references=True, total_papers_found=total_found)
     
     # <<< MODIFICATION: Return all three pieces of information >>>
     return analysis, papers_for_references, total_found
@@ -1515,7 +1659,7 @@ Assistant Response:"""
                 search_mode = active_conv.get("search_mode", "all_keywords")
                 
                 # For follow-up responses, use all retrieved papers to make citations clickable but don't include references section
-                response_text = display_citations_separately(response_text, retrieved_papers, retrieved_papers, search_mode, include_references=False)
+                response_text = display_citations_separately(response_text, retrieved_papers, retrieved_papers, search_mode, include_references=False, total_papers_found=None)
                 active_conv["messages"].append({"role": "assistant", "content": response_text})
                 # Update last interaction time for this conversation
                 active_conv['last_interaction_time'] = time.time()
