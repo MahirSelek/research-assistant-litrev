@@ -165,6 +165,11 @@ def initialize_default_admin():
 
 def show_login_page():
     """Display the login page"""
+    st.set_page_config(
+        page_title="Polo GGB Research Assistant - Login",
+        page_icon="favicon.svg",
+        layout="centered"
+    )
     
     # CSS with dark/light mode support for login page
     st.markdown("""
