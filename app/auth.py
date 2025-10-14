@@ -839,17 +839,56 @@ def show_login_page():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         # Display logo with better visibility and size
+        st.markdown("**Debug:** Trying to load logo...")
         try:
-            # Create a container for the logo with better styling
+            # Use st.image with custom styling
             st.markdown("""
-            <div style="text-align: center; margin: 20px 0;">
-                <img src="data:image/png;base64,{}" style="width: 200px; height: auto; max-width: 100%; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); transition: transform 0.3s ease;" alt="Polo GGB Logo">
+            <div style="text-align: center; margin: 30px 0;">
+                <style>
+                .logo-container img {
+                    width: 250px !important;
+                    height: auto !important;
+                    max-width: 100% !important;
+                    filter: drop-shadow(0 6px 12px rgba(0,0,0,0.4)) !important;
+                    transition: transform 0.3s ease !important;
+                }
+                .logo-container img:hover {
+                    transform: scale(1.05) !important;
+                }
+                </style>
+                <div class="logo-container">
+            """, unsafe_allow_html=True)
+            
+            # Try different logo paths
+            logo_paths = [
+                "polo-ggb-logo.png",
+                "../polo-ggb-logo.png", 
+                "/mount/src/research-assistant-litrev/polo-ggb-logo.png",
+                "/mount/src/research-assistant-litrev/app/polo-ggb-logo.png"
+            ]
+            
+            logo_found = False
+            for path in logo_paths:
+                try:
+                    st.image(path, width=250)
+                    st.markdown(f"**Debug:** Logo loaded from: {path}")
+                    logo_found = True
+                    break
+                except Exception as e:
+                    st.markdown(f"**Debug:** Failed to load from {path}: {str(e)}")
+                    continue
+            
+            if not logo_found:
+                raise Exception("Logo not found")
+            
+            st.markdown("""
+                </div>
             </div>
-            """.format(base64.b64encode(open("polo-ggb-logo.png", "rb").read()).decode()), unsafe_allow_html=True)
-        except:
+            """, unsafe_allow_html=True)
+        except Exception as e:
             st.markdown("""
-            <div style="text-align: center; margin: 20px 0;">
-                <h1 style="font-size: 2.5rem; color: #1f77b4; margin: 0;">🧬 POLO GGB</h1>
+            <div style="text-align: center; margin: 30px 0;">
+                <h1 style="font-size: 3rem; color: #1f77b4; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🧬 POLO GGB</h1>
             </div>
             """, unsafe_allow_html=True)
         
