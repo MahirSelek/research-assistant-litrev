@@ -16,13 +16,14 @@ class AuthenticationManager:
     def __init__(self):
         # GCS Configuration
         self.gcs_bucket_name = st.secrets["app_config"]["gcs_bucket_name"]
+        self.gcs_project_id = st.secrets["vertex_ai"]["VERTEXAI_PROJECT"]  # Use same project as Vertex AI
         self.users_folder = "user_data/"
         self.session_timeout = 3600  # 1 hour in seconds
         self.max_login_attempts = 5
         self.lockout_duration = 300  # 5 minutes in seconds
         
-        # Initialize GCS client
-        self.storage_client = storage.Client()
+        # Initialize GCS client with project ID
+        self.storage_client = storage.Client(project=self.gcs_project_id)
         self.bucket = self.storage_client.bucket(self.gcs_bucket_name)
         
         # Generate encryption key for user data (this should be stored securely in production)
