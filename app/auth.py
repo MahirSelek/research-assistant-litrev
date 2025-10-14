@@ -21,9 +21,9 @@ class AuthenticationManager:
             self.gcs_bucket_name = st.secrets["app_config"]["gcs_bucket_name"]
             self.gcs_project_id = st.secrets["vertex_ai"]["VERTEXAI_PROJECT"]  # Use same project as Vertex AI
             self.users_folder = "user_data/"
-            self.session_timeout = 3600  # 1 hour in seconds
-            self.max_login_attempts = 5
-            self.lockout_duration = 300  # 5 minutes in seconds
+        self.session_timeout = 3600  # 1 hour in seconds
+        self.max_login_attempts = 5
+        self.lockout_duration = 300  # 5 minutes in seconds
             
             # Wait for credentials to be set up (same as main.py)
             import time
@@ -130,10 +130,10 @@ class AuthenticationManager:
             if users_blob.exists():
                 encrypted_data = users_blob.download_as_text()
                 return self.decrypt_user_data(encrypted_data)
-            return {}
+                return {}
         except Exception as e:
             st.error(f"Error loading users: {e}")
-            return {}
+        return {}
     
     def save_users(self, users: Dict):
         """Save users to GCS"""
@@ -773,7 +773,7 @@ def get_auth_manager():
     if auth_manager is None:
         try:
             # Try to initialize cloud-based auth
-            auth_manager = AuthenticationManager()
+auth_manager = AuthenticationManager()
         except Exception as e:
             # Fall back to local auth if cloud fails
             auth_manager = FallbackAuthenticationManager()
@@ -836,7 +836,8 @@ def show_login_page():
     """, unsafe_allow_html=True)
     
     # Simple login page - no logo
-    st.markdown("---")
+    st.markdown("**Updated: No Logo Version**")
+        st.markdown("---")
     # Login/Register tabs
     tab1, tab2 = st.tabs(["Log in", "Sign in"])
     
