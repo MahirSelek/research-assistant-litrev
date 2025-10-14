@@ -996,7 +996,7 @@ def main():
             st.markdown(f"**Role:** {user_role.title()}")
             
             # Show data storage info
-            st.markdown(f"**Data stored in:** Global Session State")
+            st.markdown(f"**Data stored in:** Persistent Session Storage")
         
         if st.button("➕ New Analysis", use_container_width=True):
             set_user_session('active_conversation_id', None)
