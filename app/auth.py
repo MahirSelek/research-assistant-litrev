@@ -6,103 +6,36 @@ import time
 from typing import Dict, Optional, Tuple
 import json
 import os
+from persistent_storage import PersistentStorageManager
 
 class AuthenticationManager:
     def __init__(self):
-        self.users_file = "users.json"
+        # Get GCS bucket name from secrets
+        try:
+            self.gcs_bucket_name = st.secrets["app_config"]["gcs_bucket_name"]
+            self.storage_manager = PersistentStorageManager(self.gcs_bucket_name)
+        except KeyError:
+            st.error("GCS bucket configuration not found in secrets")
+            self.storage_manager = None
+        
         self.session_timeout = 3600  # 1 hour in seconds
         self.max_login_attempts = 5
         self.lockout_duration = 300  # 5 minutes in seconds
         
-    def hash_password(self, password: str, salt: str = None) -> Tuple[str, str]:
-        """Hash password with salt using SHA-256"""
-        if salt is None:
-            salt = secrets.token_hex(16)
-        
-        # Combine password and salt
-        password_salt = password + salt
-        # Hash using SHA-256
-        hashed = hashlib.sha256(password_salt.encode()).hexdigest()
-        
-        return hashed, salt
-    
-    def verify_password(self, password: str, hashed: str, salt: str) -> bool:
-        """Verify password against stored hash"""
-        test_hash, _ = self.hash_password(password, salt)
-        return test_hash == hashed
-    
-    def load_users(self) -> Dict:
-        """Load users from file"""
-        if os.path.exists(self.users_file):
-            try:
-                with open(self.users_file, 'r') as f:
-                    return json.load(f)
-            except (json.JSONDecodeError, FileNotFoundError):
-                return {}
-        return {}
-    
-    def save_users(self, users: Dict):
-        """Save users to file"""
-        with open(self.users_file, 'w') as f:
-            json.dump(users, f, indent=2)
-    
     def create_user(self, username: str, password: str) -> bool:
-        """Create a new user"""
-        users = self.load_users()
+        """Create a new user using persistent storage"""
+        if not self.storage_manager:
+            st.error("Storage manager not initialized")
+            return False
         
-        if username in users:
-            return False  # User already exists
-        
-        hashed_password, salt = self.hash_password(password)
-        
-        users[username] = {
-            'password_hash': hashed_password,
-            'salt': salt,
-            'created_at': time.time(),
-            'last_login': None,
-            'login_attempts': 0,
-            'locked_until': None
-        }
-        
-        self.save_users(users)
-        return True
+        return self.storage_manager.create_user(username, password)
     
     def authenticate_user(self, username: str, password: str) -> Tuple[bool, str]:
-        """Authenticate user with username and password"""
-        users = self.load_users()
+        """Authenticate user with username and password using persistent storage"""
+        if not self.storage_manager:
+            return False, "Storage manager not initialized"
         
-        if username not in users:
-            return False, "Invalid username or password"
-        
-        user = users[username]
-        current_time = time.time()
-        
-        # Check if account is locked
-        if user.get('locked_until') and current_time < user['locked_until']:
-            remaining_time = int(user['locked_until'] - current_time)
-            return False, f"Account locked. Try again in {remaining_time} seconds."
-        
-        # Verify password
-        if not self.verify_password(password, user['password_hash'], user['salt']):
-            # Increment login attempts
-            user['login_attempts'] = user.get('login_attempts', 0) + 1
-            
-            # Lock account if too many attempts
-            if user['login_attempts'] >= self.max_login_attempts:
-                user['locked_until'] = current_time + self.lockout_duration
-                self.save_users(users)
-                return False, f"Too many failed attempts. Account locked for {self.lockout_duration // 60} minutes."
-            
-            self.save_users(users)
-            return False, "Invalid username or password"
-        
-        # Successful login - reset attempts and update last login
-        user['login_attempts'] = 0
-        user['locked_until'] = None
-        user['last_login'] = current_time
-        self.save_users(users)
-        
-        return True, "Login successful"
+        return self.storage_manager.verify_password(username, password)
     
     def is_session_valid(self) -> bool:
         """Check if current session is valid"""

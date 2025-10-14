@@ -20,12 +20,15 @@ def show_user_management():
     st.title("👥 User Management")
     st.markdown("Manage users and access to the Polo GGB Research Assistant")
     
-    # Show user count
-    total_users = len(auth_manager.load_users())
-    st.info(f"📊 Total registered users: **{total_users}**")
+    # Check if storage manager is available
+    if not auth_manager.storage_manager:
+        st.error("Storage manager not initialized. Cannot manage users.")
+        return
     
-    # Load current users
-    users = auth_manager.load_users()
+    # Show user count
+    all_users = auth_manager.storage_manager.get_all_users()
+    total_users = len(all_users)
+    st.info(f"📊 Total registered users: **{total_users}**")
     
     # Create new user section
     st.subheader("➕ Add New User")
@@ -51,13 +54,14 @@ def show_user_management():
     # Display existing users
     st.subheader("📋 Current Users")
     
-    if not users:
+    if not all_users:
         st.info("No users found.")
         return
     
     # Create a table of users
     user_data = []
-    for username, user_info in users.items():
+    for user_info in all_users:
+        username = user_info['username']
         created_date = time.strftime('%Y-%m-%d %H:%M', time.localtime(user_info.get('created_at', 0)))
         last_login = user_info.get('last_login')
         if last_login:
@@ -96,23 +100,24 @@ def show_user_management():
             with col3:
                 if user['Username'] != 'admin':  # Don't allow deleting admin
                     if st.button(f"🗑️ Delete User", key=f"delete_{user['Username']}"):
-                        users = auth_manager.load_users()
-                        if user['Username'] in users:
-                            del users[user['Username']]
-                            auth_manager.save_users(users)
+                        if auth_manager.storage_manager.delete_user(user['Username']):
                             st.success(f"User '{user['Username']}' deleted successfully!")
                             st.rerun()
+                        else:
+                            st.error(f"Failed to delete user '{user['Username']}'")
                 
                 # Reset login attempts
                 if user['Failed Attempts'] > 0:
                     if st.button(f"🔄 Reset Attempts", key=f"reset_{user['Username']}"):
-                        users = auth_manager.load_users()
-                        if user['Username'] in users:
-                            users[user['Username']]['login_attempts'] = 0
-                            users[user['Username']]['locked_until'] = None
-                            auth_manager.save_users(users)
-                            st.success(f"Login attempts reset for '{user['Username']}'!")
-                            st.rerun()
+                        user_data = auth_manager.storage_manager.get_user_data(user['Username'])
+                        if user_data:
+                            user_data['login_attempts'] = 0
+                            user_data['locked_until'] = None
+                            if auth_manager.storage_manager.update_user_data(user['Username'], user_data):
+                                st.success(f"Login attempts reset for '{user['Username']}'!")
+                                st.rerun()
+                            else:
+                                st.error(f"Failed to reset attempts for '{user['Username']}'")
     
     # System statistics
     st.markdown("---")
@@ -121,18 +126,18 @@ def show_user_management():
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Total Users", len(users))
+        st.metric("Total Users", len(all_users))
     
     with col2:
-        active_users = len([u for u in users.values() if u.get('last_login', 0) > time.time() - 86400])  # Last 24 hours
+        active_users = len([u for u in all_users if u.get('last_login', 0) > time.time() - 86400])  # Last 24 hours
         st.metric("Active (24h)", active_users)
     
     with col3:
-        locked_users = len([u for u in users.values() if u.get('locked_until', 0) > time.time()])
+        locked_users = len([u for u in all_users if u.get('locked_until', 0) > time.time()])
         st.metric("Locked Users", locked_users)
     
     with col4:
-        total_attempts = sum(u.get('login_attempts', 0) for u in users.values())
+        total_attempts = sum(u.get('login_attempts', 0) for u in all_users)
         st.metric("Failed Attempts", total_attempts)
     
     # Recent registrations
@@ -140,10 +145,10 @@ def show_user_management():
     st.subheader("🆕 Recent Registrations")
     
     recent_users = []
-    for username, user_info in users.items():
+    for user_info in all_users:
         created_time = user_info.get('created_at', 0)
         if created_time > time.time() - 7 * 86400:  # Last 7 days
-            recent_users.append((username, created_time))
+            recent_users.append((user_info['username'], created_time))
     
     recent_users.sort(key=lambda x: x[1], reverse=True)
     
@@ -167,6 +172,7 @@ def show_user_management():
     with col2:
         st.write(f"**Session Timeout:** {auth_manager.session_timeout // 3600} hours")
         st.write(f"**Password Hashing:** SHA-256 with Salt")
+        st.write(f"**Storage:** Google Cloud Storage (Persistent)")
 
 if __name__ == "__main__":
     # Check authentication
