@@ -547,7 +547,7 @@ def display_citations_separately(analysis_text: str, papers: list, analysis_pape
         # Show additional papers found in search
         additional_papers = [p for p in papers if p not in analysis_papers]
         if additional_papers:
-            citations_section += f"#### Additional References Found ({len(additional_papers)} papers)\n\n"
+            citations_section += "#### Additional References Found\n\n"
             start_num = len(analysis_papers) + 1
             
             for i, paper in enumerate(additional_papers):
