@@ -838,13 +838,21 @@ def show_login_page():
     # Logo and company name
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # Try to display logo
+        # Display logo with better visibility and size
         try:
-            st.image("polo-ggb-logo.png", width=120)
+            # Create a container for the logo with better styling
+            st.markdown("""
+            <div style="text-align: center; margin: 20px 0;">
+                <img src="data:image/png;base64,{}" style="width: 200px; height: auto; max-width: 100%; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); transition: transform 0.3s ease;" alt="Polo GGB Logo">
+            </div>
+            """.format(base64.b64encode(open("polo-ggb-logo.png", "rb").read()).decode()), unsafe_allow_html=True)
         except:
-            st.markdown("🧬 **Polo GGB**")
+            st.markdown("""
+            <div style="text-align: center; margin: 20px 0;">
+                <h1 style="font-size: 2.5rem; color: #1f77b4; margin: 0;">🧬 POLO GGB</h1>
+            </div>
+            """, unsafe_allow_html=True)
         
-        st.markdown("**Polo d'Innovazione di Genomica, Genetica e Biologia**")
         st.markdown("---")
     # Login/Register tabs
     tab1, tab2 = st.tabs(["Log in", "Sign in"])

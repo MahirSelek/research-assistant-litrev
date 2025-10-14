@@ -11,6 +11,7 @@ import io
 import yaml
 import os
 import sys
+import base64
 from typing import List, Dict, Any
 import datetime
 from dateutil import parser as date_parser
@@ -1197,7 +1198,13 @@ def main():
     </style>
     """, unsafe_allow_html=True)
     
-    st.markdown("<h1>🧬 POLO-GGB RESEARCH ASSISTANT</h1>", unsafe_allow_html=True)
+    # Display logo and title with better styling
+    st.markdown("""
+    <div style="text-align: center; margin: 20px 0;">
+        <img src="data:image/png;base64,{}" style="width: 150px; height: auto; max-width: 100%; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); transition: transform 0.3s ease; margin-bottom: 10px;" alt="Polo GGB Logo">
+        <h1 style="font-size: 2.2rem; color: #1f77b4; margin: 0;">🧬 POLO-GGB RESEARCH ASSISTANT</h1>
+    </div>
+    """.format(base64.b64encode(open("polo-ggb-logo.png", "rb").read()).decode()), unsafe_allow_html=True)
 
     # Show user management if requested
     if st.session_state.get('show_user_management', False):
