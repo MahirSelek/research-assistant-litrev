@@ -2,7 +2,7 @@
 import streamlit as st
 import json
 import time
-from auth import auth_manager
+from auth import get_auth_manager
 
 def show_user_management():
     """Show user management interface for admin users"""
@@ -21,11 +21,12 @@ def show_user_management():
     st.markdown("Manage users and access to the Polo GGB Research Assistant")
     
     # Show user count
-    total_users = len(auth_manager.load_users())
+    auth_mgr = get_auth_manager()
+    total_users = len(auth_mgr.load_users())
     st.info(f"📊 Total registered users: **{total_users}**")
     
     # Load current users
-    users = auth_manager.load_users()
+    users = auth_mgr.load_users()
     
     # Create new user section
     st.subheader("➕ Add New User")
@@ -38,7 +39,8 @@ def show_user_management():
         
         if st.form_submit_button("Create User"):
             if new_username and new_password:
-                success, message = auth_manager.create_user(new_username, new_password)
+                auth_mgr = get_auth_manager()
+                success, message = auth_mgr.create_user(new_username, new_password)
                 if success:
                     st.success(f"User '{new_username}' created successfully!")
                     st.rerun()
@@ -100,21 +102,23 @@ def show_user_management():
             with col3:
                 if user['Username'] != 'admin':  # Don't allow deleting admin
                     if st.button(f"🗑️ Delete User", key=f"delete_{user['Username']}"):
-                        users = auth_manager.load_users()
+                        auth_mgr = get_auth_manager()
+                        users = auth_mgr.load_users()
                         if user['Username'] in users:
                             del users[user['Username']]
-                            auth_manager.save_users(users)
+                            auth_mgr.save_users(users)
                             st.success(f"User '{user['Username']}' deleted successfully!")
                             st.rerun()
                 
                 # Reset login attempts
                 if user['Failed Attempts'] > 0:
                     if st.button(f"🔄 Reset Attempts", key=f"reset_{user['Username']}"):
-                        users = auth_manager.load_users()
+                        auth_mgr = get_auth_manager()
+                        users = auth_mgr.load_users()
                         if user['Username'] in users:
                             users[user['Username']]['login_attempts'] = 0
                             users[user['Username']]['locked_until'] = None
-                            auth_manager.save_users(users)
+                            auth_mgr.save_users(users)
                             st.success(f"Login attempts reset for '{user['Username']}'!")
                             st.rerun()
     
@@ -165,16 +169,18 @@ def show_user_management():
     col1, col2 = st.columns(2)
     
     with col1:
-        st.write(f"**Max Login Attempts:** {auth_manager.max_login_attempts}")
-        st.write(f"**Lockout Duration:** {auth_manager.lockout_duration // 60} minutes")
+        auth_mgr = get_auth_manager()
+        st.write(f"**Max Login Attempts:** {auth_mgr.max_login_attempts}")
+        st.write(f"**Lockout Duration:** {auth_mgr.lockout_duration // 60} minutes")
     
     with col2:
-        st.write(f"**Session Timeout:** {auth_manager.session_timeout // 3600} hours")
+        st.write(f"**Session Timeout:** {auth_mgr.session_timeout // 3600} hours")
         st.write(f"**Password Hashing:** PBKDF2 with Salt")
 
 if __name__ == "__main__":
     # Check authentication
-    if not auth_manager.require_auth():
+    auth_mgr = get_auth_manager()
+    if not auth_mgr.require_auth():
         from auth import show_login_page
         show_login_page()
     else:
