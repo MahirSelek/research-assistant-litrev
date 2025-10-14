@@ -844,6 +844,7 @@ def show_login_page():
         except:
             st.markdown("🧬 **Polo GGB**")
         
+        st.markdown("**TEST: If you see this, the app updated!**")
         st.markdown("---")
     # Login/Register tabs
     tab1, tab2 = st.tabs(["Log in", "Sign in"])
