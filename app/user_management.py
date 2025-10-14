@@ -20,15 +20,12 @@ def show_user_management():
     st.title("👥 User Management")
     st.markdown("Manage users and access to the Polo GGB Research Assistant")
     
-    # Check if storage manager is available
-    if not auth_manager.storage_manager:
-        st.error("Storage manager not initialized. Cannot manage users.")
-        return
-    
     # Show user count
-    all_users = auth_manager.storage_manager.get_all_users()
-    total_users = len(all_users)
+    total_users = len(auth_manager.load_users())
     st.info(f"📊 Total registered users: **{total_users}**")
+    
+    # Load current users
+    users = auth_manager.load_users()
     
     # Create new user section
     st.subheader("➕ Add New User")
@@ -54,14 +51,13 @@ def show_user_management():
     # Display existing users
     st.subheader("📋 Current Users")
     
-    if not all_users:
+    if not users:
         st.info("No users found.")
         return
     
     # Create a table of users
     user_data = []
-    for user_info in all_users:
-        username = user_info['username']
+    for username, user_info in users.items():
         created_date = time.strftime('%Y-%m-%d %H:%M', time.localtime(user_info.get('created_at', 0)))
         last_login = user_info.get('last_login')
         if last_login:
@@ -100,24 +96,23 @@ def show_user_management():
             with col3:
                 if user['Username'] != 'admin':  # Don't allow deleting admin
                     if st.button(f"🗑️ Delete User", key=f"delete_{user['Username']}"):
-                        if auth_manager.storage_manager.delete_user(user['Username']):
+                        users = auth_manager.load_users()
+                        if user['Username'] in users:
+                            del users[user['Username']]
+                            auth_manager.save_users(users)
                             st.success(f"User '{user['Username']}' deleted successfully!")
                             st.rerun()
-                        else:
-                            st.error(f"Failed to delete user '{user['Username']}'")
                 
                 # Reset login attempts
                 if user['Failed Attempts'] > 0:
                     if st.button(f"🔄 Reset Attempts", key=f"reset_{user['Username']}"):
-                        user_data = auth_manager.storage_manager.get_user_data(user['Username'])
-                        if user_data:
-                            user_data['login_attempts'] = 0
-                            user_data['locked_until'] = None
-                            if auth_manager.storage_manager.update_user_data(user['Username'], user_data):
-                                st.success(f"Login attempts reset for '{user['Username']}'!")
-                                st.rerun()
-                            else:
-                                st.error(f"Failed to reset attempts for '{user['Username']}'")
+                        users = auth_manager.load_users()
+                        if user['Username'] in users:
+                            users[user['Username']]['login_attempts'] = 0
+                            users[user['Username']]['locked_until'] = None
+                            auth_manager.save_users(users)
+                            st.success(f"Login attempts reset for '{user['Username']}'!")
+                            st.rerun()
     
     # System statistics
     st.markdown("---")
@@ -126,18 +121,18 @@ def show_user_management():
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Total Users", len(all_users))
+        st.metric("Total Users", len(users))
     
     with col2:
-        active_users = len([u for u in all_users if u.get('last_login', 0) > time.time() - 86400])  # Last 24 hours
+        active_users = len([u for u in users.values() if u.get('last_login', 0) > time.time() - 86400])  # Last 24 hours
         st.metric("Active (24h)", active_users)
     
     with col3:
-        locked_users = len([u for u in all_users if u.get('locked_until', 0) > time.time()])
+        locked_users = len([u for u in users.values() if u.get('locked_until', 0) > time.time()])
         st.metric("Locked Users", locked_users)
     
     with col4:
-        total_attempts = sum(u.get('login_attempts', 0) for u in all_users)
+        total_attempts = sum(u.get('login_attempts', 0) for u in users.values())
         st.metric("Failed Attempts", total_attempts)
     
     # Recent registrations
@@ -145,10 +140,10 @@ def show_user_management():
     st.subheader("🆕 Recent Registrations")
     
     recent_users = []
-    for user_info in all_users:
+    for username, user_info in users.items():
         created_time = user_info.get('created_at', 0)
         if created_time > time.time() - 7 * 86400:  # Last 7 days
-            recent_users.append((user_info['username'], created_time))
+            recent_users.append((username, created_time))
     
     recent_users.sort(key=lambda x: x[1], reverse=True)
     
@@ -158,50 +153,6 @@ def show_user_management():
             st.write(f"• **{username}** - {created_date}")
     else:
         st.info("No new registrations in the last 7 days")
-    
-    # Password change section
-    st.markdown("---")
-    st.subheader("🔐 Change Admin Password")
-    
-    with st.form("change_password_form"):
-        current_password = st.text_input("Current Password", type="password", placeholder="Enter current password")
-        new_password = st.text_input("New Password", type="password", placeholder="Enter new password")
-        confirm_password = st.text_input("Confirm New Password", type="password", placeholder="Confirm new password")
-        
-        if st.form_submit_button("Change Password"):
-            if current_password and new_password and confirm_password:
-                # Verify current password
-                success, message = auth_manager.authenticate_user("admin", current_password)
-                if success:
-                    if new_password == confirm_password:
-                        if len(new_password) >= 8 and any(c.isalpha() for c in new_password) and any(c.isdigit() for c in new_password):
-                            # Update password
-                            user_data = auth_manager.storage_manager.get_user_data("admin")
-                            if user_data:
-                                # Generate new salt and hash
-                                import hashlib
-                                import secrets
-                                new_salt = secrets.token_hex(16)
-                                new_hash = hashlib.sha256((new_password + new_salt).encode()).hexdigest()
-                                
-                                user_data['password_hash'] = new_hash
-                                user_data['salt'] = new_salt
-                                
-                                if auth_manager.storage_manager.update_user_data("admin", user_data):
-                                    st.success("✅ Password changed successfully!")
-                                    st.rerun()
-                                else:
-                                    st.error("❌ Failed to update password")
-                            else:
-                                st.error("❌ Admin user not found")
-                        else:
-                            st.error("❌ New password must be at least 8 characters with letters and numbers")
-                    else:
-                        st.error("❌ New passwords do not match")
-                else:
-                    st.error("❌ Current password is incorrect")
-            else:
-                st.error("❌ Please fill in all fields")
     
     # Security settings
     st.markdown("---")
@@ -216,7 +167,6 @@ def show_user_management():
     with col2:
         st.write(f"**Session Timeout:** {auth_manager.session_timeout // 3600} hours")
         st.write(f"**Password Hashing:** SHA-256 with Salt")
-        st.write(f"**Storage:** Google Cloud Storage (Persistent)")
 
 if __name__ == "__main__":
     # Check authentication

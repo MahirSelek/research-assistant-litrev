@@ -6,36 +6,103 @@ import time
 from typing import Dict, Optional, Tuple
 import json
 import os
-from persistent_storage import PersistentStorageManager
 
 class AuthenticationManager:
     def __init__(self):
-        # Get GCS bucket name from secrets
-        try:
-            self.gcs_bucket_name = st.secrets["app_config"]["gcs_bucket_name"]
-            self.storage_manager = PersistentStorageManager(self.gcs_bucket_name)
-        except KeyError:
-            st.error("GCS bucket configuration not found in secrets")
-            self.storage_manager = None
-        
+        self.users_file = "users.json"
         self.session_timeout = 3600  # 1 hour in seconds
         self.max_login_attempts = 5
         self.lockout_duration = 300  # 5 minutes in seconds
         
-    def create_user(self, username: str, password: str) -> bool:
-        """Create a new user using persistent storage"""
-        if not self.storage_manager:
-            st.error("Storage manager not initialized")
-            return False
+    def hash_password(self, password: str, salt: str = None) -> Tuple[str, str]:
+        """Hash password with salt using SHA-256"""
+        if salt is None:
+            salt = secrets.token_hex(16)
         
-        return self.storage_manager.create_user(username, password)
+        # Combine password and salt
+        password_salt = password + salt
+        # Hash using SHA-256
+        hashed = hashlib.sha256(password_salt.encode()).hexdigest()
+        
+        return hashed, salt
+    
+    def verify_password(self, password: str, hashed: str, salt: str) -> bool:
+        """Verify password against stored hash"""
+        test_hash, _ = self.hash_password(password, salt)
+        return test_hash == hashed
+    
+    def load_users(self) -> Dict:
+        """Load users from file"""
+        if os.path.exists(self.users_file):
+            try:
+                with open(self.users_file, 'r') as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, FileNotFoundError):
+                return {}
+        return {}
+    
+    def save_users(self, users: Dict):
+        """Save users to file"""
+        with open(self.users_file, 'w') as f:
+            json.dump(users, f, indent=2)
+    
+    def create_user(self, username: str, password: str) -> bool:
+        """Create a new user"""
+        users = self.load_users()
+        
+        if username in users:
+            return False  # User already exists
+        
+        hashed_password, salt = self.hash_password(password)
+        
+        users[username] = {
+            'password_hash': hashed_password,
+            'salt': salt,
+            'created_at': time.time(),
+            'last_login': None,
+            'login_attempts': 0,
+            'locked_until': None
+        }
+        
+        self.save_users(users)
+        return True
     
     def authenticate_user(self, username: str, password: str) -> Tuple[bool, str]:
-        """Authenticate user with username and password using persistent storage"""
-        if not self.storage_manager:
-            return False, "Storage manager not initialized"
+        """Authenticate user with username and password"""
+        users = self.load_users()
         
-        return self.storage_manager.verify_password(username, password)
+        if username not in users:
+            return False, "Invalid username or password"
+        
+        user = users[username]
+        current_time = time.time()
+        
+        # Check if account is locked
+        if user.get('locked_until') and current_time < user['locked_until']:
+            remaining_time = int(user['locked_until'] - current_time)
+            return False, f"Account locked. Try again in {remaining_time} seconds."
+        
+        # Verify password
+        if not self.verify_password(password, user['password_hash'], user['salt']):
+            # Increment login attempts
+            user['login_attempts'] = user.get('login_attempts', 0) + 1
+            
+            # Lock account if too many attempts
+            if user['login_attempts'] >= self.max_login_attempts:
+                user['locked_until'] = current_time + self.lockout_duration
+                self.save_users(users)
+                return False, f"Too many failed attempts. Account locked for {self.lockout_duration // 60} minutes."
+            
+            self.save_users(users)
+            return False, "Invalid username or password"
+        
+        # Successful login - reset attempts and update last login
+        user['login_attempts'] = 0
+        user['locked_until'] = None
+        user['last_login'] = current_time
+        self.save_users(users)
+        
+        return True, "Login successful"
     
     def is_session_valid(self) -> bool:
         """Check if current session is valid"""
@@ -89,32 +156,12 @@ auth_manager = AuthenticationManager()
 
 # Default admin user creation (only if no users exist)
 def initialize_default_admin():
-    """Create default admin user if no users exist - AUTOMATIC and SECURE"""
-    if not auth_manager.storage_manager:
-        return  # Skip if storage not available
-    
-    # Check if any users exist
-    try:
-        all_users = auth_manager.storage_manager.get_all_users()
-        if not all_users:
-            # Generate secure random password
-            import secrets
-            import string
-            
-            # Create a strong random password
-            alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
-            admin_password = ''.join(secrets.choice(alphabet) for _ in range(16))
-            
-            # Create admin user with random password
-            success = auth_manager.create_user("admin", admin_password)
-            if success:
-                # Store the password securely in Streamlit secrets for first-time setup
-                # This is ONLY for the very first admin user creation
-                st.session_state['_admin_setup_password'] = admin_password
-                st.session_state['_admin_setup_complete'] = True
-    except Exception as e:
-        # Silently fail - don't expose errors
-        pass
+    """Create default admin user if no users exist"""
+    users = auth_manager.load_users()
+    if not users:
+        # Create default admin user
+        auth_manager.create_user("admin", "pologgb2024")
+        # Don't show success message to avoid confusion
 
 def show_login_page():
     """Display the login page"""
@@ -123,28 +170,6 @@ def show_login_page():
         page_icon="polo-ggb-logo.png",
         layout="centered"
     )
-    
-    # Check for first-time admin setup
-    if st.session_state.get('_admin_setup_complete', False):
-        admin_password = st.session_state.get('_admin_setup_password', '')
-        if admin_password:
-            st.success("🎉 **System Initialized Successfully!**")
-            st.info(f"""
-            **First-time setup complete!**
-            
-            Your admin account has been created with a secure random password.
-            
-            **Username:** `admin`  
-            **Password:** `{admin_password}`
-            
-            ⚠️ **IMPORTANT:** Please change this password after your first login for security.
-            """)
-            
-            # Clear the temporary password from session
-            del st.session_state['_admin_setup_password']
-            del st.session_state['_admin_setup_complete']
-            
-            st.stop()
     
     # Simple CSS for login page
     st.markdown("""
