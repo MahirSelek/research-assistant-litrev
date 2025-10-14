@@ -21,9 +21,9 @@ class AuthenticationManager:
             self.gcs_bucket_name = st.secrets["app_config"]["gcs_bucket_name"]
             self.gcs_project_id = st.secrets["vertex_ai"]["VERTEXAI_PROJECT"]  # Use same project as Vertex AI
             self.users_folder = "user_data/"
-        self.session_timeout = 3600  # 1 hour in seconds
-        self.max_login_attempts = 5
-        self.lockout_duration = 300  # 5 minutes in seconds
+            self.session_timeout = 3600  # 1 hour in seconds
+            self.max_login_attempts = 5
+            self.lockout_duration = 300  # 5 minutes in seconds
             
             # Wait for credentials to be set up (same as main.py)
             import time
