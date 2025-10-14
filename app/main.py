@@ -20,7 +20,7 @@ import vertexai
 from vertexai.generative_models import GenerativeModel
 from google.cloud import storage
 from google.api_core.exceptions import NotFound
-from auth import auth_manager, show_login_page, show_logout_button
+from auth import get_auth_manager, show_login_page, show_logout_button
 from user_management import show_user_management
 
 
@@ -143,7 +143,8 @@ def save_user_data_to_cloud():
         
         # Save to cloud
         if user_data:
-            auth_manager.save_user_data(username, user_data)
+            auth_mgr = get_auth_manager()
+            auth_mgr.save_user_data(username, user_data)
 
 def initialize_session_state():
     # Get current username for user-specific data
@@ -965,7 +966,8 @@ def display_chat_history():
 
 def main():
     # Check authentication first
-    if not auth_manager.require_auth():
+    auth_mgr = get_auth_manager()
+    if not auth_mgr.require_auth():
         show_login_page()
         return
     
@@ -988,7 +990,8 @@ def main():
             st.markdown(f"**Logged in as:** {st.session_state.username}")
             
             # Get user role from auth manager
-            users = auth_manager.load_users()
+            auth_mgr = get_auth_manager()
+            users = auth_mgr.load_users()
             user_role = users.get(st.session_state.username, {}).get('role', 'user')
             st.markdown(f"**Role:** {user_role.title()}")
         

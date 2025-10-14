@@ -23,7 +23,15 @@ class AuthenticationManager:
             self.max_login_attempts = 5
             self.lockout_duration = 300  # 5 minutes in seconds
             
-            # Initialize GCS client with project ID
+            # Wait for credentials to be set up (same as main.py)
+            import time
+            max_retries = 10
+            for i in range(max_retries):
+                if os.path.exists("gcp_credentials.json"):
+                    break
+                time.sleep(0.5)
+            
+            # Initialize GCS client with project ID and explicit credentials
             self.storage_client = storage.Client(project=self.gcs_project_id)
             self.bucket = self.storage_client.bucket(self.gcs_bucket_name)
             
@@ -377,22 +385,34 @@ class FallbackAuthenticationManager:
     def load_user_data(self, username: str) -> dict:
         return {}  # No-op for fallback
 
-# Initialize authentication manager - using fallback for now
-# TODO: Re-enable cloud authentication once GCS issues are resolved
-auth_manager = FallbackAuthenticationManager()
+# Initialize authentication manager lazily
+auth_manager = None
+
+def get_auth_manager():
+    """Get the authentication manager, initializing it if needed"""
+    global auth_manager
+    if auth_manager is None:
+        try:
+            # Try to initialize cloud-based auth
+            auth_manager = AuthenticationManager()
+        except Exception as e:
+            # Fall back to local auth if cloud fails
+            auth_manager = FallbackAuthenticationManager()
+    return auth_manager
 
 # Default admin user creation (only if no users exist)
 def initialize_default_admin():
     """Create default admin user if no users exist"""
-    users = auth_manager.load_users()
+    auth_mgr = get_auth_manager()
+    users = auth_mgr.load_users()
     if not users:
         # Create default admin user with strong password
-        success, message = auth_manager.create_user("admin", "PoloGGB2024!")
+        success, message = auth_mgr.create_user("admin", "PoloGGB2024!")
         if success:
             # Set admin role
-            users = auth_manager.load_users()
+            users = auth_mgr.load_users()
             users["admin"]["role"] = "admin"
-            auth_manager.save_users(users)
+            auth_mgr.save_users(users)
         # Don't show success message to avoid confusion
 
 def show_login_page():
@@ -480,7 +500,8 @@ def show_login_page():
         
         if submitted:
             if username and password:
-                success, message = auth_manager.login(username, password)
+                auth_mgr = get_auth_manager()
+                success, message = auth_mgr.login(username, password)
                 
                 if success:
                     st.markdown(f'<div class="success-message">✅ {message}</div>', unsafe_allow_html=True)
@@ -492,19 +513,20 @@ def show_login_page():
         
         if register_submitted:
             if new_username and new_password and confirm_password:
+                auth_mgr = get_auth_manager()
                 # Validate password strength
-                is_valid, message = auth_manager.validate_password_strength(new_password)
+                is_valid, message = auth_mgr.validate_password_strength(new_password)
                 if not is_valid:
                     st.markdown(f'<div class="error-message">❌ {message}</div>', unsafe_allow_html=True)
                 elif new_password != confirm_password:
                     st.markdown('<div class="error-message">❌ Passwords do not match</div>', unsafe_allow_html=True)
                 else:
                     # Create new user
-                    success, message = auth_manager.create_user(new_username, new_password)
+                    success, message = auth_mgr.create_user(new_username, new_password)
                     if success:
                         st.markdown('<div class="success-message">✅ Account created successfully! You can now login.</div>', unsafe_allow_html=True)
                         # Auto-login the new user
-                        auth_manager.login(new_username, new_password)
+                        auth_mgr.login(new_username, new_password)
                         st.rerun()
                     else:
                         st.markdown(f'<div class="error-message">❌ {message}</div>', unsafe_allow_html=True)
@@ -527,5 +549,6 @@ def show_logout_button():
     """Show logout button in sidebar"""
     if st.session_state.get('authenticated', False):
         if st.button("Logout", use_container_width=True, key="logout_btn"):
-            auth_manager.logout()
+            auth_mgr = get_auth_manager()
+            auth_mgr.logout()
             st.rerun()
