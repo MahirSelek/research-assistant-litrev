@@ -11,6 +11,7 @@ from google.cloud import storage
 from google.api_core.exceptions import NotFound
 import base64
 from cryptography.fernet import Fernet
+import urllib.parse
 
 class AuthenticationManager:
     def __init__(self):
@@ -313,16 +314,16 @@ class AuthenticationManager:
             return False
         return True
 
-# Fallback AuthenticationManager for Streamlit Cloud (uses session state)
+# Fallback AuthenticationManager with URL-based session persistence
 class FallbackAuthenticationManager:
     def __init__(self):
-        self.session_timeout = 3600
+        self.session_timeout = 1800  # 30 minutes
         self.max_login_attempts = 5
         self.lockout_duration = 300
         
-        # Initialize global session state for users and data
-        if 'global_users' not in st.session_state:
-            st.session_state.global_users = {
+        # Initialize persistent storage
+        if 'persistent_users' not in st.session_state:
+            st.session_state.persistent_users = {
                 "admin": {
                     "password_hash": "fallback", 
                     "salt": "fallback", 
@@ -334,8 +335,55 @@ class FallbackAuthenticationManager:
                 }
             }
         
-        if 'global_user_data' not in st.session_state:
-            st.session_state.global_user_data = {}
+        if 'persistent_user_data' not in st.session_state:
+            st.session_state.persistent_user_data = {}
+            
+        if 'persistent_sessions' not in st.session_state:
+            st.session_state.persistent_sessions = {}
+        
+        # Check for session token in URL
+        self._check_url_session()
+    
+    def _check_url_session(self):
+        """Check for valid session token in URL parameters"""
+        try:
+            # Get current URL parameters
+            query_params = st.query_params
+            
+            if 'session_token' in query_params:
+                session_token = query_params['session_token']
+                
+                # Check if session exists and is valid
+                if session_token in st.session_state.persistent_sessions:
+                    session_info = st.session_state.persistent_sessions[session_token]
+                    current_time = time.time()
+                    
+                    # Check if session is still valid (not expired)
+                    if current_time - session_info['login_time'] < self.session_timeout:
+                        username = session_info['username']
+                        
+                        # Restore session
+                        st.session_state.authenticated = True
+                        st.session_state.username = username
+                        st.session_state.login_time = session_info['login_time']
+                        st.session_state.session_id = session_token
+                        
+                        # Load user data
+                        user_data = self.load_user_data(username)
+                        if user_data:
+                            for key, value in user_data.items():
+                                st.session_state[f"{key}_{username}"] = value
+                        
+                        st.success(f"🔄 Session restored for {username}")
+                        return True
+                    else:
+                        # Session expired, remove it
+                        del st.session_state.persistent_sessions[session_token]
+                        st.query_params.clear()
+        except Exception as e:
+            st.error(f"Error checking URL session: {e}")
+        
+        return False
     
     def validate_password_strength(self, password: str) -> Tuple[bool, str]:
         if len(password) < 8:
@@ -428,38 +476,42 @@ class FallbackAuthenticationManager:
         return True, "Login successful"
     
     def load_users(self) -> Dict:
-        """Load users from global session state"""
-        return st.session_state.global_users
+        """Load users from persistent storage"""
+        return st.session_state.persistent_users
     
     def save_users(self, users: Dict):
-        """Save users to global session state"""
-        st.session_state.global_users = users
+        """Save users to persistent storage"""
+        st.session_state.persistent_users = users
     
     def login(self, username: str, password: str) -> Tuple[bool, str]:
         success, message = self.authenticate_user(username, password)
         if success:
-            # Initialize global authenticated users if needed
-            if 'global_authenticated_users' not in st.session_state:
-                st.session_state.global_authenticated_users = {}
+            # Generate session token
+            session_token = secrets.token_urlsafe(32)
             
-            # Store session info in global state
-            st.session_state.global_authenticated_users[username] = {
+            # Store session in persistent storage
+            st.session_state.persistent_sessions[session_token] = {
+                'username': username,
                 'login_time': time.time(),
-                'session_id': secrets.token_hex(16)
+                'session_id': session_token
             }
             
             # Set current session
             st.session_state.authenticated = True
             st.session_state.username = username
             st.session_state.login_time = time.time()
-            st.session_state.session_id = secrets.token_hex(16)
+            st.session_state.session_id = session_token
             
-            # Load user-specific data from global session state
+            # Add session token to URL
+            st.query_params.session_token = session_token
+            
+            # Load user-specific data
             user_data = self.load_user_data(username)
             if user_data:
-                # Restore user's chat history and other data
                 for key, value in user_data.items():
                     st.session_state[f"{key}_{username}"] = value
+            
+            st.success(f"✅ Logged in as {username}")
         
         return success, message
     
@@ -467,8 +519,9 @@ class FallbackAuthenticationManager:
         """Logout user and save data before clearing session"""
         if 'authenticated' in st.session_state and 'username' in st.session_state:
             username = st.session_state.username
+            session_id = st.session_state.get('session_id')
             
-            # Save user-specific data to local files before logout
+            # Save user-specific data before logout
             user_data = {}
             for key, value in st.session_state.items():
                 if key.endswith(f"_{username}"):
@@ -478,6 +531,14 @@ class FallbackAuthenticationManager:
             
             if user_data:
                 self.save_user_data(username, user_data)
+            
+            # Remove session from persistent storage
+            if session_id and session_id in st.session_state.persistent_sessions:
+                del st.session_state.persistent_sessions[session_id]
+        
+        # Clear URL session token
+        if 'session_token' in st.query_params:
+            del st.query_params.session_token
         
         # Clear session state
         if 'authenticated' in st.session_state:
@@ -490,90 +551,68 @@ class FallbackAuthenticationManager:
             del st.session_state.session_id
     
     def is_session_valid(self) -> bool:
-        # Check if user is authenticated in global session state
-        if 'global_authenticated_users' not in st.session_state:
-            st.session_state.global_authenticated_users = {}
+        """Check if current session is valid"""
+        if 'authenticated' not in st.session_state or not st.session_state.get('authenticated', False):
+            return False
         
-        current_user = st.session_state.get('username')
-        if not current_user:
+        if 'login_time' not in st.session_state:
             return False
-            
-        user_session = st.session_state.global_authenticated_users.get(current_user)
-        if not user_session:
-            return False
-            
-        current_time = time.time()
-        session_age = current_time - user_session.get('login_time', 0)
-        return session_age < self.session_timeout
-    
-    def restore_session_if_valid(self):
-        """Restore session from global state if valid"""
-        if 'global_authenticated_users' not in st.session_state:
-            return False
-            
-        # Check if there's a valid session for any user
-        current_time = time.time()
-        for username, session_info in st.session_state.global_authenticated_users.items():
-            session_age = current_time - session_info.get('login_time', 0)
-            if session_age < self.session_timeout:
-                # Restore this user's session
-                st.session_state.authenticated = True
-                st.session_state.username = username
-                st.session_state.login_time = session_info['login_time']
-                st.session_state.session_id = session_info['session_id']
-                
-                # Load user data
-                user_data = self.load_user_data(username)
-                if user_data:
-                    for key, value in user_data.items():
-                        st.session_state[f"{key}_{username}"] = value
-                
-                return True
         
-        return False
+        current_time = time.time()
+        session_age = current_time - st.session_state.login_time
+        
+        # Check if session has expired
+        if session_age > self.session_timeout:
+            return False
+        
+        # Check if session token exists in persistent storage
+        session_id = st.session_state.get('session_id')
+        if session_id and session_id not in st.session_state.persistent_sessions:
+            return False
+        
+        return True
     
     def save_user_data(self, username: str, data: dict):
-        """Save user-specific data to global session state"""
+        """Save user-specific data to persistent storage"""
         try:
-            st.session_state.global_user_data[username] = data
-            st.info(f"💾 Data saved for {username} to global session state")
+            st.session_state.persistent_user_data[username] = data
+            st.info(f"💾 Data saved for {username} to persistent storage")
         except Exception as e:
             st.error(f"Error saving user data: {e}")
     
     def load_user_data(self, username: str) -> dict:
-        """Load user-specific data from global session state"""
+        """Load user-specific data from persistent storage"""
         try:
-            data = st.session_state.global_user_data.get(username, {})
+            data = st.session_state.persistent_user_data.get(username, {})
             if data:
-                st.info(f"📂 Data loaded for {username} from global session state")
+                st.info(f"📂 Data loaded for {username} from persistent storage")
             else:
-                st.info(f"📂 No data found for {username} in global session state")
+                st.info(f"📂 No data found for {username} in persistent storage")
             return data
         except Exception as e:
             st.error(f"Error loading user data: {e}")
             return {}
     
     def delete_user_data(self, username: str):
-        """Delete user-specific data from global session state"""
+        """Delete user-specific data from persistent storage"""
         try:
-            if username in st.session_state.global_user_data:
-                del st.session_state.global_user_data[username]
+            if username in st.session_state.persistent_user_data:
+                del st.session_state.persistent_user_data[username]
                 st.info(f"🗑️ Data deleted for {username}")
         except Exception as e:
             st.error(f"Error deleting user data: {e}")
     
     def require_auth(self) -> bool:
-        """Require authentication - restore session if valid"""
-        # First try to restore session from global state
+        """Require authentication - check session validity"""
+        # Check if user is currently authenticated
         if 'authenticated' not in st.session_state or not st.session_state.get('authenticated', False):
-            if self.restore_session_if_valid():
-                return True
             return False
         
         # Check if current session is valid
         if not self.is_session_valid():
             self.logout()
             return False
+        
         return True
 
 # Initialize authentication manager lazily
