@@ -1319,83 +1319,28 @@ def main():
                 if (message["role"] == "assistant" and message_index == 0 and 
                     "retrieved_papers" in active_conv and active_conv["retrieved_papers"] and 
                     active_conv.get("search_mode") != "custom"):
-                    
-                    # For OR searches, show top 15 papers used in analysis
-                    if active_conv.get("search_mode") == "any_keyword":
-                        # Show top 15 papers used in analysis
-                        top_papers = active_conv["retrieved_papers"][:15]
-                        additional_papers = active_conv["retrieved_papers"][15:]
+                    with st.expander("View and Download Retrieved Papers for this Analysis"):
+                        # Display papers without the count message
                         
-                        with st.expander("View and Download Retrieved Papers for this Analysis"):
-                            st.info(f"Showing top 15 papers used in the analysis (out of {len(active_conv['retrieved_papers'])} total papers found)")
-                            
-                            for paper_index, paper in enumerate(top_papers):
-                                meta = paper.get('metadata', {})
-                                title = meta.get('title', 'N/A')
-                                paper_id = paper.get('paper_id')
+                        for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
+                            meta = paper.get('metadata', {})
+                            title = meta.get('title', 'N/A')
+                            paper_id = paper.get('paper_id')
 
-                                col1, col2 = st.columns([4, 1])
-                                with col1:
-                                    st.markdown(f"**{paper_index+1}. {title}**")
-                                with col2:
-                                    if paper_id:
-                                        pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
-                                        if pdf_bytes:
-                                            st.download_button(
-                                                label="Download PDF",
-                                                data=pdf_bytes,
-                                                file_name=paper_id,
-                                                mime="application/pdf",
-                                                key=f"download_{active_id}_{paper_id}"
-                                            )
-                        
-                        # Show additional papers if there are any
-                        if additional_papers:
-                            with st.expander(f"Additional References Found ({len(additional_papers)} papers)"):
-                                st.info(f"Additional papers found in the search (papers 16-{len(active_conv['retrieved_papers'])})")
-                                
-                                for paper_index, paper in enumerate(additional_papers):
-                                    meta = paper.get('metadata', {})
-                                    title = meta.get('title', 'N/A')
-                                    paper_id = paper.get('paper_id')
-                                    actual_index = paper_index + 16  # Start numbering from 16
-
-                                    col1, col2 = st.columns([4, 1])
-                                    with col1:
-                                        st.markdown(f"**{actual_index}. {title}**")
-                                    with col2:
-                                        if paper_id:
-                                            pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
-                                            if pdf_bytes:
-                                                st.download_button(
-                                                    label="Download PDF",
-                                                    data=pdf_bytes,
-                                                    file_name=paper_id,
-                                                    mime="application/pdf",
-                                                    key=f"download_additional_{active_id}_{paper_id}"
-                                                )
-                    else:
-                        # For AND searches, show all papers as before
-                        with st.expander("View and Download Retrieved Papers for this Analysis"):
-                            for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
-                                meta = paper.get('metadata', {})
-                                title = meta.get('title', 'N/A')
-                                paper_id = paper.get('paper_id')
-
-                                col1, col2 = st.columns([4, 1])
-                                with col1:
-                                    st.markdown(f"**{paper_index+1}. {title}**")
-                                with col2:
-                                    if paper_id:
-                                        pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
-                                        if pdf_bytes:
-                                            st.download_button(
-                                                label="Download PDF",
-                                                data=pdf_bytes,
-                                                file_name=paper_id,
-                                                mime="application/pdf",
-                                                key=f"download_{active_id}_{paper_id}"
-                                            )
+                            col1, col2 = st.columns([4, 1])
+                            with col1:
+                                st.markdown(f"**{paper_index+1}. {title}**")
+                            with col2:
+                                if paper_id:
+                                    pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
+                                    if pdf_bytes:
+                                        st.download_button(
+                                            label="Download PDF",
+                                            data=pdf_bytes,
+                                            file_name=paper_id,
+                                            mime="application/pdf",
+                                            key=f"download_{active_id}_{paper_id}"
+                                        )
 
 
 
