@@ -31,9 +31,21 @@ class AuthenticationManager:
                     break
                 time.sleep(0.5)
             
-            # Initialize GCS client with project ID and explicit credentials
-            self.storage_client = storage.Client(project=self.gcs_project_id)
-            self.bucket = self.storage_client.bucket(self.gcs_bucket_name)
+            # Test GCS connection
+            try:
+                self.storage_client = storage.Client(project=self.gcs_project_id)
+                self.bucket = self.storage_client.bucket(self.gcs_bucket_name)
+                
+                # Test if bucket exists and is accessible
+                if self.bucket.exists():
+                    st.success(f"✅ GCS Connected: {self.gcs_bucket_name}")
+                else:
+                    st.error(f"❌ GCS Bucket not found: {self.gcs_bucket_name}")
+                    raise Exception("Bucket not accessible")
+                    
+            except Exception as e:
+                st.error(f"❌ GCS Connection failed: {e}")
+                raise
             
             # Generate encryption key for user data (this should be stored securely in production)
             self.encryption_key = self._get_or_create_encryption_key()
@@ -426,12 +438,23 @@ class FallbackAuthenticationManager:
     def login(self, username: str, password: str) -> Tuple[bool, str]:
         success, message = self.authenticate_user(username, password)
         if success:
+            # Initialize global authenticated users if needed
+            if 'global_authenticated_users' not in st.session_state:
+                st.session_state.global_authenticated_users = {}
+            
+            # Store session info in global state
+            st.session_state.global_authenticated_users[username] = {
+                'login_time': time.time(),
+                'session_id': secrets.token_hex(16)
+            }
+            
+            # Set current session
             st.session_state.authenticated = True
             st.session_state.username = username
             st.session_state.login_time = time.time()
             st.session_state.session_id = secrets.token_hex(16)
             
-            # Load user-specific data from local files
+            # Load user-specific data from global session state
             user_data = self.load_user_data(username)
             if user_data:
                 # Restore user's chat history and other data
@@ -467,21 +490,47 @@ class FallbackAuthenticationManager:
             del st.session_state.session_id
     
     def is_session_valid(self) -> bool:
-        if 'authenticated' not in st.session_state or not st.session_state.authenticated:
+        # Check if user is authenticated in global session state
+        if 'global_authenticated_users' not in st.session_state:
+            st.session_state.global_authenticated_users = {}
+        
+        current_user = st.session_state.get('username')
+        if not current_user:
             return False
-        if 'login_time' not in st.session_state:
+            
+        user_session = st.session_state.global_authenticated_users.get(current_user)
+        if not user_session:
             return False
+            
         current_time = time.time()
-        session_age = current_time - st.session_state.login_time
+        session_age = current_time - user_session.get('login_time', 0)
         return session_age < self.session_timeout
     
-    def require_auth(self) -> bool:
-        if 'authenticated' not in st.session_state:
+    def restore_session_if_valid(self):
+        """Restore session from global state if valid"""
+        if 'global_authenticated_users' not in st.session_state:
             return False
-        if not self.is_session_valid():
-            self.logout()
-            return False
-        return True
+            
+        # Check if there's a valid session for any user
+        current_time = time.time()
+        for username, session_info in st.session_state.global_authenticated_users.items():
+            session_age = current_time - session_info.get('login_time', 0)
+            if session_age < self.session_timeout:
+                # Restore this user's session
+                st.session_state.authenticated = True
+                st.session_state.username = username
+                st.session_state.login_time = session_info['login_time']
+                st.session_state.session_id = session_info['session_id']
+                
+                # Load user data
+                user_data = self.load_user_data(username)
+                if user_data:
+                    for key, value in user_data.items():
+                        st.session_state[f"{key}_{username}"] = value
+                
+                return True
+        
+        return False
     
     def save_user_data(self, username: str, data: dict):
         """Save user-specific data to global session state"""
@@ -512,6 +561,20 @@ class FallbackAuthenticationManager:
                 st.info(f"🗑️ Data deleted for {username}")
         except Exception as e:
             st.error(f"Error deleting user data: {e}")
+    
+    def require_auth(self) -> bool:
+        """Require authentication - restore session if valid"""
+        # First try to restore session from global state
+        if 'authenticated' not in st.session_state or not st.session_state.get('authenticated', False):
+            if self.restore_session_if_valid():
+                return True
+            return False
+        
+        # Check if current session is valid
+        if not self.is_session_valid():
+            self.logout()
+            return False
+        return True
 
 # Initialize authentication manager lazily
 auth_manager = None
