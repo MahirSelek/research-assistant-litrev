@@ -995,9 +995,8 @@ def main():
             user_role = users.get(st.session_state.username, {}).get('role', 'user')
             st.markdown(f"**Role:** {user_role.title()}")
             
-            # Show data storage location (debug info)
-            if hasattr(auth_mgr, 'user_data_folder'):
-                st.markdown(f"**Data stored in:** `{auth_mgr.user_data_folder}`")
+            # Show data storage info
+            st.markdown(f"**Data stored in:** Global Session State")
         
         if st.button("➕ New Analysis", use_container_width=True):
             set_user_session('active_conversation_id', None)

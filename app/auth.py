@@ -301,25 +301,29 @@ class AuthenticationManager:
             return False
         return True
 
-# Fallback AuthenticationManager for when GCS is not available
+# Fallback AuthenticationManager for Streamlit Cloud (uses session state)
 class FallbackAuthenticationManager:
     def __init__(self):
-        # Use absolute paths to ensure files persist
-        self.app_dir = os.path.dirname(os.path.abspath(__file__))
-        self.users_file = os.path.join(self.app_dir, "users.json")
-        self.user_data_folder = os.path.join(self.app_dir, "user_data")
         self.session_timeout = 3600
         self.max_login_attempts = 5
         self.lockout_duration = 300
         
-        # Create user data folder if it doesn't exist
-        os.makedirs(self.user_data_folder, exist_ok=True)
+        # Initialize global session state for users and data
+        if 'global_users' not in st.session_state:
+            st.session_state.global_users = {
+                "admin": {
+                    "password_hash": "fallback", 
+                    "salt": "fallback", 
+                    "role": "admin",
+                    "created_at": time.time(),
+                    "last_login": None,
+                    "login_attempts": 0,
+                    "locked_until": None
+                }
+            }
         
-        # Load existing users or create default admin
-        self.users = self.load_users()
-        if not self.users:
-            self.users = {"admin": {"password_hash": "fallback", "salt": "fallback", "role": "admin"}}
-            self.save_users(self.users)
+        if 'global_user_data' not in st.session_state:
+            st.session_state.global_user_data = {}
     
     def validate_password_strength(self, password: str) -> Tuple[bool, str]:
         if len(password) < 8:
@@ -412,19 +416,12 @@ class FallbackAuthenticationManager:
         return True, "Login successful"
     
     def load_users(self) -> Dict:
-        """Load users from local file"""
-        if os.path.exists(self.users_file):
-            try:
-                with open(self.users_file, 'r') as f:
-                    return json.load(f)
-            except (json.JSONDecodeError, FileNotFoundError):
-                return {}
-        return {}
+        """Load users from global session state"""
+        return st.session_state.global_users
     
     def save_users(self, users: Dict):
-        """Save users to local file"""
-        with open(self.users_file, 'w') as f:
-            json.dump(users, f, indent=2)
+        """Save users to global session state"""
+        st.session_state.global_users = users
     
     def login(self, username: str, password: str) -> Tuple[bool, str]:
         success, message = self.authenticate_user(username, password)
@@ -487,39 +484,32 @@ class FallbackAuthenticationManager:
         return True
     
     def save_user_data(self, username: str, data: dict):
-        """Save user-specific data (chat history, etc.) to local files"""
+        """Save user-specific data to global session state"""
         try:
-            user_data_file = os.path.join(self.user_data_folder, f"{username}_data.json")
-            with open(user_data_file, 'w') as f:
-                json.dump(data, f, indent=2)
-            # Debug: Show where data is saved
-            st.info(f"💾 Data saved for {username} to: {user_data_file}")
+            st.session_state.global_user_data[username] = data
+            st.info(f"💾 Data saved for {username} to global session state")
         except Exception as e:
             st.error(f"Error saving user data: {e}")
     
     def load_user_data(self, username: str) -> dict:
-        """Load user-specific data (chat history, etc.) from local files"""
+        """Load user-specific data from global session state"""
         try:
-            user_data_file = os.path.join(self.user_data_folder, f"{username}_data.json")
-            if os.path.exists(user_data_file):
-                with open(user_data_file, 'r') as f:
-                    data = json.load(f)
-                # Debug: Show where data is loaded from
-                st.info(f"📂 Data loaded for {username} from: {user_data_file}")
-                return data
+            data = st.session_state.global_user_data.get(username, {})
+            if data:
+                st.info(f"📂 Data loaded for {username} from global session state")
             else:
-                st.info(f"📂 No data file found for {username} at: {user_data_file}")
-            return {}
+                st.info(f"📂 No data found for {username} in global session state")
+            return data
         except Exception as e:
             st.error(f"Error loading user data: {e}")
             return {}
     
     def delete_user_data(self, username: str):
-        """Delete user-specific data from local files"""
+        """Delete user-specific data from global session state"""
         try:
-            user_data_file = os.path.join(self.user_data_folder, f"{username}_data.json")
-            if os.path.exists(user_data_file):
-                os.remove(user_data_file)
+            if username in st.session_state.global_user_data:
+                del st.session_state.global_user_data[username]
+                st.info(f"🗑️ Data deleted for {username}")
         except Exception as e:
             st.error(f"Error deleting user data: {e}")
 
