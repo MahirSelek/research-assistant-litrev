@@ -837,7 +837,7 @@ def show_login_page():
     
     # Simple login page - no logo
     st.markdown("**Updated: No Logo Version**")
-        st.markdown("---")
+    st.markdown("---")
     # Login/Register tabs
     tab1, tab2 = st.tabs(["Log in", "Sign in"])
     
