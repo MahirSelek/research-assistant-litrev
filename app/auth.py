@@ -3,28 +3,89 @@ import streamlit as st
 import hashlib
 import secrets
 import time
+import re
 from typing import Dict, Optional, Tuple
 import json
 import os
+from google.cloud import storage
+from google.api_core.exceptions import NotFound
+import base64
+from cryptography.fernet import Fernet
 
 class AuthenticationManager:
     def __init__(self):
-        self.users_file = "users.json"
+        # GCS Configuration
+        self.gcs_bucket_name = st.secrets["app_config"]["gcs_bucket_name"]
+        self.users_folder = "user_data/"
         self.session_timeout = 3600  # 1 hour in seconds
         self.max_login_attempts = 5
         self.lockout_duration = 300  # 5 minutes in seconds
         
+        # Initialize GCS client
+        self.storage_client = storage.Client()
+        self.bucket = self.storage_client.bucket(self.gcs_bucket_name)
+        
+        # Generate encryption key for user data (this should be stored securely in production)
+        self.encryption_key = self._get_or_create_encryption_key()
+        self.cipher_suite = Fernet(self.encryption_key)
+    
+    def _get_or_create_encryption_key(self) -> bytes:
+        """Get or create encryption key for user data"""
+        key_blob_name = f"{self.users_folder}encryption_key.key"
+        key_blob = self.bucket.blob(key_blob_name)
+        
+        try:
+            # Try to get existing key
+            encrypted_key = key_blob.download_as_bytes()
+            return encrypted_key
+        except NotFound:
+            # Create new key
+            key = Fernet.generate_key()
+            key_blob.upload_from_string(key)
+            return key
+    
+    def validate_password_strength(self, password: str) -> Tuple[bool, str]:
+        """Validate password meets security requirements"""
+        if len(password) < 8:
+            return False, "Password must be at least 8 characters long"
+        
+        if not re.search(r'[A-Z]', password):
+            return False, "Password must contain at least one uppercase letter"
+        
+        if not re.search(r'[a-z]', password):
+            return False, "Password must contain at least one lowercase letter"
+        
+        if not re.search(r'\d', password):
+            return False, "Password must contain at least one number"
+        
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+            return False, "Password must contain at least one special character"
+        
+        return True, "Password is valid"
+    
+    def encrypt_user_data(self, data: dict) -> str:
+        """Encrypt user data before storing"""
+        json_data = json.dumps(data)
+        encrypted_data = self.cipher_suite.encrypt(json_data.encode())
+        return base64.b64encode(encrypted_data).decode()
+    
+    def decrypt_user_data(self, encrypted_data: str) -> dict:
+        """Decrypt user data after retrieving"""
+        try:
+            encrypted_bytes = base64.b64decode(encrypted_data.encode())
+            decrypted_data = self.cipher_suite.decrypt(encrypted_bytes)
+            return json.loads(decrypted_data.decode())
+        except Exception:
+            return {}
+        
     def hash_password(self, password: str, salt: str = None) -> Tuple[str, str]:
-        """Hash password with salt using SHA-256"""
+        """Hash password with salt using PBKDF2 for better security"""
         if salt is None:
             salt = secrets.token_hex(16)
         
-        # Combine password and salt
-        password_salt = password + salt
-        # Hash using SHA-256
-        hashed = hashlib.sha256(password_salt.encode()).hexdigest()
-        
-        return hashed, salt
+        # Use PBKDF2 with 100,000 iterations for better security
+        hashed = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000)
+        return hashed.hex(), salt
     
     def verify_password(self, password: str, hashed: str, salt: str) -> bool:
         """Verify password against stored hash"""
@@ -32,26 +93,41 @@ class AuthenticationManager:
         return test_hash == hashed
     
     def load_users(self) -> Dict:
-        """Load users from file"""
-        if os.path.exists(self.users_file):
-            try:
-                with open(self.users_file, 'r') as f:
-                    return json.load(f)
-            except (json.JSONDecodeError, FileNotFoundError):
-                return {}
-        return {}
+        """Load users from GCS"""
+        try:
+            users_blob_name = f"{self.users_folder}users.json"
+            users_blob = self.bucket.blob(users_blob_name)
+            
+            if users_blob.exists():
+                encrypted_data = users_blob.download_as_text()
+                return self.decrypt_user_data(encrypted_data)
+            return {}
+        except Exception as e:
+            st.error(f"Error loading users: {e}")
+            return {}
     
     def save_users(self, users: Dict):
-        """Save users to file"""
-        with open(self.users_file, 'w') as f:
-            json.dump(users, f, indent=2)
+        """Save users to GCS"""
+        try:
+            users_blob_name = f"{self.users_folder}users.json"
+            users_blob = self.bucket.blob(users_blob_name)
+            
+            encrypted_data = self.encrypt_user_data(users)
+            users_blob.upload_from_string(encrypted_data)
+        except Exception as e:
+            st.error(f"Error saving users: {e}")
     
-    def create_user(self, username: str, password: str) -> bool:
-        """Create a new user"""
+    def create_user(self, username: str, password: str) -> Tuple[bool, str]:
+        """Create a new user with password validation"""
+        # Validate password strength
+        is_valid, message = self.validate_password_strength(password)
+        if not is_valid:
+            return False, message
+        
         users = self.load_users()
         
         if username in users:
-            return False  # User already exists
+            return False, "Username already exists"
         
         hashed_password, salt = self.hash_password(password)
         
@@ -61,11 +137,48 @@ class AuthenticationManager:
             'created_at': time.time(),
             'last_login': None,
             'login_attempts': 0,
-            'locked_until': None
+            'locked_until': None,
+            'role': 'user'  # Default role
         }
         
         self.save_users(users)
-        return True
+        return True, "User created successfully"
+    
+    def save_user_data(self, username: str, data: dict):
+        """Save user-specific data (chat history, etc.) to GCS"""
+        try:
+            user_data_blob_name = f"{self.users_folder}{username}_data.json"
+            user_data_blob = self.bucket.blob(user_data_blob_name)
+            
+            encrypted_data = self.encrypt_user_data(data)
+            user_data_blob.upload_from_string(encrypted_data)
+        except Exception as e:
+            st.error(f"Error saving user data: {e}")
+    
+    def load_user_data(self, username: str) -> dict:
+        """Load user-specific data (chat history, etc.) from GCS"""
+        try:
+            user_data_blob_name = f"{self.users_folder}{username}_data.json"
+            user_data_blob = self.bucket.blob(user_data_blob_name)
+            
+            if user_data_blob.exists():
+                encrypted_data = user_data_blob.download_as_text()
+                return self.decrypt_user_data(encrypted_data)
+            return {}
+        except Exception as e:
+            st.error(f"Error loading user data: {e}")
+            return {}
+    
+    def delete_user_data(self, username: str):
+        """Delete user-specific data from GCS"""
+        try:
+            user_data_blob_name = f"{self.users_folder}{username}_data.json"
+            user_data_blob = self.bucket.blob(user_data_blob_name)
+            
+            if user_data_blob.exists():
+                user_data_blob.delete()
+        except Exception as e:
+            st.error(f"Error deleting user data: {e}")
     
     def authenticate_user(self, username: str, password: str) -> Tuple[bool, str]:
         """Authenticate user with username and password"""
@@ -126,11 +239,33 @@ class AuthenticationManager:
             st.session_state.username = username
             st.session_state.login_time = time.time()
             st.session_state.session_id = secrets.token_hex(16)
+            
+            # Load user-specific data from GCS
+            user_data = self.load_user_data(username)
+            if user_data:
+                # Restore user's chat history and other data
+                for key, value in user_data.items():
+                    st.session_state[f"{key}_{username}"] = value
         
         return success, message
     
     def logout(self):
-        """Logout user and clear session"""
+        """Logout user and save data before clearing session"""
+        if 'authenticated' in st.session_state and 'username' in st.session_state:
+            username = st.session_state.username
+            
+            # Save user-specific data to GCS before logout
+            user_data = {}
+            for key, value in st.session_state.items():
+                if key.endswith(f"_{username}"):
+                    # Extract the original key name
+                    original_key = key[:-len(f"_{username}")]
+                    user_data[original_key] = value
+            
+            if user_data:
+                self.save_user_data(username, user_data)
+        
+        # Clear session state
         if 'authenticated' in st.session_state:
             del st.session_state.authenticated
         if 'username' in st.session_state:
@@ -159,8 +294,13 @@ def initialize_default_admin():
     """Create default admin user if no users exist"""
     users = auth_manager.load_users()
     if not users:
-        # Create default admin user
-        auth_manager.create_user("admin", "pologgb2024")
+        # Create default admin user with strong password
+        success, message = auth_manager.create_user("admin", "PoloGGB2024!")
+        if success:
+            # Set admin role
+            users = auth_manager.load_users()
+            users["admin"]["role"] = "admin"
+            auth_manager.save_users(users)
         # Don't show success message to avoid confusion
 
 def show_login_page():
@@ -240,7 +380,9 @@ def show_login_page():
             # Password requirements
             st.markdown("**Password Requirements:**")
             st.markdown("- At least 8 characters long")
-            st.markdown("- Contains letters and numbers")
+            st.markdown("- Contains uppercase and lowercase letters")
+            st.markdown("- Contains at least one number")
+            st.markdown("- Contains at least one special character (!@#$%^&* etc.)")
             
             register_submitted = st.form_submit_button("Create Account", use_container_width=True)
         
@@ -258,23 +400,22 @@ def show_login_page():
         
         if register_submitted:
             if new_username and new_password and confirm_password:
-                # Validate password
-                if len(new_password) < 8:
-                    st.markdown('<div class="error-message">❌ Password must be at least 8 characters long</div>', unsafe_allow_html=True)
-                elif not any(c.isalpha() for c in new_password) or not any(c.isdigit() for c in new_password):
-                    st.markdown('<div class="error-message">❌ Password must contain both letters and numbers</div>', unsafe_allow_html=True)
+                # Validate password strength
+                is_valid, message = auth_manager.validate_password_strength(new_password)
+                if not is_valid:
+                    st.markdown(f'<div class="error-message">❌ {message}</div>', unsafe_allow_html=True)
                 elif new_password != confirm_password:
                     st.markdown('<div class="error-message">❌ Passwords do not match</div>', unsafe_allow_html=True)
                 else:
                     # Create new user
-                    success = auth_manager.create_user(new_username, new_password)
+                    success, message = auth_manager.create_user(new_username, new_password)
                     if success:
                         st.markdown('<div class="success-message">✅ Account created successfully! You can now login.</div>', unsafe_allow_html=True)
                         # Auto-login the new user
                         auth_manager.login(new_username, new_password)
                         st.rerun()
                     else:
-                        st.markdown('<div class="error-message">❌ Username already exists. Please choose a different username.</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="error-message">❌ {message}</div>', unsafe_allow_html=True)
             else:
                 st.markdown('<div class="error-message">❌ Please fill in all fields</div>', unsafe_allow_html=True)
     

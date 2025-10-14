@@ -128,6 +128,23 @@ def set_user_session(key, value):
     user_key = get_user_key(key)
     st.session_state[user_key] = value
 
+def save_user_data_to_cloud():
+    """Save current user's data to cloud storage"""
+    if st.session_state.get('authenticated', False) and 'username' in st.session_state:
+        username = st.session_state.username
+        
+        # Collect all user-specific data
+        user_data = {}
+        for key, value in st.session_state.items():
+            if key.endswith(f"_{username}"):
+                # Extract the original key name
+                original_key = key[:-len(f"_{username}")]
+                user_data[original_key] = value
+        
+        # Save to cloud
+        if user_data:
+            auth_manager.save_user_data(username, user_data)
+
 def initialize_session_state():
     # Get current username for user-specific data
     current_user = st.session_state.get('username', 'default')
@@ -969,10 +986,11 @@ def main():
         if st.session_state.get('authenticated', False):
             st.markdown("---")
             st.markdown(f"**Logged in as:** {st.session_state.username}")
-            if st.session_state.get('username') == 'admin':
-                st.markdown("**Role:** Administrator")
-            else:
-                st.markdown("**Role:** User")
+            
+            # Get user role from auth manager
+            users = auth_manager.load_users()
+            user_role = users.get(st.session_state.username, {}).get('role', 'user')
+            st.markdown(f"**Role:** {user_role.title()}")
         
         if st.button("➕ New Analysis", use_container_width=True):
             set_user_session('active_conversation_id', None)
@@ -1075,6 +1093,8 @@ def main():
                 set_user_session('active_conversation_id', conv_id)
                 # Custom summaries are now in chat history
                 set_user_session('custom_summary_chat', [])  # Clear custom summary chat
+                # Save user data to cloud
+                save_user_data_to_cloud()
                 st.rerun()
             else:
                 st.error("Failed to generate analysis. Please try again.")
@@ -1251,6 +1271,9 @@ def main():
             # Set this as the active conversation so user can immediately interact
             set_user_session('active_conversation_id', conv_id)
             
+            # Save user data to cloud
+            save_user_data_to_cloud()
+            
             # Summary is now permanently stored in chat history
         else:
             st.error("Failed to generate summary. Please try again.")
@@ -1357,6 +1380,8 @@ Assistant Response:"""
                 active_conv['last_interaction_time'] = time.time()
                 # Save updated conversations
                 set_user_session('conversations', conversations)
+                # Save user data to cloud
+                save_user_data_to_cloud()
                 st.rerun()
 
 if __name__ == "__main__":

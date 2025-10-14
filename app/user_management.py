@@ -38,11 +38,12 @@ def show_user_management():
         
         if st.form_submit_button("Create User"):
             if new_username and new_password:
-                if auth_manager.create_user(new_username, new_password):
+                success, message = auth_manager.create_user(new_username, new_password)
+                if success:
                     st.success(f"User '{new_username}' created successfully!")
                     st.rerun()
                 else:
-                    st.error(f"User '{new_username}' already exists!")
+                    st.error(f"Error: {message}")
             else:
                 st.error("Please enter both username and password")
     
@@ -72,8 +73,10 @@ def show_user_management():
         else:
             status = "✅ Active"
         
+        role = user_info.get('role', 'user')
         user_data.append({
             "Username": username,
+            "Role": role,
             "Created": created_date,
             "Last Login": last_login_date,
             "Failed Attempts": login_attempts,
@@ -86,6 +89,7 @@ def show_user_management():
             col1, col2, col3 = st.columns(3)
             
             with col1:
+                st.write(f"**Role:** {user['Role'].title()}")
                 st.write(f"**Created:** {user['Created']}")
                 st.write(f"**Last Login:** {user['Last Login']}")
             
@@ -166,7 +170,7 @@ def show_user_management():
     
     with col2:
         st.write(f"**Session Timeout:** {auth_manager.session_timeout // 3600} hours")
-        st.write(f"**Password Hashing:** SHA-256 with Salt")
+        st.write(f"**Password Hashing:** PBKDF2 with Salt")
 
 if __name__ == "__main__":
     # Check authentication
