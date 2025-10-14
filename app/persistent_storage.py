@@ -6,8 +6,9 @@ import hashlib
 import secrets
 from typing import Dict, List, Any, Optional, Tuple
 from google.cloud import storage
-from google.api_core.exceptions import NotFound
+from google.api_core.exceptions import NotFound, TooManyRequests, ServiceUnavailable
 import os
+import random
 
 class PersistentStorageManager:
     """
@@ -20,8 +21,44 @@ class PersistentStorageManager:
         self.storage_client = storage.Client()
         self.bucket = self.storage_client.bucket(bucket_name)
         
+        # Rate limiting settings
+        self.last_request_time = 0
+        self.min_request_interval = 0.1  # Minimum 100ms between requests
+        self.max_retries = 3
+        self.retry_delay = 1.0  # Start with 1 second delay
+        
         # Ensure required folders exist
         self._ensure_folders_exist()
+    
+    def _rate_limit(self):
+        """Implement rate limiting to avoid 429 errors"""
+        current_time = time.time()
+        time_since_last_request = current_time - self.last_request_time
+        
+        if time_since_last_request < self.min_request_interval:
+            sleep_time = self.min_request_interval - time_since_last_request
+            time.sleep(sleep_time)
+        
+        self.last_request_time = time.time()
+    
+    def _retry_with_backoff(self, func, *args, **kwargs):
+        """Retry a function with exponential backoff for rate limit errors"""
+        for attempt in range(self.max_retries):
+            try:
+                self._rate_limit()
+                return func(*args, **kwargs)
+            except (TooManyRequests, ServiceUnavailable) as e:
+                if attempt == self.max_retries - 1:
+                    st.error(f"Failed after {self.max_retries} attempts: {e}")
+                    raise
+                
+                # Exponential backoff with jitter
+                delay = self.retry_delay * (2 ** attempt) + random.uniform(0, 1)
+                st.warning(f"Rate limit hit, retrying in {delay:.1f} seconds... (attempt {attempt + 1}/{self.max_retries})")
+                time.sleep(delay)
+            except Exception as e:
+                st.error(f"Unexpected error: {e}")
+                raise
     
     def _ensure_folders_exist(self):
         """Ensure required folder structure exists in GCS"""
@@ -58,27 +95,33 @@ class PersistentStorageManager:
         return f"user-data/sessions/{username}.json"
     
     def _upload_json(self, blob_path: str, data: Dict) -> bool:
-        """Upload JSON data to GCS"""
-        try:
+        """Upload JSON data to GCS with retry logic"""
+        def _do_upload():
             blob = self.bucket.blob(blob_path)
             blob.upload_from_string(
                 json.dumps(data, indent=2),
                 content_type='application/json'
             )
             return True
+        
+        try:
+            return self._retry_with_backoff(_do_upload)
         except Exception as e:
             st.error(f"Failed to upload {blob_path}: {e}")
             return False
     
     def _download_json(self, blob_path: str) -> Optional[Dict]:
-        """Download JSON data from GCS"""
-        try:
+        """Download JSON data from GCS with retry logic"""
+        def _do_download():
             blob = self.bucket.blob(blob_path)
             if not blob.exists():
                 return None
             
             content = blob.download_as_string()
             return json.loads(content)
+        
+        try:
+            return self._retry_with_backoff(_do_download)
         except NotFound:
             return None
         except Exception as e:
@@ -86,12 +129,15 @@ class PersistentStorageManager:
             return None
     
     def _delete_blob(self, blob_path: str) -> bool:
-        """Delete a blob from GCS"""
-        try:
+        """Delete a blob from GCS with retry logic"""
+        def _do_delete():
             blob = self.bucket.blob(blob_path)
             if blob.exists():
                 blob.delete()
             return True
+        
+        try:
+            return self._retry_with_backoff(_do_delete)
         except Exception as e:
             st.error(f"Failed to delete {blob_path}: {e}")
             return False
@@ -325,13 +371,21 @@ class PersistentStorageManager:
         return self._download_json(blob_path)
     
     def update_user_session_key(self, username: str, key: str, value: Any) -> bool:
-        """Update a specific key in user session data"""
+        """Update a specific key in user session data with rate limiting"""
         session_data = self.get_user_session(username)
         if not session_data:
             session_data = {}
         
         session_data[key] = value
-        return self.save_user_session(username, session_data)
+        
+        # Only save to GCS for important keys to reduce rate limiting
+        important_keys = ['active_conversation_id', 'uploaded_papers']
+        if key in important_keys:
+            return self.save_user_session(username, session_data)
+        else:
+            # For less important keys, just update in memory
+            # This reduces GCS calls and prevents rate limiting
+            return True
     
     # Utility Methods
     def get_all_users(self) -> List[Dict]:

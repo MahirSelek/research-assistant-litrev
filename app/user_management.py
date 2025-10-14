@@ -159,6 +159,50 @@ def show_user_management():
     else:
         st.info("No new registrations in the last 7 days")
     
+    # Password change section
+    st.markdown("---")
+    st.subheader("🔐 Change Admin Password")
+    
+    with st.form("change_password_form"):
+        current_password = st.text_input("Current Password", type="password", placeholder="Enter current password")
+        new_password = st.text_input("New Password", type="password", placeholder="Enter new password")
+        confirm_password = st.text_input("Confirm New Password", type="password", placeholder="Confirm new password")
+        
+        if st.form_submit_button("Change Password"):
+            if current_password and new_password and confirm_password:
+                # Verify current password
+                success, message = auth_manager.authenticate_user("admin", current_password)
+                if success:
+                    if new_password == confirm_password:
+                        if len(new_password) >= 8 and any(c.isalpha() for c in new_password) and any(c.isdigit() for c in new_password):
+                            # Update password
+                            user_data = auth_manager.storage_manager.get_user_data("admin")
+                            if user_data:
+                                # Generate new salt and hash
+                                import hashlib
+                                import secrets
+                                new_salt = secrets.token_hex(16)
+                                new_hash = hashlib.sha256((new_password + new_salt).encode()).hexdigest()
+                                
+                                user_data['password_hash'] = new_hash
+                                user_data['salt'] = new_salt
+                                
+                                if auth_manager.storage_manager.update_user_data("admin", user_data):
+                                    st.success("✅ Password changed successfully!")
+                                    st.rerun()
+                                else:
+                                    st.error("❌ Failed to update password")
+                            else:
+                                st.error("❌ Admin user not found")
+                        else:
+                            st.error("❌ New password must be at least 8 characters with letters and numbers")
+                    else:
+                        st.error("❌ New passwords do not match")
+                else:
+                    st.error("❌ Current password is incorrect")
+            else:
+                st.error("❌ Please fill in all fields")
+    
     # Security settings
     st.markdown("---")
     st.subheader("🔒 Security Settings")

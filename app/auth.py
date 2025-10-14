@@ -89,12 +89,32 @@ auth_manager = AuthenticationManager()
 
 # Default admin user creation (only if no users exist)
 def initialize_default_admin():
-    """Create default admin user if no users exist"""
-    users = auth_manager.load_users()
-    if not users:
-        # Create default admin user
-        auth_manager.create_user("admin", "pologgb2024")
-        # Don't show success message to avoid confusion
+    """Create default admin user if no users exist - AUTOMATIC and SECURE"""
+    if not auth_manager.storage_manager:
+        return  # Skip if storage not available
+    
+    # Check if any users exist
+    try:
+        all_users = auth_manager.storage_manager.get_all_users()
+        if not all_users:
+            # Generate secure random password
+            import secrets
+            import string
+            
+            # Create a strong random password
+            alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+            admin_password = ''.join(secrets.choice(alphabet) for _ in range(16))
+            
+            # Create admin user with random password
+            success = auth_manager.create_user("admin", admin_password)
+            if success:
+                # Store the password securely in Streamlit secrets for first-time setup
+                # This is ONLY for the very first admin user creation
+                st.session_state['_admin_setup_password'] = admin_password
+                st.session_state['_admin_setup_complete'] = True
+    except Exception as e:
+        # Silently fail - don't expose errors
+        pass
 
 def show_login_page():
     """Display the login page"""
@@ -103,6 +123,28 @@ def show_login_page():
         page_icon="polo-ggb-logo.png",
         layout="centered"
     )
+    
+    # Check for first-time admin setup
+    if st.session_state.get('_admin_setup_complete', False):
+        admin_password = st.session_state.get('_admin_setup_password', '')
+        if admin_password:
+            st.success("🎉 **System Initialized Successfully!**")
+            st.info(f"""
+            **First-time setup complete!**
+            
+            Your admin account has been created with a secure random password.
+            
+            **Username:** `admin`  
+            **Password:** `{admin_password}`
+            
+            ⚠️ **IMPORTANT:** Please change this password after your first login for security.
+            """)
+            
+            # Clear the temporary password from session
+            del st.session_state['_admin_setup_password']
+            del st.session_state['_admin_setup_complete']
+            
+            st.stop()
     
     # Simple CSS for login page
     st.markdown("""

@@ -20,7 +20,7 @@ import vertexai
 from vertexai.generative_models import GenerativeModel
 from google.cloud import storage
 from google.api_core.exceptions import NotFound
-from auth import auth_manager, show_login_page, show_logout_button
+from auth import auth_manager, show_login_page, show_logout_button, initialize_default_admin
 from user_management import show_user_management
 from persistent_storage import PersistentStorageManager
 
@@ -150,7 +150,7 @@ def get_user_session(key, default=None):
     return st.session_state.get(user_key, default)
 
 def set_user_session(key, value):
-    """Set user-specific session value in persistent storage"""
+    """Set user-specific session value in persistent storage with rate limiting"""
     current_user = st.session_state.get('username')
     if not current_user:
         # Fallback to session state if no user
@@ -165,12 +165,18 @@ def set_user_session(key, value):
         st.session_state[user_key] = value
         return
     
-    # Update persistent storage
-    storage_manager.update_user_session_key(current_user, key, value)
-    
-    # Also update session state for immediate access
+    # Always update session state for immediate access
     user_key = get_user_key(key)
     st.session_state[user_key] = value
+    
+    # Only update persistent storage for important keys to prevent rate limiting
+    important_keys = ['active_conversation_id', 'uploaded_papers', 'conversations']
+    if key in important_keys:
+        try:
+            storage_manager.update_user_session_key(current_user, key, value)
+        except Exception as e:
+            st.warning(f"Failed to save {key} to persistent storage: {e}")
+            # Continue with session state only
 
 def initialize_session_state():
     # Get current username for user-specific data
@@ -1000,6 +1006,9 @@ def display_chat_history():
                     st.rerun()
 
 def main():
+    # Initialize admin user automatically if needed
+    initialize_default_admin()
+    
     # Check authentication first
     if not auth_manager.require_auth():
         show_login_page()
