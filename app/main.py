@@ -129,7 +129,7 @@ def set_user_session(key, value):
     st.session_state[user_key] = value
 
 def save_user_data_to_cloud():
-    """Save current user's data to cloud storage"""
+    """Save current user's data to storage (cloud or local)"""
     if st.session_state.get('authenticated', False) and 'username' in st.session_state:
         username = st.session_state.username
         
@@ -141,7 +141,7 @@ def save_user_data_to_cloud():
                 original_key = key[:-len(f"_{username}")]
                 user_data[original_key] = value
         
-        # Save to cloud
+        # Save to storage (cloud or local)
         if user_data:
             auth_mgr = get_auth_manager()
             auth_mgr.save_user_data(username, user_data)
@@ -994,6 +994,10 @@ def main():
             users = auth_mgr.load_users()
             user_role = users.get(st.session_state.username, {}).get('role', 'user')
             st.markdown(f"**Role:** {user_role.title()}")
+            
+            # Show data storage location (debug info)
+            if hasattr(auth_mgr, 'user_data_folder'):
+                st.markdown(f"**Data stored in:** `{auth_mgr.user_data_folder}`")
         
         if st.button("➕ New Analysis", use_container_width=True):
             set_user_session('active_conversation_id', None)
@@ -1383,7 +1387,7 @@ Assistant Response:"""
                 active_conv['last_interaction_time'] = time.time()
                 # Save updated conversations
                 set_user_session('conversations', conversations)
-                # Save user data to cloud
+                # Save user data immediately
                 save_user_data_to_cloud()
                 st.rerun()
 

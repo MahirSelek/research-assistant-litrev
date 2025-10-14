@@ -304,8 +304,10 @@ class AuthenticationManager:
 # Fallback AuthenticationManager for when GCS is not available
 class FallbackAuthenticationManager:
     def __init__(self):
-        self.users_file = "users.json"
-        self.user_data_folder = "user_data/"
+        # Use absolute paths to ensure files persist
+        self.app_dir = os.path.dirname(os.path.abspath(__file__))
+        self.users_file = os.path.join(self.app_dir, "users.json")
+        self.user_data_folder = os.path.join(self.app_dir, "user_data")
         self.session_timeout = 3600
         self.max_login_attempts = 5
         self.lockout_duration = 300
@@ -490,6 +492,8 @@ class FallbackAuthenticationManager:
             user_data_file = os.path.join(self.user_data_folder, f"{username}_data.json")
             with open(user_data_file, 'w') as f:
                 json.dump(data, f, indent=2)
+            # Debug: Show where data is saved
+            st.info(f"💾 Data saved for {username} to: {user_data_file}")
         except Exception as e:
             st.error(f"Error saving user data: {e}")
     
@@ -499,7 +503,12 @@ class FallbackAuthenticationManager:
             user_data_file = os.path.join(self.user_data_folder, f"{username}_data.json")
             if os.path.exists(user_data_file):
                 with open(user_data_file, 'r') as f:
-                    return json.load(f)
+                    data = json.load(f)
+                # Debug: Show where data is loaded from
+                st.info(f"📂 Data loaded for {username} from: {user_data_file}")
+                return data
+            else:
+                st.info(f"📂 No data file found for {username} at: {user_data_file}")
             return {}
         except Exception as e:
             st.error(f"Error loading user data: {e}")
