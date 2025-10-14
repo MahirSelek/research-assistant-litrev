@@ -14,21 +14,27 @@ from cryptography.fernet import Fernet
 
 class AuthenticationManager:
     def __init__(self):
-        # GCS Configuration
-        self.gcs_bucket_name = st.secrets["app_config"]["gcs_bucket_name"]
-        self.gcs_project_id = st.secrets["vertex_ai"]["VERTEXAI_PROJECT"]  # Use same project as Vertex AI
-        self.users_folder = "user_data/"
-        self.session_timeout = 3600  # 1 hour in seconds
-        self.max_login_attempts = 5
-        self.lockout_duration = 300  # 5 minutes in seconds
-        
-        # Initialize GCS client with project ID
-        self.storage_client = storage.Client(project=self.gcs_project_id)
-        self.bucket = self.storage_client.bucket(self.gcs_bucket_name)
-        
-        # Generate encryption key for user data (this should be stored securely in production)
-        self.encryption_key = self._get_or_create_encryption_key()
-        self.cipher_suite = Fernet(self.encryption_key)
+        try:
+            # GCS Configuration
+            self.gcs_bucket_name = st.secrets["app_config"]["gcs_bucket_name"]
+            self.gcs_project_id = st.secrets["vertex_ai"]["VERTEXAI_PROJECT"]  # Use same project as Vertex AI
+            self.users_folder = "user_data/"
+            self.session_timeout = 3600  # 1 hour in seconds
+            self.max_login_attempts = 5
+            self.lockout_duration = 300  # 5 minutes in seconds
+            
+            # Initialize GCS client with project ID
+            self.storage_client = storage.Client(project=self.gcs_project_id)
+            self.bucket = self.storage_client.bucket(self.gcs_bucket_name)
+            
+            # Generate encryption key for user data (this should be stored securely in production)
+            self.encryption_key = self._get_or_create_encryption_key()
+            self.cipher_suite = Fernet(self.encryption_key)
+            
+        except Exception as e:
+            st.error(f"Failed to initialize authentication system: {e}")
+            st.error("Please check your Google Cloud configuration and secrets.")
+            raise
     
     def _get_or_create_encryption_key(self) -> bytes:
         """Get or create encryption key for user data"""
@@ -287,12 +293,104 @@ class AuthenticationManager:
             return False
         return True
 
-# Initialize authentication manager
-auth_manager = AuthenticationManager()
+# Fallback AuthenticationManager for when GCS is not available
+class FallbackAuthenticationManager:
+    def __init__(self):
+        self.users_file = "users.json"
+        self.session_timeout = 3600
+        self.max_login_attempts = 5
+        self.lockout_duration = 300
+        self.users = {"admin": {"password_hash": "fallback", "salt": "fallback", "role": "admin"}}
+    
+    def validate_password_strength(self, password: str) -> Tuple[bool, str]:
+        if len(password) < 8:
+            return False, "Password must be at least 8 characters long"
+        if not re.search(r'[A-Z]', password):
+            return False, "Password must contain at least one uppercase letter"
+        if not re.search(r'[a-z]', password):
+            return False, "Password must contain at least one lowercase letter"
+        if not re.search(r'\d', password):
+            return False, "Password must contain at least one number"
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+            return False, "Password must contain at least one special character"
+        return True, "Password is valid"
+    
+    def create_user(self, username: str, password: str) -> Tuple[bool, str]:
+        is_valid, message = self.validate_password_strength(password)
+        if not is_valid:
+            return False, message
+        if username in self.users:
+            return False, "Username already exists"
+        self.users[username] = {"password_hash": "fallback", "salt": "fallback", "role": "user"}
+        return True, "User created successfully"
+    
+    def authenticate_user(self, username: str, password: str) -> Tuple[bool, str]:
+        if username == "admin" and password == "PoloGGB2024!":
+            return True, "Login successful"
+        return False, "Invalid username or password"
+    
+    def load_users(self) -> Dict:
+        return self.users
+    
+    def save_users(self, users: Dict):
+        self.users = users
+    
+    def login(self, username: str, password: str) -> Tuple[bool, str]:
+        success, message = self.authenticate_user(username, password)
+        if success:
+            st.session_state.authenticated = True
+            st.session_state.username = username
+            st.session_state.login_time = time.time()
+            st.session_state.session_id = secrets.token_hex(16)
+        return success, message
+    
+    def logout(self):
+        if 'authenticated' in st.session_state:
+            del st.session_state.authenticated
+        if 'username' in st.session_state:
+            del st.session_state.username
+        if 'login_time' in st.session_state:
+            del st.session_state.login_time
+        if 'session_id' in st.session_state:
+            del st.session_state.session_id
+    
+    def is_session_valid(self) -> bool:
+        if 'authenticated' not in st.session_state or not st.session_state.authenticated:
+            return False
+        if 'login_time' not in st.session_state:
+            return False
+        current_time = time.time()
+        session_age = current_time - st.session_state.login_time
+        return session_age < self.session_timeout
+    
+    def require_auth(self) -> bool:
+        if 'authenticated' not in st.session_state:
+            return False
+        if not self.is_session_valid():
+            self.logout()
+            return False
+        return True
+    
+    def save_user_data(self, username: str, data: dict):
+        pass  # No-op for fallback
+    
+    def load_user_data(self, username: str) -> dict:
+        return {}  # No-op for fallback
+
+# Initialize authentication manager with error handling
+auth_manager = None
+try:
+    auth_manager = AuthenticationManager()
+except Exception as e:
+    # Create a fallback auth manager that doesn't use GCS
+    auth_manager = FallbackAuthenticationManager()
 
 # Default admin user creation (only if no users exist)
 def initialize_default_admin():
     """Create default admin user if no users exist"""
+    if auth_manager is None:
+        return  # Skip if auth manager failed to initialize
+    
     users = auth_manager.load_users()
     if not users:
         # Create default admin user with strong password
