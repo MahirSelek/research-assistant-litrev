@@ -20,9 +20,8 @@ import vertexai
 from vertexai.generative_models import GenerativeModel
 from google.cloud import storage
 from google.api_core.exceptions import NotFound
-from auth import auth_manager, show_login_page, show_logout_button, initialize_default_admin
+from auth import auth_manager, show_login_page, show_logout_button
 from user_management import show_user_management
-from persistent_storage import PersistentStorageManager
 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -114,102 +113,38 @@ def get_pdf_bytes_from_gcs(bucket_name: str, blob_name: str) -> bytes | None:
         st.error(f"Failed to download from GCS: {e}")
         return None
 
-# Initialize persistent storage manager
-def get_storage_manager():
-    """Get the persistent storage manager"""
-    if 'storage_manager' not in st.session_state:
-        try:
-            st.session_state.storage_manager = PersistentStorageManager(GCS_BUCKET_NAME)
-        except Exception as e:
-            st.error(f"Failed to initialize storage manager: {e}")
-            return None
-    return st.session_state.storage_manager
-
 def get_user_key(key):
     """Get user-specific session key"""
     current_user = st.session_state.get('username', 'default')
     return f"{key}_{current_user}"
 
 def get_user_session(key, default=None):
-    """Get user-specific session value from persistent storage"""
-    current_user = st.session_state.get('username')
-    if not current_user:
-        return default
-    
-    storage_manager = get_storage_manager()
-    if not storage_manager:
-        return default
-    
-    # Try to get from persistent storage first
-    session_data = storage_manager.get_user_session(current_user)
-    if session_data and key in session_data:
-        return session_data[key]
-    
-    # Fallback to session state
+    """Get user-specific session value"""
     user_key = get_user_key(key)
     return st.session_state.get(user_key, default)
 
 def set_user_session(key, value):
-    """Set user-specific session value in persistent storage with rate limiting"""
-    current_user = st.session_state.get('username')
-    if not current_user:
-        # Fallback to session state if no user
-        user_key = get_user_key(key)
-        st.session_state[user_key] = value
-        return
-    
-    storage_manager = get_storage_manager()
-    if not storage_manager:
-        # Fallback to session state if storage unavailable
-        user_key = get_user_key(key)
-        st.session_state[user_key] = value
-        return
-    
-    # Always update session state for immediate access
+    """Set user-specific session value"""
     user_key = get_user_key(key)
     st.session_state[user_key] = value
-    
-    # Only update persistent storage for important keys to prevent rate limiting
-    important_keys = ['active_conversation_id', 'uploaded_papers', 'conversations']
-    if key in important_keys:
-        try:
-            storage_manager.update_user_session_key(current_user, key, value)
-        except Exception as e:
-            st.warning(f"Failed to save {key} to persistent storage: {e}")
-            # Continue with session state only
 
 def initialize_session_state():
     # Get current username for user-specific data
-    current_user = st.session_state.get('username')
+    current_user = st.session_state.get('username', 'default')
     
-    if current_user:
-        # Load user data from persistent storage
-        storage_manager = get_storage_manager()
-        if storage_manager:
-            session_data = storage_manager.get_user_session(current_user)
-            if session_data:
-                # Load user-specific data from persistent storage
-                for key in ['active_conversation_id', 'selected_keywords', 'search_mode', 'uploaded_papers', 'custom_summary_chat']:
-                    if key in session_data:
-                        set_user_session(key, session_data[key])
-                    else:
-                        # Initialize with defaults if not found
-                        if key == 'selected_keywords':
-                            set_user_session(key, [])
-                        elif key == 'search_mode':
-                            set_user_session(key, "all_keywords")
-                        elif key in ['uploaded_papers', 'custom_summary_chat']:
-                            set_user_session(key, [])
-                        elif key == 'active_conversation_id':
-                            set_user_session(key, None)
-            else:
-                # Initialize new user session
-                storage_manager._initialize_user_session(current_user)
-                set_user_session('selected_keywords', [])
-                set_user_session('search_mode', "all_keywords")
-                set_user_session('uploaded_papers', [])
-                set_user_session('custom_summary_chat', [])
-                set_user_session('active_conversation_id', None)
+    # Initialize user-specific session state
+    if get_user_key('conversations') not in st.session_state:
+        set_user_session('conversations', {})
+    if get_user_key('active_conversation_id') not in st.session_state:
+        set_user_session('active_conversation_id', None)
+    if get_user_key('selected_keywords') not in st.session_state:
+        set_user_session('selected_keywords', [])
+    if get_user_key('search_mode') not in st.session_state:
+        set_user_session('search_mode', "all_keywords")
+    if get_user_key('uploaded_papers') not in st.session_state:
+        set_user_session('uploaded_papers', [])
+    if get_user_key('custom_summary_chat') not in st.session_state:
+        set_user_session('custom_summary_chat', [])
     
     # Global session state (shared across users)
     if 'es_manager' not in st.session_state:
@@ -946,18 +881,8 @@ def display_paper_management():
 def display_chat_history():
     st.markdown("<h3>Chat History</h3>", unsafe_allow_html=True)
     
-    current_user = st.session_state.get('username')
-    if not current_user:
-        st.caption("Please log in to view chat history.")
-        return
-    
-    storage_manager = get_storage_manager()
-    if not storage_manager:
-        st.caption("Storage unavailable. Please try again.")
-        return
-    
-    # Get user-specific conversations from persistent storage
-    conversations = storage_manager.get_user_conversations(current_user)
+    # Get user-specific conversations
+    conversations = get_user_session('conversations', {})
     if not conversations:
         st.caption("No past analyses found.")
         return
@@ -966,7 +891,19 @@ def display_chat_history():
     
     # Sort conversations by last interaction time (most recent first)
     def get_last_interaction_time(conv_id, conv_data):
-        return conv_data.get('last_interaction_time', conv_data.get('created_at', 0))
+        # Use last_interaction_time if available, otherwise fall back to creation time
+        if 'last_interaction_time' in conv_data:
+            return conv_data['last_interaction_time']
+        
+        # Fallback to creation time from conversation ID
+        try:
+            if conv_id.startswith('custom_summary_'):
+                timestamp_str = conv_id.split('_', 2)[2]
+            else:
+                timestamp_str = conv_id.split('_')[1]
+            return float(timestamp_str)
+        except (IndexError, ValueError):
+            return 0
     
     sorted_conv_ids = sorted(
         conversations.keys(), 
@@ -976,11 +913,16 @@ def display_chat_history():
     
     for conv_id in sorted_conv_ids:
         try:
-            conv_data = conversations[conv_id]
-            created_at = conv_data.get('created_at', 0)
-            conv_date = datetime.datetime.fromtimestamp(created_at)
+            # Get creation date for grouping by month
+            if conv_id.startswith('custom_summary_'):
+                timestamp_str = conv_id.split('_', 2)[2]
+            else:
+                timestamp_str = conv_id.split('_')[1]
+            
+            ts = float(timestamp_str)
+            conv_date = datetime.datetime.fromtimestamp(ts)
             month_key = conv_date.strftime("%Y-%m")
-            title = conv_data.get("title", "Chat...")
+            title = conversations[conv_id].get("title", "Chat...")
             grouped_convs[month_key].append((conv_id, title))
         except (IndexError, ValueError):
             continue
@@ -1000,15 +942,11 @@ def display_chat_history():
                 if get_user_session('active_conversation_id') != conv_id:
                     set_user_session('active_conversation_id', conv_id)
                     # Update last interaction time for this conversation
-                    conv_data = conversations[conv_id]
-                    conv_data['last_interaction_time'] = time.time()
-                    storage_manager._update_conversations_index(current_user, conv_id, conv_data)
+                    conversations[conv_id]['last_interaction_time'] = time.time()
+                    set_user_session('conversations', conversations)
                     st.rerun()
 
 def main():
-    # Initialize admin user automatically if needed
-    initialize_default_admin()
-    
     # Check authentication first
     if not auth_manager.require_auth():
         show_login_page()
@@ -1120,25 +1058,19 @@ def main():
 """}
                 title = generate_conversation_title(analysis_result)
                 
-                # Save conversation to persistent storage
-                current_user = st.session_state.get('username')
-                storage_manager = get_storage_manager()
-                
-                if current_user and storage_manager:
-                    conversation_data = {
-                        "title": title, 
-                        "messages": [initial_message], 
-                        "keywords": selected_keywords,
-                        "search_mode": search_mode_display,
-                        "retrieved_papers": retrieved_papers,
-                        "total_papers_found": total_found,
-                        "created_at": time.time(),
-                        "last_interaction_time": time.time()
-                    }
-                    
-                    # Save to persistent storage
-                    storage_manager.save_conversation(current_user, conv_id, conversation_data)
-                
+                # Get user-specific conversations and add new one
+                conversations = get_user_session('conversations', {})
+                conversations[conv_id] = {
+                    "title": title, 
+                    "messages": [initial_message], 
+                    "keywords": selected_keywords,
+                    "search_mode": search_mode_display,
+                    "retrieved_papers": retrieved_papers,
+                    "total_papers_found": total_found,
+                    "created_at": time.time(),
+                    "last_interaction_time": time.time()
+                }
+                set_user_session('conversations', conversations)
                 # Clear any previous analysis and set new one
                 set_user_session('active_conversation_id', conv_id)
                 # Custom summaries are now in chat history
@@ -1301,25 +1233,20 @@ def main():
                 "content": f"**Custom Summary of {len(uploaded_papers)} Uploaded Papers**\n\n{summary}"
             }
             
-            # Save custom summary to persistent storage
-            current_user = st.session_state.get('username')
-            storage_manager = get_storage_manager()
-            
-            if current_user and storage_manager:
-                conversation_data = {
-                    "title": title,
-                    "messages": [initial_message],
-                    "keywords": ["Custom Summary"],
-                    "search_mode": "custom",
-                    "retrieved_papers": uploaded_papers,
-                    "total_papers_found": len(uploaded_papers),
-                    "created_at": time.time(),
-                    "last_interaction_time": time.time(),
-                    "paper_count": len(uploaded_papers)
-                }
-                
-                # Save to persistent storage
-                storage_manager.save_conversation(current_user, conv_id, conversation_data)
+            # Get user-specific conversations and add new one
+            conversations = get_user_session('conversations', {})
+            conversations[conv_id] = {
+                "title": title,
+                "messages": [initial_message],
+                "keywords": ["Custom Summary"],
+                "search_mode": "custom",
+                "retrieved_papers": uploaded_papers,
+                "total_papers_found": len(uploaded_papers),
+                "created_at": time.time(),
+                "last_interaction_time": time.time(),
+                "paper_count": len(uploaded_papers)
+            }
+            set_user_session('conversations', conversations)
             
             # Set this as the active conversation so user can immediately interact
             set_user_session('active_conversation_id', conv_id)
@@ -1340,19 +1267,8 @@ def main():
         st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
     elif active_conversation_id is not None:
         active_id = active_conversation_id
-        current_user = st.session_state.get('username')
-        storage_manager = get_storage_manager()
-        
-        # Load conversation from persistent storage
-        if current_user and storage_manager:
-            active_conv = storage_manager.get_conversation(current_user, active_id)
-            if not active_conv:
-                st.error("Conversation not found. Please select a different conversation.")
-                set_user_session('active_conversation_id', None)
-                st.rerun()
-        else:
-            st.error("Unable to load conversation. Please try again.")
-            return
+        conversations = get_user_session('conversations', {})
+        active_conv = conversations[active_id]
         
         for message_index, message in enumerate(active_conv["messages"]):
             avatar = BOT_AVATAR if message["role"] == "assistant" else USER_AVATAR
@@ -1393,32 +1309,27 @@ def main():
             active_conv["messages"].append({"role": "user", "content": prompt})
             # Update last interaction time for this conversation
             active_conv['last_interaction_time'] = time.time()
-            # Save updated conversation to persistent storage
-            if current_user and storage_manager:
-                storage_manager.save_conversation(current_user, active_id, active_conv)
+            # Save updated conversations
+            set_user_session('conversations', conversations)
             st.rerun()
 
     active_conversation_id = get_user_session('active_conversation_id')
-    if active_conversation_id:
-        current_user = st.session_state.get('username')
-        storage_manager = get_storage_manager()
-        
-        if current_user and storage_manager:
-            active_conv = storage_manager.get_conversation(current_user, active_conversation_id)
-            if active_conv and active_conv["messages"][-1]["role"] == "user":
-                with st.spinner("Thinking..."):
-                    chat_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in active_conv["messages"]])
-                    full_context = ""
-                    if active_conv.get("retrieved_papers"):
-                        full_context += "Here is the full context of every paper found in the initial analysis:\n\n"
-                        for i, paper in enumerate(active_conv["retrieved_papers"]):
-                            meta = paper.get('metadata', {})
-                            title = meta.get('title', 'N/A')
-                            link = get_paper_link(meta)
-                            content_preview = (meta.get('abstract') or paper.get('content') or '')[:4000]
-                            full_context += f"SOURCE [{i+1}]:\nTitle: {title}\nLink: {link}\nContent: {content_preview}\n---\n\n"
-                    
-                    full_prompt = f"""Continue our conversation. You are the Polo-GGB Research Assistant.
+    conversations = get_user_session('conversations', {})
+    if active_conversation_id and conversations[active_conversation_id]["messages"][-1]["role"] == "user":
+        active_conv = conversations[active_conversation_id]
+        with st.spinner("Thinking..."):
+            chat_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in active_conv["messages"]])
+            full_context = ""
+            if active_conv.get("retrieved_papers"):
+                full_context += "Here is the full context of every paper found in the initial analysis:\n\n"
+                for i, paper in enumerate(active_conv["retrieved_papers"]):
+                    meta = paper.get('metadata', {})
+                    title = meta.get('title', 'N/A')
+                    link = get_paper_link(meta)
+                    content_preview = (meta.get('abstract') or paper.get('content') or '')[:4000]
+                    full_context += f"SOURCE [{i+1}]:\nTitle: {title}\nLink: {link}\nContent: {content_preview}\n---\n\n"
+            
+            full_prompt = f"""Continue our conversation. You are the Polo-GGB Research Assistant.
 Your task is to answer the user's last message based on the chat history and the full context from the paper sources provided below.
 
 **CITATION INSTRUCTIONS:** When referencing sources, use citation markers in square brackets like [1], [2], [3], etc. Separate multiple citations with individual brackets like [2][3][4]. **IMPORTANT:** Limit citations to a maximum of 3 per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
@@ -1432,21 +1343,21 @@ Your task is to answer the user's last message based on the chat history and the
 --- END FULL LITERATURE CONTEXT FOR THIS ANALYSIS ---
 
 Assistant Response:"""
-                    
-                    response_text = post_message_vertexai(full_prompt)
-                    if response_text:
-                        # Make citations clickable in follow-up responses
-                        retrieved_papers = active_conv.get("retrieved_papers", [])
-                        search_mode = active_conv.get("search_mode", "all_keywords")
-                        
-                        # For follow-up responses, use all retrieved papers to make citations clickable but don't include references section
-                        response_text = display_citations_separately(response_text, retrieved_papers, retrieved_papers, search_mode, include_references=False)
-                        active_conv["messages"].append({"role": "assistant", "content": response_text})
-                        # Update last interaction time for this conversation
-                        active_conv['last_interaction_time'] = time.time()
-                        # Save updated conversation to persistent storage
-                        storage_manager.save_conversation(current_user, active_conversation_id, active_conv)
-                        st.rerun()
+            
+            response_text = post_message_vertexai(full_prompt)
+            if response_text:
+                # Make citations clickable in follow-up responses
+                retrieved_papers = active_conv.get("retrieved_papers", [])
+                search_mode = active_conv.get("search_mode", "all_keywords")
+                
+                # For follow-up responses, use all retrieved papers to make citations clickable but don't include references section
+                response_text = display_citations_separately(response_text, retrieved_papers, retrieved_papers, search_mode, include_references=False)
+                active_conv["messages"].append({"role": "assistant", "content": response_text})
+                # Update last interaction time for this conversation
+                active_conv['last_interaction_time'] = time.time()
+                # Save updated conversations
+                set_user_session('conversations', conversations)
+                st.rerun()
 
 if __name__ == "__main__":
     main()
