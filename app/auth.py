@@ -305,10 +305,19 @@ class AuthenticationManager:
 class FallbackAuthenticationManager:
     def __init__(self):
         self.users_file = "users.json"
+        self.user_data_folder = "user_data/"
         self.session_timeout = 3600
         self.max_login_attempts = 5
         self.lockout_duration = 300
-        self.users = {"admin": {"password_hash": "fallback", "salt": "fallback", "role": "admin"}}
+        
+        # Create user data folder if it doesn't exist
+        os.makedirs(self.user_data_folder, exist_ok=True)
+        
+        # Load existing users or create default admin
+        self.users = self.load_users()
+        if not self.users:
+            self.users = {"admin": {"password_hash": "fallback", "salt": "fallback", "role": "admin"}}
+            self.save_users(self.users)
     
     def validate_password_strength(self, password: str) -> Tuple[bool, str]:
         if len(password) < 8:
@@ -323,25 +332,97 @@ class FallbackAuthenticationManager:
             return False, "Password must contain at least one special character"
         return True, "Password is valid"
     
+    def hash_password(self, password: str, salt: str = None) -> Tuple[str, str]:
+        """Hash password with salt using PBKDF2 for better security"""
+        if salt is None:
+            salt = secrets.token_hex(16)
+        
+        # Use PBKDF2 with 100,000 iterations for better security
+        hashed = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000)
+        return hashed.hex(), salt
+    
+    def verify_password(self, password: str, hashed: str, salt: str) -> bool:
+        """Verify password against stored hash"""
+        test_hash, _ = self.hash_password(password, salt)
+        return test_hash == hashed
+    
     def create_user(self, username: str, password: str) -> Tuple[bool, str]:
         is_valid, message = self.validate_password_strength(password)
         if not is_valid:
             return False, message
         if username in self.users:
             return False, "Username already exists"
-        self.users[username] = {"password_hash": "fallback", "salt": "fallback", "role": "user"}
+        
+        hashed_password, salt = self.hash_password(password)
+        self.users[username] = {
+            "password_hash": hashed_password,
+            "salt": salt,
+            "role": "user",
+            "created_at": time.time(),
+            "last_login": None,
+            "login_attempts": 0,
+            "locked_until": None
+        }
+        self.save_users(self.users)
         return True, "User created successfully"
     
     def authenticate_user(self, username: str, password: str) -> Tuple[bool, str]:
+        if username not in self.users:
+            return False, "Invalid username or password"
+        
+        user = self.users[username]
+        current_time = time.time()
+        
+        # Check if account is locked
+        if user.get('locked_until') and current_time < user['locked_until']:
+            remaining_time = int(user['locked_until'] - current_time)
+            return False, f"Account locked. Try again in {remaining_time} seconds."
+        
+        # Special case for admin fallback
         if username == "admin" and password == "PoloGGB2024!":
+            # Update last login
+            user['last_login'] = current_time
+            user['login_attempts'] = 0
+            user['locked_until'] = None
+            self.save_users(self.users)
             return True, "Login successful"
-        return False, "Invalid username or password"
+        
+        # Verify password for regular users
+        if not self.verify_password(password, user['password_hash'], user['salt']):
+            # Increment login attempts
+            user['login_attempts'] = user.get('login_attempts', 0) + 1
+            
+            # Lock account if too many attempts
+            if user['login_attempts'] >= self.max_login_attempts:
+                user['locked_until'] = current_time + self.lockout_duration
+                self.save_users(self.users)
+                return False, f"Too many failed attempts. Account locked for {self.lockout_duration // 60} minutes."
+            
+            self.save_users(self.users)
+            return False, "Invalid username or password"
+        
+        # Successful login - reset attempts and update last login
+        user['login_attempts'] = 0
+        user['locked_until'] = None
+        user['last_login'] = current_time
+        self.save_users(self.users)
+        
+        return True, "Login successful"
     
     def load_users(self) -> Dict:
-        return self.users
+        """Load users from local file"""
+        if os.path.exists(self.users_file):
+            try:
+                with open(self.users_file, 'r') as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, FileNotFoundError):
+                return {}
+        return {}
     
     def save_users(self, users: Dict):
-        self.users = users
+        """Save users to local file"""
+        with open(self.users_file, 'w') as f:
+            json.dump(users, f, indent=2)
     
     def login(self, username: str, password: str) -> Tuple[bool, str]:
         success, message = self.authenticate_user(username, password)
@@ -350,9 +431,33 @@ class FallbackAuthenticationManager:
             st.session_state.username = username
             st.session_state.login_time = time.time()
             st.session_state.session_id = secrets.token_hex(16)
+            
+            # Load user-specific data from local files
+            user_data = self.load_user_data(username)
+            if user_data:
+                # Restore user's chat history and other data
+                for key, value in user_data.items():
+                    st.session_state[f"{key}_{username}"] = value
+        
         return success, message
     
     def logout(self):
+        """Logout user and save data before clearing session"""
+        if 'authenticated' in st.session_state and 'username' in st.session_state:
+            username = st.session_state.username
+            
+            # Save user-specific data to local files before logout
+            user_data = {}
+            for key, value in st.session_state.items():
+                if key.endswith(f"_{username}"):
+                    # Extract the original key name
+                    original_key = key[:-len(f"_{username}")]
+                    user_data[original_key] = value
+            
+            if user_data:
+                self.save_user_data(username, user_data)
+        
+        # Clear session state
         if 'authenticated' in st.session_state:
             del st.session_state.authenticated
         if 'username' in st.session_state:
@@ -380,10 +485,34 @@ class FallbackAuthenticationManager:
         return True
     
     def save_user_data(self, username: str, data: dict):
-        pass  # No-op for fallback
+        """Save user-specific data (chat history, etc.) to local files"""
+        try:
+            user_data_file = os.path.join(self.user_data_folder, f"{username}_data.json")
+            with open(user_data_file, 'w') as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            st.error(f"Error saving user data: {e}")
     
     def load_user_data(self, username: str) -> dict:
-        return {}  # No-op for fallback
+        """Load user-specific data (chat history, etc.) from local files"""
+        try:
+            user_data_file = os.path.join(self.user_data_folder, f"{username}_data.json")
+            if os.path.exists(user_data_file):
+                with open(user_data_file, 'r') as f:
+                    return json.load(f)
+            return {}
+        except Exception as e:
+            st.error(f"Error loading user data: {e}")
+            return {}
+    
+    def delete_user_data(self, username: str):
+        """Delete user-specific data from local files"""
+        try:
+            user_data_file = os.path.join(self.user_data_folder, f"{username}_data.json")
+            if os.path.exists(user_data_file):
+                os.remove(user_data_file)
+        except Exception as e:
+            st.error(f"Error deleting user data: {e}")
 
 # Initialize authentication manager lazily
 auth_manager = None
