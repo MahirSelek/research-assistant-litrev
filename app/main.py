@@ -741,10 +741,14 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
         time_filter_dict = {"gte": f"01 {month_abbr} {data_year}", "lt": f"01 {next_month_abbr} {next_year}"}
     
     # Skip Elasticsearch time filtering - we'll use GCS instead
+    # For OR searches, increase the result limit to capture more papers
+    # For AND searches, keep the original limit as they're more restrictive
+    n_results_limit = 1000 if search_mode == "any_keyword" else 100
+    
     all_papers, total_found = perform_hybrid_search(
         keywords, 
         time_filter_dict=None,  # No ES time filtering
-        n_results=100, 
+        n_results=n_results_limit, 
         max_final_results=15,
         search_mode=search_mode
     )
