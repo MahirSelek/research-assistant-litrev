@@ -839,17 +839,16 @@ def show_login_page():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         # Display logo with better visibility and size
-        st.markdown("**Debug:** Trying to load logo...")
         try:
-            # Use st.image with custom styling
+            # Simple approach - just use st.image with larger size
             st.markdown("""
             <div style="text-align: center; margin: 30px 0;">
                 <style>
                 .logo-container img {
-                    width: 250px !important;
+                    width: 300px !important;
                     height: auto !important;
                     max-width: 100% !important;
-                    filter: drop-shadow(0 6px 12px rgba(0,0,0,0.4)) !important;
+                    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5)) !important;
                     transition: transform 0.3s ease !important;
                 }
                 .logo-container img:hover {
@@ -859,27 +858,8 @@ def show_login_page():
                 <div class="logo-container">
             """, unsafe_allow_html=True)
             
-            # Try different logo paths
-            logo_paths = [
-                "polo-ggb-logo.png",
-                "../polo-ggb-logo.png", 
-                "/mount/src/research-assistant-litrev/polo-ggb-logo.png",
-                "/mount/src/research-assistant-litrev/app/polo-ggb-logo.png"
-            ]
-            
-            logo_found = False
-            for path in logo_paths:
-                try:
-                    st.image(path, width=250)
-                    st.markdown(f"**Debug:** Logo loaded from: {path}")
-                    logo_found = True
-                    break
-                except Exception as e:
-                    st.markdown(f"**Debug:** Failed to load from {path}: {str(e)}")
-                    continue
-            
-            if not logo_found:
-                raise Exception("Logo not found")
+            # Use the logo file in the app directory with cache busting
+            st.image("polo-ggb-logo.png", width=300)
             
             st.markdown("""
                 </div>
@@ -888,9 +868,16 @@ def show_login_page():
         except Exception as e:
             st.markdown("""
             <div style="text-align: center; margin: 30px 0;">
-                <h1 style="font-size: 3rem; color: #1f77b4; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🧬 POLO GGB</h1>
+                <h1 style="font-size: 3.5rem; color: #1f77b4; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🧬 POLO GGB</h1>
             </div>
             """, unsafe_allow_html=True)
+        
+        # Add a visible indicator that the new version is loaded
+        st.markdown("""
+        <div style="text-align: center; margin: 10px 0; padding: 10px; background-color: rgba(31, 119, 180, 0.1); border-radius: 5px;">
+            <small style="color: #1f77b4;">✅ Logo Updated - Version 2.0</small>
+        </div>
+        """, unsafe_allow_html=True)
         
         st.markdown("---")
     # Login/Register tabs
