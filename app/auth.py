@@ -33,7 +33,21 @@ class AuthenticationManager:
                     break
                 time.sleep(0.5)
             
-
+            # Test GCS connection
+            try:
+                self.storage_client = storage.Client(project=self.gcs_project_id)
+                self.bucket = self.storage_client.bucket(self.gcs_bucket_name)
+                
+                # Test if bucket exists and is accessible
+                if self.bucket.exists():
+                    st.success(f"✅ GCS Connected: {self.gcs_bucket_name}")
+                else:
+                    st.error(f"❌ GCS Bucket not found: {self.gcs_bucket_name}")
+                    raise Exception("Bucket not accessible")
+                    
+            except Exception as e:
+                st.error(f"❌ GCS Connection failed: {e}")
+                raise
             
             # Generate encryption key for user data (this should be stored securely in production)
             self.encryption_key = self._get_or_create_encryption_key()
