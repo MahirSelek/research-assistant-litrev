@@ -388,9 +388,6 @@ except Exception as e:
 # Default admin user creation (only if no users exist)
 def initialize_default_admin():
     """Create default admin user if no users exist"""
-    if auth_manager is None:
-        return  # Skip if auth manager failed to initialize
-    
     users = auth_manager.load_users()
     if not users:
         # Create default admin user with strong password
