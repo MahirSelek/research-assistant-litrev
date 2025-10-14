@@ -840,11 +840,9 @@ def show_login_page():
     with col2:
         # Try to display logo
         try:
-            st.image("polo-ggb-logo.png", width=120)
+            st.image("polo-ggb-logo.png", width=250)
         except:
             st.markdown("🧬 **Polo GGB**")
-        
-        st.markdown("**Polo d'Innovazione di Genomica, Genetica e Biologia**")
         
         st.markdown("---")
     # Login/Register tabs
