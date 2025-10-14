@@ -838,46 +838,13 @@ def show_login_page():
     # Logo and company name
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # Display logo with better visibility and size
+        # Try to display logo
         try:
-            # Simple approach - just use st.image with larger size
-            st.markdown("""
-            <div style="text-align: center; margin: 30px 0;">
-                <style>
-                .logo-container img {
-                    width: 300px !important;
-                    height: auto !important;
-                    max-width: 100% !important;
-                    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5)) !important;
-                    transition: transform 0.3s ease !important;
-                }
-                .logo-container img:hover {
-                    transform: scale(1.05) !important;
-                }
-                </style>
-                <div class="logo-container">
-            """, unsafe_allow_html=True)
-            
-            # Use the logo file in the app directory with cache busting
-            st.image("polo-ggb-logo.png", width=300)
-            
-            st.markdown("""
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        except Exception as e:
-            st.markdown("""
-            <div style="text-align: center; margin: 30px 0;">
-                <h1 style="font-size: 3.5rem; color: #1f77b4; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🧬 POLO GGB</h1>
-            </div>
-            """, unsafe_allow_html=True)
+            st.image("polo-ggb-logo.png", width=120)
+        except:
+            st.markdown("🧬 **Polo GGB**")
         
-        # Add a visible indicator that the new version is loaded
-        st.markdown("""
-        <div style="text-align: center; margin: 10px 0; padding: 10px; background-color: rgba(31, 119, 180, 0.1); border-radius: 5px;">
-            <small style="color: #1f77b4;">✅ Logo Updated - Version 2.0</small>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("**Polo d'Innovazione di Genomica, Genetica e Biologia**")
         
         st.markdown("---")
     # Login/Register tabs

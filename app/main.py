@@ -1198,36 +1198,7 @@ def main():
     </style>
     """, unsafe_allow_html=True)
     
-    # Display logo and title with better styling
-    st.markdown("""
-    <div style="text-align: center; margin: 30px 0;">
-        <style>
-        .main-logo-container img {
-            width: 250px !important;
-            height: auto !important;
-            max-width: 100% !important;
-            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5)) !important;
-            transition: transform 0.3s ease !important;
-            margin-bottom: 15px !important;
-        }
-        .main-logo-container img:hover {
-            transform: scale(1.05) !important;
-        }
-        </style>
-        <div class="main-logo-container">
-    """, unsafe_allow_html=True)
-    
-    # Use the logo file in the app directory
-    st.image("polo-ggb-logo.png", width=250)
-    
-    st.markdown("""
-        </div>
-        <h1 style="font-size: 2.8rem; color: #1f77b4; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🧬 POLO-GGB RESEARCH ASSISTANT</h1>
-        <div style="margin: 10px 0; padding: 8px; background-color: rgba(31, 119, 180, 0.1); border-radius: 5px;">
-            <small style="color: #1f77b4;">✅ Logo Updated - Version 2.0</small>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("<h1>🧬 POLO-GGB RESEARCH ASSISTANT</h1>", unsafe_allow_html=True)
 
     # Show user management if requested
     if st.session_state.get('show_user_management', False):
