@@ -773,7 +773,7 @@ def get_auth_manager():
     if auth_manager is None:
         try:
             # Try to initialize cloud-based auth
-auth_manager = AuthenticationManager()
+            auth_manager = AuthenticationManager()
         except Exception as e:
             # Fall back to local auth if cloud fails
             auth_manager = FallbackAuthenticationManager()
