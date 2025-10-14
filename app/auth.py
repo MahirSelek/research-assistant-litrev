@@ -835,17 +835,8 @@ def show_login_page():
     </style>
     """, unsafe_allow_html=True)
     
-    # Logo and company name
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        # Try to display logo
-        try:
-            st.image("polo-ggb-logo.png", width=250)
-        except:
-            st.markdown("🧬 **Polo GGB**")
-        
-        st.markdown("**TEST: If you see this, the app updated!**")
-        st.markdown("---")
+    # Simple login page - no logo
+    st.markdown("---")
     # Login/Register tabs
     tab1, tab2 = st.tabs(["Log in", "Sign in"])
     
