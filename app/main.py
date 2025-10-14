@@ -967,6 +967,12 @@ def display_chat_history():
 def main():
     # Check authentication first
     auth_mgr = get_auth_manager()
+    
+    # Check for session restoration from localStorage
+    if hasattr(auth_mgr, 'restore_session_from_localStorage'):
+        # This will be handled by JavaScript in the auth manager
+        pass
+    
     if not auth_mgr.require_auth():
         show_login_page()
         return
@@ -996,7 +1002,7 @@ def main():
             st.markdown(f"**Role:** {user_role.title()}")
             
             # Show data storage info
-            st.markdown(f"**Data stored in:** Persistent Session Storage")
+            st.markdown(f"**Data stored in:** Browser localStorage + Session State")
         
         if st.button("➕ New Analysis", use_container_width=True):
             set_user_session('active_conversation_id', None)

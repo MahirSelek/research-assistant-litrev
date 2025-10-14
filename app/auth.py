@@ -12,6 +12,7 @@ from google.api_core.exceptions import NotFound
 import base64
 from cryptography.fernet import Fernet
 import urllib.parse
+import streamlit.components.v1 as components
 
 class AuthenticationManager:
     def __init__(self):
@@ -314,7 +315,64 @@ class AuthenticationManager:
             return False
         return True
 
-# Fallback AuthenticationManager with URL-based session persistence
+# JavaScript functions for localStorage session management
+SESSION_JS = """
+<script>
+function setSessionData(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+        return true;
+    } catch (e) {
+        console.error('Error setting session data:', e);
+        return false;
+    }
+}
+
+function getSessionData(key) {
+    try {
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : null;
+    } catch (e) {
+        console.error('Error getting session data:', e);
+        return null;
+    }
+}
+
+function removeSessionData(key) {
+    try {
+        localStorage.removeItem(key);
+        return true;
+    } catch (e) {
+        console.error('Error removing session data:', e);
+        return false;
+    }
+}
+
+function clearAllSessionData() {
+    try {
+        localStorage.clear();
+        return true;
+    } catch (e) {
+        console.error('Error clearing session data:', e);
+        return false;
+    }
+}
+
+// Check for existing session on page load
+window.addEventListener('load', function() {
+    const sessionData = getSessionData('streamlit_session');
+    if (sessionData && sessionData.username) {
+        // Notify Streamlit that we have a session
+        window.parent.postMessage({
+            type: 'streamlit:session_restore',
+            session: sessionData
+        }, '*');
+    }
+});
+</script>
+"""
+
+# Fallback AuthenticationManager with localStorage-based session persistence
 class FallbackAuthenticationManager:
     def __init__(self):
         self.session_timeout = 1800  # 30 minutes
@@ -341,47 +399,47 @@ class FallbackAuthenticationManager:
         if 'persistent_sessions' not in st.session_state:
             st.session_state.persistent_sessions = {}
         
-        # Check for session token in URL
-        self._check_url_session()
+        # Inject JavaScript for localStorage management
+        components.html(SESSION_JS, height=0)
+        
+        # Check for existing session in localStorage
+        self._check_localStorage_session()
     
-    def _check_url_session(self):
-        """Check for valid session token in URL parameters"""
+    def _check_localStorage_session(self):
+        """Check for valid session in localStorage"""
         try:
-            # Get current URL parameters
-            query_params = st.query_params
-            
-            if 'session_token' in query_params:
-                session_token = query_params['session_token']
-                
-                # Check if session exists and is valid
-                if session_token in st.session_state.persistent_sessions:
-                    session_info = st.session_state.persistent_sessions[session_token]
-                    current_time = time.time()
+            # Use JavaScript to check localStorage
+            js_code = """
+            <script>
+            const sessionData = localStorage.getItem('streamlit_session');
+            if (sessionData) {
+                try {
+                    const session = JSON.parse(sessionData);
+                    const now = Date.now();
+                    const sessionAge = now - session.login_time;
+                    const timeoutMs = 30 * 60 * 1000; // 30 minutes
                     
-                    # Check if session is still valid (not expired)
-                    if current_time - session_info['login_time'] < self.session_timeout:
-                        username = session_info['username']
-                        
-                        # Restore session
-                        st.session_state.authenticated = True
-                        st.session_state.username = username
-                        st.session_state.login_time = session_info['login_time']
-                        st.session_state.session_id = session_token
-                        
-                        # Load user data
-                        user_data = self.load_user_data(username)
-                        if user_data:
-                            for key, value in user_data.items():
-                                st.session_state[f"{key}_{username}"] = value
-                        
-                        st.success(f"🔄 Session restored for {username}")
-                        return True
-                    else:
-                        # Session expired, remove it
-                        del st.session_state.persistent_sessions[session_token]
-                        st.query_params.clear()
+                    if (sessionAge < timeoutMs && session.username) {
+                        // Session is valid, notify Streamlit
+                        window.parent.postMessage({
+                            type: 'streamlit:session_restore',
+                            session: session
+                        }, '*');
+                    } else {
+                        // Session expired, remove it
+                        localStorage.removeItem('streamlit_session');
+                    }
+                } catch (e) {
+                    localStorage.removeItem('streamlit_session');
+                }
+            }
+            </script>
+            """
+            
+            components.html(js_code, height=0)
+            
         except Exception as e:
-            st.error(f"Error checking URL session: {e}")
+            st.error(f"Error checking localStorage session: {e}")
         
         return False
     
@@ -488,22 +546,36 @@ class FallbackAuthenticationManager:
         if success:
             # Generate session token
             session_token = secrets.token_urlsafe(32)
+            login_time = time.time()
             
             # Store session in persistent storage
             st.session_state.persistent_sessions[session_token] = {
                 'username': username,
-                'login_time': time.time(),
+                'login_time': login_time,
                 'session_id': session_token
             }
             
             # Set current session
             st.session_state.authenticated = True
             st.session_state.username = username
-            st.session_state.login_time = time.time()
+            st.session_state.login_time = login_time
             st.session_state.session_id = session_token
             
-            # Add session token to URL
-            st.query_params.session_token = session_token
+            # Store session in localStorage using JavaScript
+            session_data = {
+                'username': username,
+                'login_time': login_time * 1000,  # Convert to milliseconds for JavaScript
+                'session_id': session_token,
+                'authenticated': True
+            }
+            
+            js_code = f"""
+            <script>
+            localStorage.setItem('streamlit_session', JSON.stringify({json.dumps(session_data)}));
+            console.log('Session stored in localStorage');
+            </script>
+            """
+            components.html(js_code, height=0)
             
             # Load user-specific data
             user_data = self.load_user_data(username)
@@ -536,9 +608,14 @@ class FallbackAuthenticationManager:
             if session_id and session_id in st.session_state.persistent_sessions:
                 del st.session_state.persistent_sessions[session_id]
         
-        # Clear URL session token
-        if 'session_token' in st.query_params:
-            del st.query_params.session_token
+        # Clear localStorage session using JavaScript
+        js_code = """
+        <script>
+        localStorage.removeItem('streamlit_session');
+        console.log('Session cleared from localStorage');
+        </script>
+        """
+        components.html(js_code, height=0)
         
         # Clear session state
         if 'authenticated' in st.session_state:
@@ -602,10 +679,82 @@ class FallbackAuthenticationManager:
         except Exception as e:
             st.error(f"Error deleting user data: {e}")
     
+    def restore_session_from_localStorage(self, session_data):
+        """Restore session from localStorage data"""
+        try:
+            username = session_data.get('username')
+            login_time = session_data.get('login_time', 0) / 1000  # Convert from milliseconds
+            session_id = session_data.get('session_id')
+            
+            # Check if session is still valid
+            current_time = time.time()
+            if current_time - login_time < self.session_timeout:
+                # Restore session
+                st.session_state.authenticated = True
+                st.session_state.username = username
+                st.session_state.login_time = login_time
+                st.session_state.session_id = session_id
+                
+                # Store session in persistent storage
+                st.session_state.persistent_sessions[session_id] = {
+                    'username': username,
+                    'login_time': login_time,
+                    'session_id': session_id
+                }
+                
+                # Load user data
+                user_data = self.load_user_data(username)
+                if user_data:
+                    for key, value in user_data.items():
+                        st.session_state[f"{key}_{username}"] = value
+                
+                st.success(f"🔄 Session restored for {username}")
+                return True
+            else:
+                # Session expired, clear localStorage
+                js_code = """
+                <script>
+                localStorage.removeItem('streamlit_session');
+                </script>
+                """
+                components.html(js_code, height=0)
+                return False
+        except Exception as e:
+            st.error(f"Error restoring session: {e}")
+            return False
+    
     def require_auth(self) -> bool:
-        """Require authentication - check session validity"""
+        """Require authentication - check session validity and restore if needed"""
         # Check if user is currently authenticated
         if 'authenticated' not in st.session_state or not st.session_state.get('authenticated', False):
+            # Try to restore from localStorage
+            js_code = """
+            <script>
+            const sessionData = localStorage.getItem('streamlit_session');
+            if (sessionData) {
+                try {
+                    const session = JSON.parse(sessionData);
+                    const now = Date.now();
+                    const sessionAge = now - session.login_time;
+                    const timeoutMs = 30 * 60 * 1000; // 30 minutes
+                    
+                    if (sessionAge < timeoutMs && session.username) {
+                        // Session is valid, trigger restoration
+                        window.parent.postMessage({
+                            type: 'streamlit:session_restore',
+                            session: session
+                        }, '*');
+                    } else {
+                        // Session expired, remove it
+                        localStorage.removeItem('streamlit_session');
+                    }
+                } catch (e) {
+                    localStorage.removeItem('streamlit_session');
+                }
+            }
+            </script>
+            """
+            components.html(js_code, height=0)
             return False
         
         # Check if current session is valid
