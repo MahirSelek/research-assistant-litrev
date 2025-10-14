@@ -377,13 +377,9 @@ class FallbackAuthenticationManager:
     def load_user_data(self, username: str) -> dict:
         return {}  # No-op for fallback
 
-# Initialize authentication manager with error handling
-auth_manager = None
-try:
-    auth_manager = AuthenticationManager()
-except Exception as e:
-    # Create a fallback auth manager that doesn't use GCS
-    auth_manager = FallbackAuthenticationManager()
+# Initialize authentication manager - using fallback for now
+# TODO: Re-enable cloud authentication once GCS issues are resolved
+auth_manager = FallbackAuthenticationManager()
 
 # Default admin user creation (only if no users exist)
 def initialize_default_admin():
