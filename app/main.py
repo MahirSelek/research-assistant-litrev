@@ -165,10 +165,105 @@ def restore_user_data_from_cloud(username: str):
             else:
                 st.info("📂 No conversation history found in cloud storage")
         else:
-            st.info("📂 No user data found in cloud storage")
+            # Try to load individual conversation files as fallback
+            load_individual_conversations(username)
             
     except Exception as e:
         st.error(f"Error restoring user data: {e}")
+
+def load_individual_conversations(username: str):
+    """Load individual conversation files from the conversations folder"""
+    try:
+        from google.cloud import storage
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(GCS_BUCKET_NAME)
+        
+        # Look for conversations in user_data/conversations/{username}/
+        conversations_folder = f"user_data/conversations/{username}/"
+        blobs = bucket.list_blobs(prefix=conversations_folder)
+        
+        conversations = {}
+        conversation_count = 0
+        
+        for blob in blobs:
+            if blob.name.endswith('.json') and not blob.name.endswith('index.json'):
+                try:
+                    # Download and parse the conversation file
+                    content = blob.download_as_text()
+                    conv_data = json.loads(content)
+                    
+                    # Extract conversation ID from filename
+                    filename = blob.name.split('/')[-1]
+                    if filename.startswith('conv_'):
+                        conv_id = filename.replace('.json', '')
+                        conversations[conv_id] = conv_data
+                        conversation_count += 1
+                        
+                except Exception as e:
+                    st.warning(f"Could not load conversation file {blob.name}: {e}")
+                    continue
+        
+        if conversations:
+            # Restore conversations to session state
+            set_user_session('conversations', conversations)
+            st.success(f"📂 Restored {conversation_count} conversation(s) from individual files")
+        else:
+            st.info("📂 No individual conversation files found")
+            
+    except Exception as e:
+        st.error(f"Error loading individual conversations: {e}")
+
+def debug_cloud_storage(username: str):
+    """Debug function to show what's stored in cloud storage"""
+    try:
+        from google.cloud import storage
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(GCS_BUCKET_NAME)
+        
+        st.write("🔍 **Cloud Storage Debug Info:**")
+        
+        # Check for consolidated user data file
+        user_data_file = f"user_data/{username}_data.json"
+        user_data_blob = bucket.blob(user_data_file)
+        
+        st.write(f"**1. Consolidated user data file:** `{user_data_file}`")
+        if user_data_blob.exists():
+            st.success(f"✅ Found consolidated user data file")
+            try:
+                content = user_data_blob.download_as_text()
+                data = json.loads(content)
+                conv_count = len(data.get('conversations', {}))
+                st.write(f"   - Contains {conv_count} conversations")
+            except Exception as e:
+                st.error(f"   - Error reading file: {e}")
+        else:
+            st.warning(f"❌ Consolidated user data file not found")
+        
+        # Check for individual conversation files
+        conversations_folder = f"user_data/conversations/{username}/"
+        st.write(f"**2. Individual conversation files:** `{conversations_folder}`")
+        
+        blobs = list(bucket.list_blobs(prefix=conversations_folder))
+        if blobs:
+            st.success(f"✅ Found {len(blobs)} files in conversations folder:")
+            for blob in blobs:
+                st.write(f"   - `{blob.name}` ({blob.size} bytes)")
+        else:
+            st.warning(f"❌ No files found in conversations folder")
+        
+        # Check for any files with username
+        st.write(f"**3. All files containing '{username}':**")
+        all_blobs = list(bucket.list_blobs(prefix="user_data/"))
+        matching_files = [blob for blob in all_blobs if username in blob.name]
+        
+        if matching_files:
+            for blob in matching_files:
+                st.write(f"   - `{blob.name}` ({blob.size} bytes)")
+        else:
+            st.warning(f"❌ No files found containing '{username}'")
+            
+    except Exception as e:
+        st.error(f"Error debugging cloud storage: {e}")
 
 def initialize_session_state():
     # Get current username for user-specific data
@@ -1043,6 +1138,14 @@ def main():
             if username:
                 restore_user_data_from_cloud(username)
                 st.rerun()
+            else:
+                st.error("No username found in session")
+        
+        # Add debug button to check cloud storage
+        if st.button("🔍 Debug Cloud Storage", use_container_width=True, help="Check what's stored in cloud storage"):
+            username = st.session_state.get('username')
+            if username:
+                debug_cloud_storage(username)
             else:
                 st.error("No username found in session")
 
