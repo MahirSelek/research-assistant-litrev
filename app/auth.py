@@ -774,7 +774,6 @@ def get_auth_manager():
         try:
             # Try to initialize cloud-based auth
             auth_manager = AuthenticationManager()
-            st.info("✅ Using Cloud-based Authentication Manager")
         except Exception as e:
             # Fall back to local auth if cloud fails
             st.warning(f"⚠️ Cloud auth failed: {e}")
