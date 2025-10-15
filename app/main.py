@@ -998,9 +998,6 @@ def main():
             users = auth_mgr.load_users()
             user_role = users.get(st.session_state.username, {}).get('role', 'user')
             st.markdown(f"**Role:** {user_role.title()}")
-            
-            # Show data storage info
-            st.markdown(f"**Data stored in:** Browser localStorage + Session State")
         
         if st.button("➕ New Analysis", use_container_width=True):
             set_user_session('active_conversation_id', None)
