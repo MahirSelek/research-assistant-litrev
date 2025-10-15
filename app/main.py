@@ -146,6 +146,30 @@ def save_user_data_to_cloud():
             auth_mgr = get_auth_manager()
             auth_mgr.save_user_data(username, user_data)
 
+def restore_user_data_from_cloud(username: str):
+    """Restore user data from cloud storage to session state"""
+    try:
+        auth_mgr = get_auth_manager()
+        user_data = auth_mgr.load_user_data(username)
+        
+        if user_data:
+            # Restore user-specific data to session state
+            for key, value in user_data.items():
+                user_key = get_user_key(key)
+                st.session_state[user_key] = value
+            
+            # Show success message
+            conversation_count = len(user_data.get('conversations', {}))
+            if conversation_count > 0:
+                st.success(f"📂 Restored {conversation_count} conversation(s) from cloud storage")
+            else:
+                st.info("📂 No conversation history found in cloud storage")
+        else:
+            st.info("📂 No user data found in cloud storage")
+            
+    except Exception as e:
+        st.error(f"Error restoring user data: {e}")
+
 def initialize_session_state():
     # Get current username for user-specific data
     current_user = st.session_state.get('username', 'default')
@@ -163,6 +187,12 @@ def initialize_session_state():
         set_user_session('uploaded_papers', [])
     if get_user_key('custom_summary_chat') not in st.session_state:
         set_user_session('custom_summary_chat', [])
+    
+    # Load user data from cloud storage if authenticated and no data loaded yet
+    if (st.session_state.get('authenticated', False) and 
+        current_user != 'default' and 
+        not get_user_session('conversations')):
+        restore_user_data_from_cloud(current_user)
     
     # Global session state (shared across users)
     if 'es_manager' not in st.session_state:
@@ -1006,6 +1036,15 @@ def main():
             # Custom summaries are now in chat history
             set_user_session('custom_summary_chat', [])  # Clear custom summary chat
             st.rerun()
+        
+        # Add restore button for conversation history
+        if st.button("🔄 Restore History", use_container_width=True, help="Restore conversation history from cloud storage"):
+            username = st.session_state.get('username')
+            if username:
+                restore_user_data_from_cloud(username)
+                st.rerun()
+            else:
+                st.error("No username found in session")
 
         display_chat_history()
 
