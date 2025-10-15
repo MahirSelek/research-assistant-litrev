@@ -183,10 +183,10 @@ def load_individual_conversations(username: str, show_progress: bool = False, si
         conversations = {}
         conversation_count = 0
         
-        # Try both path formats
+        # Try both path formats (prioritize the correct one)
         path_formats = [
-            f"user_data/conversations/{username}/",
-            f"user-data/conversations/{username}/"
+            f"user-data/conversations/{username}/",
+            f"user_data/conversations/{username}/"
         ]
         
         for conversations_folder in path_formats:
@@ -248,7 +248,7 @@ def debug_cloud_storage(username: str):
         st.write("🔍 **Cloud Storage Debug Info:**")
         
         # Check for consolidated user data file
-        user_data_file = f"user_data/{username}_data.json"
+        user_data_file = f"user-data/{username}_data.json"
         user_data_blob = bucket.blob(user_data_file)
         
         st.write(f"**1. Consolidated user data file:** `{user_data_file}`")
@@ -265,7 +265,7 @@ def debug_cloud_storage(username: str):
             st.warning(f"❌ Consolidated user data file not found")
         
         # Check for individual conversation files
-        conversations_folder = f"user_data/conversations/{username}/"
+        conversations_folder = f"user-data/conversations/{username}/"
         st.write(f"**2. Individual conversation files:** `{conversations_folder}`")
         
         blobs = list(bucket.list_blobs(prefix=conversations_folder))
@@ -289,7 +289,7 @@ def debug_cloud_storage(username: str):
         
         # Check for any files with username
         st.write(f"**3. All files containing '{username}':**")
-        all_blobs = list(bucket.list_blobs(prefix="user_data/"))
+        all_blobs = list(bucket.list_blobs(prefix="user-data/"))
         matching_files = [blob for blob in all_blobs if username in blob.name]
         
         if matching_files:
@@ -309,7 +309,7 @@ def fix_corrupted_data(username: str):
         bucket = storage_client.bucket(GCS_BUCKET_NAME)
         
         # Delete the corrupted admin_data.json file
-        user_data_file = f"user_data/{username}_data.json"
+        user_data_file = f"user-data/{username}_data.json"
         user_data_blob = bucket.blob(user_data_file)
         
         if user_data_blob.exists():
