@@ -161,17 +161,17 @@ def restore_user_data_from_cloud(username: str):
             # Show success message
             conversation_count = len(user_data.get('conversations', {}))
             if conversation_count > 0:
-                st.success(f"📂 Restored {conversation_count} conversation(s) from cloud storage")
+                st.success(f"✅ Restored {conversation_count} conversation(s)")
             else:
-                st.info("📂 No conversation history found in cloud storage")
+                st.info("No conversation history found")
         else:
             # Try to load individual conversation files as fallback
-            load_individual_conversations(username)
+            load_individual_conversations(username, show_progress=False)
             
     except Exception as e:
-        st.error(f"Error restoring user data: {e}")
+        st.error("Unable to restore conversation history")
 
-def load_individual_conversations(username: str):
+def load_individual_conversations(username: str, show_progress: bool = False):
     """Load individual conversation files from the conversations folder"""
     try:
         from google.cloud import storage
@@ -188,7 +188,8 @@ def load_individual_conversations(username: str):
         ]
         
         for conversations_folder in path_formats:
-            st.write(f"🔍 Checking path: `{conversations_folder}`")
+            if show_progress:
+                st.write(f"🔍 Checking path: `{conversations_folder}`")
             blobs = bucket.list_blobs(prefix=conversations_folder)
             
             for blob in blobs:
@@ -204,10 +205,12 @@ def load_individual_conversations(username: str):
                             conv_id = filename.replace('.json', '')
                             conversations[conv_id] = conv_data
                             conversation_count += 1
-                            st.write(f"✅ Loaded conversation: {conv_id}")
+                            if show_progress:
+                                st.write(f"✅ Loaded conversation: {conv_id}")
                             
                     except Exception as e:
-                        st.warning(f"Could not load conversation file {blob.name}: {e}")
+                        if show_progress:
+                            st.warning(f"Could not load conversation file {blob.name}: {e}")
                         continue
             
             # If we found conversations, break out of the loop
@@ -217,12 +220,21 @@ def load_individual_conversations(username: str):
         if conversations:
             # Restore conversations to session state
             set_user_session('conversations', conversations)
-            st.success(f"📂 Restored {conversation_count} conversation(s) from individual files")
+            if show_progress:
+                st.success(f"📂 Restored {conversation_count} conversation(s) from individual files")
+            else:
+                st.success(f"✅ Restored {conversation_count} conversation(s)")
         else:
-            st.info("📂 No individual conversation files found in any path")
+            if show_progress:
+                st.info("📂 No individual conversation files found in any path")
+            else:
+                st.info("No conversation history found")
             
     except Exception as e:
-        st.error(f"Error loading individual conversations: {e}")
+        if show_progress:
+            st.error(f"Error loading individual conversations: {e}")
+        else:
+            st.error("Unable to load conversation history")
 
 def debug_cloud_storage(username: str):
     """Debug function to show what's stored in cloud storage"""
@@ -300,13 +312,11 @@ def fix_corrupted_data(username: str):
         
         if user_data_blob.exists():
             user_data_blob.delete()
-            st.success(f"🗑️ Deleted corrupted file: {user_data_file}")
-        else:
-            st.info(f"ℹ️ File {user_data_file} doesn't exist")
+            st.success("✅ Fixed data storage issue")
         
         # Now try to load individual conversation files
-        st.write("🔄 Now loading individual conversation files...")
-        load_individual_conversations(username)
+        with st.spinner("Loading your conversation history..."):
+            load_individual_conversations(username, show_progress=False)
         
     except Exception as e:
         st.error(f"Error fixing corrupted data: {e}")
@@ -1182,26 +1192,29 @@ def main():
         if st.button("🔄 Restore History", use_container_width=True, help="Restore conversation history from cloud storage"):
             username = st.session_state.get('username')
             if username:
-                restore_user_data_from_cloud(username)
+                with st.spinner("Loading your conversation history..."):
+                    restore_user_data_from_cloud(username)
                 st.rerun()
             else:
                 st.error("No username found in session")
         
-        # Add debug button to check cloud storage
-        if st.button("🔍 Debug Cloud Storage", use_container_width=True, help="Check what's stored in cloud storage"):
-            username = st.session_state.get('username')
-            if username:
-                debug_cloud_storage(username)
-            else:
-                st.error("No username found in session")
-        
-        # Add fix corrupted data button
-        if st.button("🔧 Fix Corrupted Data", use_container_width=True, help="Delete corrupted admin_data.json to use individual files"):
-            username = st.session_state.get('username')
-            if username:
-                fix_corrupted_data(username)
-            else:
-                st.error("No username found in session")
+        # Only show technical buttons for admin users
+        user_role = users.get(st.session_state.username, {}).get('role', 'user')
+        if user_role == 'admin':
+            with st.expander("🔧 Technical Tools (Admin Only)"):
+                if st.button("🔍 Debug Cloud Storage", use_container_width=True, help="Check what's stored in cloud storage"):
+                    username = st.session_state.get('username')
+                    if username:
+                        debug_cloud_storage(username)
+                    else:
+                        st.error("No username found in session")
+                
+                if st.button("🔧 Fix Corrupted Data", use_container_width=True, help="Delete corrupted admin_data.json to use individual files"):
+                    username = st.session_state.get('username')
+                    if username:
+                        fix_corrupted_data(username)
+                    else:
+                        st.error("No username found in session")
 
         display_chat_history()
 
