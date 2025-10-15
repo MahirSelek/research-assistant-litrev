@@ -1215,6 +1215,15 @@ def main():
                         restore_user_data_from_cloud(username, silent=False)
                     else:
                         st.error("No username found in session")
+                
+                if st.button("🔍 Check Auth Manager", use_container_width=True, help="Check which authentication manager is being used"):
+                    auth_mgr = get_auth_manager()
+                    auth_type = type(auth_mgr).__name__
+                    if auth_type == "AuthenticationManager":
+                        st.success(f"✅ Using {auth_type} (Cloud Storage Enabled)")
+                    else:
+                        st.error(f"❌ Using {auth_type} (Local Storage Only - Data NOT saved to cloud)")
+                        st.warning("This is why your data isn't appearing in cloud storage!")
 
         display_chat_history()
 
