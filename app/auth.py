@@ -40,7 +40,8 @@ class AuthenticationManager:
                 
                 # Test if bucket exists and is accessible
                 if self.bucket.exists():
-                    st.success(f"✅ GCS Connected: {self.gcs_bucket_name}")
+                    # Connection successful - no need to show message to users
+                    pass
                 else:
                     st.error(f"❌ GCS Bucket not found: {self.gcs_bucket_name}")
                     raise Exception("Bucket not accessible")
