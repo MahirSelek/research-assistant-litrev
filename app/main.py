@@ -146,7 +146,7 @@ def save_user_data_to_cloud():
             auth_mgr = get_auth_manager()
             auth_mgr.save_user_data(username, user_data)
 
-def restore_user_data_from_cloud(username: str):
+def restore_user_data_from_cloud(username: str, silent: bool = True):
     """Restore user data from cloud storage to session state"""
     try:
         auth_mgr = get_auth_manager()
@@ -158,20 +158,22 @@ def restore_user_data_from_cloud(username: str):
                 user_key = get_user_key(key)
                 st.session_state[user_key] = value
             
-            # Show success message
-            conversation_count = len(user_data.get('conversations', {}))
-            if conversation_count > 0:
-                st.success(f"✅ Restored {conversation_count} conversation(s)")
-            else:
-                st.info("No conversation history found")
+            # Only show messages if not in silent mode
+            if not silent:
+                conversation_count = len(user_data.get('conversations', {}))
+                if conversation_count > 0:
+                    st.success(f"✅ Restored {conversation_count} conversation(s)")
+                else:
+                    st.info("No conversation history found")
         else:
             # Try to load individual conversation files as fallback
-            load_individual_conversations(username, show_progress=False)
+            load_individual_conversations(username, show_progress=False, silent=silent)
             
     except Exception as e:
-        st.error("Unable to restore conversation history")
+        if not silent:
+            st.error("Unable to restore conversation history")
 
-def load_individual_conversations(username: str, show_progress: bool = False):
+def load_individual_conversations(username: str, show_progress: bool = False, silent: bool = True):
     """Load individual conversation files from the conversations folder"""
     try:
         from google.cloud import storage
@@ -188,7 +190,7 @@ def load_individual_conversations(username: str, show_progress: bool = False):
         ]
         
         for conversations_folder in path_formats:
-            if show_progress:
+            if show_progress and not silent:
                 st.write(f"🔍 Checking path: `{conversations_folder}`")
             blobs = bucket.list_blobs(prefix=conversations_folder)
             
@@ -205,11 +207,11 @@ def load_individual_conversations(username: str, show_progress: bool = False):
                             conv_id = filename.replace('.json', '')
                             conversations[conv_id] = conv_data
                             conversation_count += 1
-                            if show_progress:
+                            if show_progress and not silent:
                                 st.write(f"✅ Loaded conversation: {conv_id}")
                             
                     except Exception as e:
-                        if show_progress:
+                        if show_progress and not silent:
                             st.warning(f"Could not load conversation file {blob.name}: {e}")
                         continue
             
@@ -220,20 +222,20 @@ def load_individual_conversations(username: str, show_progress: bool = False):
         if conversations:
             # Restore conversations to session state
             set_user_session('conversations', conversations)
-            if show_progress:
+            if show_progress and not silent:
                 st.success(f"📂 Restored {conversation_count} conversation(s) from individual files")
-            else:
+            elif not silent:
                 st.success(f"✅ Restored {conversation_count} conversation(s)")
         else:
-            if show_progress:
+            if show_progress and not silent:
                 st.info("📂 No individual conversation files found in any path")
-            else:
+            elif not silent:
                 st.info("No conversation history found")
             
     except Exception as e:
-        if show_progress:
+        if show_progress and not silent:
             st.error(f"Error loading individual conversations: {e}")
-        else:
+        elif not silent:
             st.error("Unable to load conversation history")
 
 def debug_cloud_storage(username: str):
@@ -343,7 +345,8 @@ def initialize_session_state():
     if (st.session_state.get('authenticated', False) and 
         current_user != 'default' and 
         not get_user_session('conversations')):
-        restore_user_data_from_cloud(current_user)
+        # Load history silently in the background
+        restore_user_data_from_cloud(current_user, silent=True)
     
     # Global session state (shared across users)
     if 'es_manager' not in st.session_state:
@@ -1188,16 +1191,6 @@ def main():
             set_user_session('custom_summary_chat', [])  # Clear custom summary chat
             st.rerun()
         
-        # Add restore button for conversation history
-        if st.button("🔄 Restore History", use_container_width=True, help="Restore conversation history from cloud storage"):
-            username = st.session_state.get('username')
-            if username:
-                with st.spinner("Loading your conversation history..."):
-                    restore_user_data_from_cloud(username)
-                st.rerun()
-            else:
-                st.error("No username found in session")
-        
         # Only show technical buttons for admin users
         user_role = users.get(st.session_state.username, {}).get('role', 'user')
         if user_role == 'admin':
@@ -1213,6 +1206,13 @@ def main():
                     username = st.session_state.get('username')
                     if username:
                         fix_corrupted_data(username)
+                    else:
+                        st.error("No username found in session")
+                
+                if st.button("🔄 Manual Restore", use_container_width=True, help="Manually restore conversation history"):
+                    username = st.session_state.get('username')
+                    if username:
+                        restore_user_data_from_cloud(username, silent=False)
                     else:
                         st.error("No username found in session")
 
