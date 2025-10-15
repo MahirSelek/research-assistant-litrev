@@ -22,7 +22,6 @@ from vertexai.generative_models import GenerativeModel
 from google.cloud import storage
 from google.api_core.exceptions import NotFound
 from auth import get_auth_manager, show_login_page, show_logout_button
-from user_management import show_user_management
 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -989,12 +988,6 @@ def main():
     initialize_session_state()
 
     with st.sidebar:
-        # Show user management for admin
-        if st.session_state.get('username') == 'admin':
-            if st.button("User Management", use_container_width=True):
-                st.session_state.show_user_management = True
-                st.rerun()
-        
         # Show user info for all users
         if st.session_state.get('authenticated', False):
             st.markdown("---")
@@ -1203,11 +1196,6 @@ def main():
     """, unsafe_allow_html=True)
     
     st.markdown("<h1>🧬 POLO-GGB RESEARCH ASSISTANT</h1>", unsafe_allow_html=True)
-
-    # Show user management if requested
-    if st.session_state.get('show_user_management', False):
-        show_user_management()
-        return
 
     # Show loading overlay if analysis is in progress (but not for custom summary)
     if st.session_state.get('is_loading_analysis', False):
