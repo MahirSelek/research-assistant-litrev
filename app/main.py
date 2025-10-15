@@ -178,37 +178,48 @@ def load_individual_conversations(username: str):
         storage_client = storage.Client()
         bucket = storage_client.bucket(GCS_BUCKET_NAME)
         
-        # Look for conversations in user_data/conversations/{username}/
-        conversations_folder = f"user_data/conversations/{username}/"
-        blobs = bucket.list_blobs(prefix=conversations_folder)
-        
         conversations = {}
         conversation_count = 0
         
-        for blob in blobs:
-            if blob.name.endswith('.json') and not blob.name.endswith('index.json'):
-                try:
-                    # Download and parse the conversation file
-                    content = blob.download_as_text()
-                    conv_data = json.loads(content)
-                    
-                    # Extract conversation ID from filename
-                    filename = blob.name.split('/')[-1]
-                    if filename.startswith('conv_'):
-                        conv_id = filename.replace('.json', '')
-                        conversations[conv_id] = conv_data
-                        conversation_count += 1
+        # Try both path formats
+        path_formats = [
+            f"user_data/conversations/{username}/",
+            f"user-data/conversations/{username}/"
+        ]
+        
+        for conversations_folder in path_formats:
+            st.write(f"🔍 Checking path: `{conversations_folder}`")
+            blobs = bucket.list_blobs(prefix=conversations_folder)
+            
+            for blob in blobs:
+                if blob.name.endswith('.json') and not blob.name.endswith('index.json'):
+                    try:
+                        # Download and parse the conversation file
+                        content = blob.download_as_text()
+                        conv_data = json.loads(content)
                         
-                except Exception as e:
-                    st.warning(f"Could not load conversation file {blob.name}: {e}")
-                    continue
+                        # Extract conversation ID from filename
+                        filename = blob.name.split('/')[-1]
+                        if filename.startswith('conv_'):
+                            conv_id = filename.replace('.json', '')
+                            conversations[conv_id] = conv_data
+                            conversation_count += 1
+                            st.write(f"✅ Loaded conversation: {conv_id}")
+                            
+                    except Exception as e:
+                        st.warning(f"Could not load conversation file {blob.name}: {e}")
+                        continue
+            
+            # If we found conversations, break out of the loop
+            if conversations:
+                break
         
         if conversations:
             # Restore conversations to session state
             set_user_session('conversations', conversations)
             st.success(f"📂 Restored {conversation_count} conversation(s) from individual files")
         else:
-            st.info("📂 No individual conversation files found")
+            st.info("📂 No individual conversation files found in any path")
             
     except Exception as e:
         st.error(f"Error loading individual conversations: {e}")
@@ -250,6 +261,17 @@ def debug_cloud_storage(username: str):
                 st.write(f"   - `{blob.name}` ({blob.size} bytes)")
         else:
             st.warning(f"❌ No files found in conversations folder")
+            
+            # Try alternative path structure
+            alt_folder = f"user-data/conversations/{username}/"
+            st.write(f"**2b. Trying alternative path:** `{alt_folder}`")
+            alt_blobs = list(bucket.list_blobs(prefix=alt_folder))
+            if alt_blobs:
+                st.success(f"✅ Found {len(alt_blobs)} files in alternative path:")
+                for blob in alt_blobs:
+                    st.write(f"   - `{blob.name}` ({blob.size} bytes)")
+            else:
+                st.warning(f"❌ No files found in alternative path either")
         
         # Check for any files with username
         st.write(f"**3. All files containing '{username}':**")
@@ -264,6 +286,30 @@ def debug_cloud_storage(username: str):
             
     except Exception as e:
         st.error(f"Error debugging cloud storage: {e}")
+
+def fix_corrupted_data(username: str):
+    """Fix corrupted admin_data.json by deleting it and loading individual files"""
+    try:
+        from google.cloud import storage
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(GCS_BUCKET_NAME)
+        
+        # Delete the corrupted admin_data.json file
+        user_data_file = f"user_data/{username}_data.json"
+        user_data_blob = bucket.blob(user_data_file)
+        
+        if user_data_blob.exists():
+            user_data_blob.delete()
+            st.success(f"🗑️ Deleted corrupted file: {user_data_file}")
+        else:
+            st.info(f"ℹ️ File {user_data_file} doesn't exist")
+        
+        # Now try to load individual conversation files
+        st.write("🔄 Now loading individual conversation files...")
+        load_individual_conversations(username)
+        
+    except Exception as e:
+        st.error(f"Error fixing corrupted data: {e}")
 
 def initialize_session_state():
     # Get current username for user-specific data
@@ -1146,6 +1192,14 @@ def main():
             username = st.session_state.get('username')
             if username:
                 debug_cloud_storage(username)
+            else:
+                st.error("No username found in session")
+        
+        # Add fix corrupted data button
+        if st.button("🔧 Fix Corrupted Data", use_container_width=True, help="Delete corrupted admin_data.json to use individual files"):
+            username = st.session_state.get('username')
+            if username:
+                fix_corrupted_data(username)
             else:
                 st.error("No username found in session")
 
