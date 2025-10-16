@@ -615,6 +615,24 @@ class ResearchAssistantUI:
                     st.rerun()
             return
         
+        # Handle keyword search analysis
+        if st.session_state.get('is_loading_analysis', False) and not st.session_state.get('generate_custom_summary', False):
+            try:
+                # Get the time filter from session state
+                time_filter_type = self.get_user_session('time_filter', 'Current year')
+                self.process_keyword_search(
+                    self.get_user_session('selected_keywords', []), 
+                    time_filter_type, 
+                    self.get_user_session('search_mode', 'all_keywords')
+                )
+            except Exception as e:
+                st.error(f"Error processing keyword search: {e}")
+                print(f"Keyword search error: {e}")
+            finally:
+                # Always clear loading state
+                st.session_state.is_loading_analysis = False
+                st.rerun()
+        
         # Handle custom summary generation
         if st.session_state.get('generate_custom_summary', False):
             st.session_state.generate_custom_summary = False
@@ -791,6 +809,7 @@ Assistant Response:"""
                 if st.form_submit_button("Search & Analyze"):
                     self.set_user_session('selected_keywords', selected_keywords)
                     self.set_user_session('search_mode', search_mode_display)
+                    self.set_user_session('time_filter', time_filter_type)
                     self.set_user_session('custom_summary_chat', [])
                     st.session_state.is_loading_analysis = True
                     st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
@@ -805,21 +824,6 @@ Assistant Response:"""
                         self.set_user_session('selected_keywords', [])
                         st.rerun()
             
-            # Handle loading state and process analysis
-            if st.session_state.get('is_loading_analysis', False):
-                try:
-                    self.process_keyword_search(
-                        self.get_user_session('selected_keywords', []), 
-                        time_filter_type, 
-                        self.get_user_session('search_mode', 'all_keywords')
-                    )
-                except Exception as e:
-                    st.error(f"Error processing keyword search: {e}")
-                    print(f"Keyword search error: {e}")
-                finally:
-                    # Always clear loading state
-                    st.session_state.is_loading_analysis = False
-                    st.rerun()
             
             st.markdown("---")
             
