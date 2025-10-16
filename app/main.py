@@ -1328,11 +1328,20 @@ def main():
         border-color: #cc3333;
     }
     
-    /* Style conversation buttons */
+    /* Style conversation buttons - keep them blue */
     .stButton > button:not([kind="secondary"]) {
         text-align: left;
         padding: 0.5rem;
         margin-bottom: 0.25rem;
+        background: linear-gradient(90deg, #2E8B57, #3CB371) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 5px !important;
+        font-weight: bold !important;
+    }
+    
+    .stButton > button:not([kind="secondary"]):hover {
+        background: linear-gradient(90deg, #228B22, #32CD32) !important;
     }
     
     /* Smaller warning messages */
