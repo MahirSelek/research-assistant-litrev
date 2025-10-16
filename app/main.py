@@ -22,6 +22,7 @@ from google.cloud import storage
 from google.api_core.exceptions import NotFound
 from auth import auth_manager, show_login_page, show_logout_button
 from user_management import show_user_management
+from gcs_user_storage import GCSUserStorage
 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -113,6 +114,9 @@ def get_pdf_bytes_from_gcs(bucket_name: str, blob_name: str) -> bytes | None:
         st.error(f"Failed to download from GCS: {e}")
         return None
 
+# Initialize GCS storage
+gcs_storage = GCSUserStorage(GCS_BUCKET_NAME)
+
 def get_user_key(key):
     """Get user-specific session key"""
     current_user = st.session_state.get('username', 'default')
@@ -127,12 +131,60 @@ def set_user_session(key, value):
     """Set user-specific session value"""
     user_key = get_user_key(key)
     st.session_state[user_key] = value
+    
+    # Auto-sync to GCS for important data
+    if key in ['conversations', 'selected_keywords', 'search_mode', 'uploaded_papers', 'custom_summary_chat', 'active_conversation_id']:
+        username = st.session_state.get('username')
+        if username and username != 'default':
+            # Sync to GCS in background
+            try:
+                gcs_storage.save_user_data(username, 'user_preferences', {
+                    'selected_keywords': get_user_session('selected_keywords', []),
+                    'search_mode': get_user_session('search_mode', 'all_keywords'),
+                    'uploaded_papers': get_user_session('uploaded_papers', []),
+                    'custom_summary_chat': get_user_session('custom_summary_chat', []),
+                    'active_conversation_id': get_user_session('active_conversation_id')
+                })
+            except Exception as e:
+                # Don't show error to user, just log it
+                print(f"Failed to sync to GCS: {e}")
 
 def initialize_session_state():
     # Get current username for user-specific data
     current_user = st.session_state.get('username', 'default')
     
-    # Initialize user-specific session state
+    # Check if this is a new login (user data not loaded yet)
+    if current_user != 'default' and get_user_key('conversations') not in st.session_state:
+        # Load user data from GCS
+        try:
+            user_data = gcs_storage.load_user_data_from_gcs(current_user)
+            if user_data:
+                # Set all user data from GCS
+                set_user_session('conversations', user_data.get('conversations', {}))
+                set_user_session('active_conversation_id', user_data.get('active_conversation_id'))
+                set_user_session('selected_keywords', user_data.get('selected_keywords', []))
+                set_user_session('search_mode', user_data.get('search_mode', 'all_keywords'))
+                set_user_session('uploaded_papers', user_data.get('uploaded_papers', []))
+                set_user_session('custom_summary_chat', user_data.get('custom_summary_chat', []))
+            else:
+                # Initialize empty user data if none exists in GCS
+                set_user_session('conversations', {})
+                set_user_session('active_conversation_id', None)
+                set_user_session('selected_keywords', [])
+                set_user_session('search_mode', "all_keywords")
+                set_user_session('uploaded_papers', [])
+                set_user_session('custom_summary_chat', [])
+        except Exception as e:
+            # Fallback to local initialization if GCS fails
+            print(f"Failed to load user data from GCS: {e}")
+            set_user_session('conversations', {})
+            set_user_session('active_conversation_id', None)
+            set_user_session('selected_keywords', [])
+            set_user_session('search_mode', "all_keywords")
+            set_user_session('uploaded_papers', [])
+            set_user_session('custom_summary_chat', [])
+    
+    # Initialize user-specific session state (fallback for default user)
     if get_user_key('conversations') not in st.session_state:
         set_user_session('conversations', {})
     if get_user_key('active_conversation_id') not in st.session_state:
@@ -944,6 +996,15 @@ def display_chat_history():
                     # Update last interaction time for this conversation
                     conversations[conv_id]['last_interaction_time'] = time.time()
                     set_user_session('conversations', conversations)
+                    
+                    # Save conversation to GCS
+                    username = st.session_state.get('username')
+                    if username:
+                        try:
+                            gcs_storage.save_conversation(username, conv_id, conversations[conv_id])
+                        except Exception as e:
+                            print(f"Failed to save conversation to GCS: {e}")
+                    
                     st.rerun()
 
 def main():
@@ -1065,6 +1126,14 @@ def main():
                     "last_interaction_time": time.time()
                 }
                 set_user_session('conversations', conversations)
+                
+                # Save conversation to GCS
+                username = st.session_state.get('username')
+                if username:
+                    try:
+                        gcs_storage.save_conversation(username, conv_id, conversations[conv_id])
+                    except Exception as e:
+                        print(f"Failed to save conversation to GCS: {e}")
                 # Clear any previous analysis and set new one
                 set_user_session('active_conversation_id', conv_id)
                 # Custom summaries are now in chat history
@@ -1242,6 +1311,14 @@ def main():
             }
             set_user_session('conversations', conversations)
             
+            # Save conversation to GCS
+            username = st.session_state.get('username')
+            if username:
+                try:
+                    gcs_storage.save_conversation(username, conv_id, conversations[conv_id])
+                except Exception as e:
+                    print(f"Failed to save conversation to GCS: {e}")
+            
             # Set this as the active conversation so user can immediately interact
             set_user_session('active_conversation_id', conv_id)
             
@@ -1305,6 +1382,15 @@ def main():
             active_conv['last_interaction_time'] = time.time()
             # Save updated conversations
             set_user_session('conversations', conversations)
+            
+            # Save conversation to GCS
+            username = st.session_state.get('username')
+            if username:
+                try:
+                    gcs_storage.save_conversation(username, active_conversation_id, active_conv)
+                except Exception as e:
+                    print(f"Failed to save conversation to GCS: {e}")
+            
             st.rerun()
 
     active_conversation_id = get_user_session('active_conversation_id')
@@ -1351,6 +1437,15 @@ Assistant Response:"""
                 active_conv['last_interaction_time'] = time.time()
                 # Save updated conversations
                 set_user_session('conversations', conversations)
+                
+                # Save conversation to GCS
+                username = st.session_state.get('username')
+                if username:
+                    try:
+                        gcs_storage.save_conversation(username, active_conversation_id, active_conv)
+                    except Exception as e:
+                        print(f"Failed to save conversation to GCS: {e}")
+                
                 st.rerun()
 
 if __name__ == "__main__":
