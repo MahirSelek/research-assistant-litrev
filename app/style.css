@@ -14,38 +14,19 @@ html, body {
     overflow-x: hidden;
 }
 
-/* --- FORCE DARK THEME EVERYWHERE - NO ADAPTABILITY --- */
+/* --- STREAMLIT APP CONTAINER --- */
 .stApp {
-    background-color: #0E1117 !important;
+    background-color: #ffffff !important;
     min-height: 100vh;
     width: 100vw;
     margin: 0;
     padding: 0;
 }
 
-/* Force dark theme for ALL containers */
-.stApp,
-.stApp > div,
-.stApp > div > div,
-.stApp > div > div > div,
-.stApp > div > div > div > div,
-.main,
-.main > div,
-.main > div > div,
-.main > div > div > div,
-.main > div > div > div > div,
-.block-container,
-.block-container > div,
-.block-container > div > div,
-.block-container > div > div > div {
-    background-color: #0E1117 !important;
-    color: #FAFAFA !important;
-}
-
-/* Force dark theme for main content area */
+/* --- MAIN CONTENT AREA --- */
 .main .block-container {
-    background-color: #0E1117 !important;
-    color: #FAFAFA !important;
+    background-color: #ffffff !important;
+    color: #262730 !important;
     padding-top: 1rem;
     padding-bottom: 1rem;
     padding-left: 1rem;
@@ -54,59 +35,34 @@ html, body {
     width: 100%;
 }
 
-/* Force ALL elements to be dark */
-.stApp * {
-    background-color: #0E1117 !important;
-    color: #FAFAFA !important;
-}
-
-/* Override any white backgrounds with !important */
+/* Force light theme for all containers */
 .stApp,
 .stApp > div,
 .stApp > div > div,
 .stApp > div > div > div,
-.stApp > div > div > div > div,
 .main,
 .main > div,
 .main > div > div,
 .main > div > div > div,
-.main > div > div > div > div {
-    background-color: #0E1117 !important;
-}
-
-/* Force dark theme for all Streamlit components */
-.stMarkdown,
-.stText,
-.stSelectbox,
-.stMultiselect,
-.stTextInput,
-.stButton,
-.stExpander,
-.stAlert,
-.stSuccess,
-.stError,
-.stWarning,
-.stInfo,
-.stCaption,
-.stCode,
-.stDataFrame,
-.stTable {
-    background-color: #0E1117 !important;
-    color: #FAFAFA !important;
+.block-container,
+.block-container > div,
+.block-container > div > div {
+    background-color: #ffffff !important;
+    color: #262730 !important;
 }
 
 /* --- SIDEBAR STYLING --- */
 [data-testid="stSidebar"] {
-    background-color: #1a1e29 !important;
-    border-right: 1px solid #2c313a !important;
+    background-color: #f8f9fa !important;
+    border-right: 1px solid #e9ecef !important;
     min-height: 100vh;
 }
 
 [data-testid="stSidebar"] > div {
-    background-color: #1a1e29 !important;
+    background-color: #f8f9fa !important;
 }
 
-/* --- HIDE ALL UNWANTED STREAMLIT ELEMENTS --- */
+/* --- HIDE UNWANTED STREAMLIT ELEMENTS --- */
 /* Hide Streamlit header elements */
 header[data-testid="stHeader"] {
     display: none !important;
@@ -127,16 +83,6 @@ footer[data-testid="stFooter"] {
     display: none !important;
 }
 
-/* Hide Streamlit hamburger menu */
-[data-testid="stToolbar"] button {
-    display: none !important;
-}
-
-/* Hide any Streamlit branding */
-.stApp > header {
-    display: none !important;
-}
-
 /* Hide Streamlit's default top bar */
 .css-1rs6os {
     display: none !important;
@@ -147,35 +93,9 @@ footer[data-testid="stFooter"] {
     display: none !important;
 }
 
-/* Hide any Streamlit icons */
-[data-testid="stToolbar"] svg {
-    display: none !important;
-}
-
-/* Hide Streamlit's fork button and GitHub elements */
-.css-1rs6os .css-1rs6os {
-    display: none !important;
-}
-
-/* Hide Streamlit's user profile elements */
-.css-1rs6os [data-testid="stUserMenu"] {
-    display: none !important;
-}
-
-/* AGGRESSIVE HIDING OF ALL BOTTOM-RIGHT ELEMENTS */
 /* Hide ALL profile pictures and avatars */
 [data-testid="stUserMenu"],
 [data-testid="stUserMenu"] *,
-.css-1rs6os [data-testid="stUserMenu"],
-.css-17eq0hr [data-testid="stUserMenu"],
-.stApp [data-testid="stUserMenu"],
-.stApp [data-testid="stUserMenu"] * {
-    display: none !important;
-}
-
-/* Hide ALL bottom-right icons */
-.css-1rs6os button,
-.css-17eq0hr button,
 .stApp button[aria-label*="profile"],
 .stApp button[aria-label*="user"],
 .stApp button[aria-label*="menu"],
@@ -183,105 +103,34 @@ footer[data-testid="stFooter"] {
     display: none !important;
 }
 
-/* Hide ALL Streamlit branding and icons */
+/* Hide ALL bottom-right icons */
 .stApp > div > div:last-child,
-.stApp > div > div:last-child > div,
-.stApp > div > div:last-child > div > div {
-    display: none !important;
-}
-
-/* Hide ALL floating elements */
-.stApp > div > div[style*="position: fixed"],
-.stApp > div > div[style*="position: absolute"] {
-    display: none !important;
-}
-
-/* Hide ALL elements in bottom-right corner */
-.stApp > div > div:last-child {
-    display: none !important;
-}
-
-/* Force hide any remaining UI elements */
 .stApp > div > div:nth-last-child(-n+3) {
     display: none !important;
 }
 
-/* Hide any remaining Streamlit UI chrome */
-.css-1rs6os,
-.css-17eq0hr,
-.css-1rs6os > div {
-    display: none !important;
-}
-
-/* Additional comprehensive hiding of Streamlit elements */
-/* Hide Streamlit's top navigation */
-.css-1rs6os,
-.css-1rs6os > div,
-.css-1rs6os > div > div {
-    display: none !important;
-}
-
-/* Hide Streamlit's bottom elements */
-.css-17eq0hr,
-.css-17eq0hr > div,
-.css-17eq0hr > div > div {
-    display: none !important;
-}
-
-/* Hide Streamlit's toolbar and menu elements */
-.css-1rs6os [data-testid="stToolbar"],
-.css-1rs6os [data-testid="stUserMenu"],
-.css-1rs6os button,
-.css-1rs6os svg {
-    display: none !important;
-}
-
-/* Hide any Streamlit branding or icons */
-.stApp > div > div:first-child {
-    display: none !important;
-}
-
-/* Hide Streamlit's default header completely */
-.stApp header,
-.stApp > header,
-.stApp > div > header {
-    display: none !important;
-}
-
-/* Hide Streamlit's default footer completely */
-.stApp footer,
-.stApp > footer,
-.stApp > div > footer {
-    display: none !important;
-}
-
-/* --- TYPOGRAPHY - FORCE DARK THEME --- */
+/* --- TYPOGRAPHY --- */
 h1, h2, h3, h4, h5, h6 {
-    color: #FAFAFA !important;
+    color: #262730 !important;
     font-family: 'Inter', sans-serif !important;
 }
 
 .stMarkdown, .stText, .stSelectbox, .stMultiselect, .stTextInput {
-    color: #D1D5DB !important;
+    color: #262730 !important;
 }
 
-/* Force all text to be light colored */
+/* Force all text to be dark colored */
 .stApp * {
-    color: #FAFAFA !important;
-}
-
-/* Override any white text on dark backgrounds */
-.stApp p, .stApp div, .stApp span, .stApp a {
-    color: #FAFAFA !important;
+    color: #262730 !important;
 }
 
 /* Ensure links are visible */
 .stApp a {
-    color: #3b82f6 !important;
+    color: #0066cc !important;
 }
 
 .stApp a:hover {
-    color: #60a5fa !important;
+    color: #004499 !important;
 }
 
 /* --- BUTTON STYLES --- */
@@ -289,17 +138,17 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 0.5rem !important;
     padding: 0.75rem 1.5rem !important;
     font-weight: 600 !important;
-    color: #FAFAFA !important;
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
     border: none !important;
     transition: all 0.2s ease-in-out !important;
     font-family: 'Inter', sans-serif !important;
 }
 
 .stButton > button:hover {
-    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+    background: linear-gradient(135deg, #218838 0%, #1ea085 100%) !important;
     transform: translateY(-1px) !important;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3) !important;
 }
 
 .stButton > button:active {
@@ -327,41 +176,41 @@ h1, h2, h3, h4, h5, h6 {
 
 /* --- CHAT INTERFACE --- */
 [data-testid="stChatMessage"] {
-    background-color: #262730 !important;
+    background-color: #f8f9fa !important;
     border-radius: 0.75rem !important;
     padding: 1rem !important;
     margin-bottom: 1rem !important;
-    border: 1px solid #30333d !important;
+    border: 1px solid #e9ecef !important;
 }
 
 /* --- FORM ELEMENTS --- */
 .stSelectbox > div > div {
-    background-color: #262730 !important;
-    border: 1px solid #2c313a !important;
-    color: #D1D5DB !important;
+    background-color: #ffffff !important;
+    border: 1px solid #ced4da !important;
+    color: #262730 !important;
 }
 
 .stMultiselect > div > div {
-    background-color: #262730 !important;
-    border: 1px solid #2c313a !important;
+    background-color: #ffffff !important;
+    border: 1px solid #ced4da !important;
 }
 
 .stTextInput > div > div > input {
-    background-color: #262730 !important;
-    border: 1px solid #2c313a !important;
-    color: #D1D5DB !important;
+    background-color: #ffffff !important;
+    border: 1px solid #ced4da !important;
+    color: #262730 !important;
 }
 
 /* --- EXPANDER STYLING --- */
 .stExpander {
-    border: 1px solid #2c313a !important;
+    border: 1px solid #e9ecef !important;
     border-radius: 0.5rem !important;
-    background-color: #1a1e29 !important;
+    background-color: #ffffff !important;
 }
 
 .stExpander header {
-    background-color: #1a1e29 !important;
-    color: #FAFAFA !important;
+    background-color: #f8f9fa !important;
+    color: #262730 !important;
 }
 
 /* --- RESPONSIVE DESIGN --- */
@@ -418,7 +267,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* --- LOADING AND ERROR STATES --- */
 .stSpinner {
-    color: #3b82f6 !important;
+    color: #28a745 !important;
 }
 
 .stAlert {
@@ -431,14 +280,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-track {
-    background: #1a1e29;
+    background: #f8f9fa;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #2c313a;
+    background: #ced4da;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #374151;
+    background: #adb5bd;
 }
