@@ -50,8 +50,9 @@ class ResearchAssistantUI:
                     
                     self.set_user_session('conversations', conversations)
                     self.set_user_session('active_conversation_id', active_conversation_id)
-                    self.set_user_session('selected_keywords', user_data.get('selected_keywords', []))
-                    self.set_user_session('search_mode', user_data.get('search_mode', 'all_keywords'))
+                    # Don't restore keywords on login - start fresh
+                    self.set_user_session('selected_keywords', [])
+                    self.set_user_session('search_mode', 'all_keywords')
                     self.set_user_session('uploaded_papers', user_data.get('uploaded_papers', []))
                     self.set_user_session('custom_summary_chat', user_data.get('custom_summary_chat', []))
                 else:
@@ -404,7 +405,6 @@ class ResearchAssistantUI:
             
             self.set_user_session('active_conversation_id', conv_id)
             self.set_user_session('custom_summary_chat', [])
-            st.rerun()
         else:
             search_mode_text = "ALL of the selected keywords" if search_mode == "all_keywords" else "AT LEAST ONE of the selected keywords"
             st.error(f"No papers found that contain {search_mode_text} within the specified time window. Please try a different combination of keywords.")
@@ -754,6 +754,9 @@ Assistant Response:"""
                 self.set_user_session('selected_keywords', [])
                 self.set_user_session('search_mode', "all_keywords")
                 self.set_user_session('custom_summary_chat', [])
+                # Clear any loading states
+                st.session_state.is_loading_analysis = False
+                st.session_state.generate_custom_summary = False
                 st.rerun()
             
             self.display_chat_history()
@@ -765,6 +768,14 @@ Assistant Response:"""
                 st.info("**Data available until:** end of September 2025")
                 
                 selected_keywords = st.multiselect("Select keywords", self.GENETICS_KEYWORDS, default=self.get_user_session('selected_keywords', []))
+                
+                # Add clear keywords button
+                if selected_keywords:
+                    col1, col2 = st.columns([3, 1])
+                    with col2:
+                        if st.button("Clear", key="clear_keywords", help="Clear all selected keywords"):
+                            self.set_user_session('selected_keywords', [])
+                            st.rerun()
                 
                 search_mode_options = {
                     "all_keywords": "Find papers containing ALL keywords",
@@ -795,8 +806,6 @@ Assistant Response:"""
             
             # Handle loading state and process analysis
             if st.session_state.get('is_loading_analysis', False):
-                self.show_loading_overlay(st.session_state.loading_message)
-                
                 try:
                     self.process_keyword_search(
                         self.get_user_session('selected_keywords', []), 
