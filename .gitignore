@@ -4,3 +4,4 @@ app/literature-review-464920-5086e8ab1996.json
 .streamlit/secrets.toml
 
 gcp_credentials.json
+.DS_Store
