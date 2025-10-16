@@ -14,7 +14,7 @@ html, body {
     overflow-x: hidden;
 }
 
-/* --- Streamlit App Container --- */
+/* --- FORCE DARK THEME EVERYWHERE - NO ADAPTABILITY --- */
 .stApp {
     background-color: #0E1117 !important;
     min-height: 100vh;
@@ -23,7 +23,23 @@ html, body {
     padding: 0;
 }
 
-/* --- Main Content Area - Force Dark Theme --- */
+/* Force dark theme for ALL containers */
+.stApp,
+.stApp > div,
+.stApp > div > div,
+.stApp > div > div > div,
+.main,
+.main > div,
+.main > div > div,
+.main > div > div > div,
+.block-container,
+.block-container > div,
+.block-container > div > div {
+    background-color: #0E1117 !important;
+    color: #FAFAFA !important;
+}
+
+/* Force dark theme for main content area */
 .main .block-container {
     background-color: #0E1117 !important;
     color: #FAFAFA !important;
@@ -35,22 +51,39 @@ html, body {
     width: 100%;
 }
 
-/* Force dark theme for all main content */
-.main {
+/* Force ALL elements to be dark */
+.stApp * {
     background-color: #0E1117 !important;
-}
-
-.main * {
     color: #FAFAFA !important;
 }
 
-/* Override any white backgrounds */
-.stApp > div {
+/* Override any white backgrounds with !important */
+.stApp,
+.stApp > div,
+.stApp > div > div,
+.stApp > div > div > div,
+.main,
+.main > div,
+.main > div > div,
+.main > div > div > div {
     background-color: #0E1117 !important;
 }
 
-.stApp > div > div {
+/* Force dark theme for all Streamlit components */
+.stMarkdown,
+.stText,
+.stSelectbox,
+.stMultiselect,
+.stTextInput,
+.stButton,
+.stExpander,
+.stAlert,
+.stSuccess,
+.stError,
+.stWarning,
+.stInfo {
     background-color: #0E1117 !important;
+    color: #FAFAFA !important;
 }
 
 /* --- Sidebar Styling --- */
@@ -130,6 +163,50 @@ footer[data-testid="stFooter"] {
 .css-1rs6os,
 .css-17eq0hr,
 .css-1rs6os > div {
+    display: none !important;
+}
+
+/* AGGRESSIVE HIDING OF ALL BOTTOM-RIGHT ELEMENTS */
+/* Hide ALL profile pictures and avatars */
+[data-testid="stUserMenu"],
+[data-testid="stUserMenu"] *,
+.css-1rs6os [data-testid="stUserMenu"],
+.css-17eq0hr [data-testid="stUserMenu"],
+.stApp [data-testid="stUserMenu"],
+.stApp [data-testid="stUserMenu"] * {
+    display: none !important;
+}
+
+/* Hide ALL bottom-right icons */
+.css-1rs6os button,
+.css-17eq0hr button,
+.stApp button[aria-label*="profile"],
+.stApp button[aria-label*="user"],
+.stApp button[aria-label*="menu"],
+.stApp button[aria-label*="settings"] {
+    display: none !important;
+}
+
+/* Hide ALL Streamlit branding and icons */
+.stApp > div > div:last-child,
+.stApp > div > div:last-child > div,
+.stApp > div > div:last-child > div > div {
+    display: none !important;
+}
+
+/* Hide ALL floating elements */
+.stApp > div > div[style*="position: fixed"],
+.stApp > div > div[style*="position: absolute"] {
+    display: none !important;
+}
+
+/* Hide ALL elements in bottom-right corner */
+.stApp > div > div:last-child {
+    display: none !important;
+}
+
+/* Force hide any remaining UI elements */
+.stApp > div > div:nth-last-child(-n+3) {
     display: none !important;
 }
 

@@ -107,29 +107,72 @@ def main():
         }
     )
     
-    # Hide Streamlit's default UI elements
+    # FORCE DARK THEME EVERYWHERE - NO ADAPTABILITY
     st.markdown("""
     <style>
-    /* Hide Streamlit's default header and footer */
+    /* FORCE DARK THEME FOR ENTIRE APP - NO WHITE ANYWHERE */
+    .stApp { 
+        background-color: #0E1117 !important; 
+        color: #FAFAFA !important;
+    }
+    .stApp > div { 
+        background-color: #0E1117 !important; 
+        color: #FAFAFA !important;
+    }
+    .stApp > div > div { 
+        background-color: #0E1117 !important; 
+        color: #FAFAFA !important;
+    }
+    .main { 
+        background-color: #0E1117 !important; 
+        color: #FAFAFA !important;
+    }
+    .main > div { 
+        background-color: #0E1117 !important; 
+        color: #FAFAFA !important;
+    }
+    .main > div > div { 
+        background-color: #0E1117 !important; 
+        color: #FAFAFA !important;
+    }
+    .block-container { 
+        background-color: #0E1117 !important; 
+        color: #FAFAFA !important;
+    }
+    .block-container > div { 
+        background-color: #0E1117 !important; 
+        color: #FAFAFA !important;
+    }
+    
+    /* FORCE ALL ELEMENTS TO BE DARK */
+    .stApp * { 
+        background-color: #0E1117 !important; 
+        color: #FAFAFA !important;
+    }
+    
+    /* HIDE ALL UNWANTED ELEMENTS */
     header[data-testid="stHeader"] { display: none !important; }
     footer[data-testid="stFooter"] { display: none !important; }
-    
-    /* Hide Streamlit's toolbar and menu */
     [data-testid="stToolbar"] { display: none !important; }
     [data-testid="stUserMenu"] { display: none !important; }
-    
-    /* Hide Streamlit's top bar elements */
     .css-1rs6os { display: none !important; }
     .css-17eq0hr { display: none !important; }
     
-    /* Force dark theme for entire app */
-    .stApp { background-color: #0E1117 !important; }
-    .main { background-color: #0E1117 !important; }
-    .main .block-container { background-color: #0E1117 !important; }
+    /* HIDE ALL PROFILE PICTURES AND BOTTOM-RIGHT ICONS */
+    [data-testid="stUserMenu"],
+    [data-testid="stUserMenu"] *,
+    .stApp button[aria-label*="profile"],
+    .stApp button[aria-label*="user"],
+    .stApp button[aria-label*="menu"],
+    .stApp button[aria-label*="settings"],
+    .stApp > div > div:last-child,
+    .stApp > div > div:nth-last-child(-n+3) {
+        display: none !important;
+    }
     
-    /* Ensure all text is visible on dark background */
-    .stApp * { color: #FAFAFA !important; }
+    /* FORCE LINKS TO BE VISIBLE */
     .stApp a { color: #3b82f6 !important; }
+    .stApp a:hover { color: #60a5fa !important; }
     </style>
     """, unsafe_allow_html=True)
     
