@@ -118,7 +118,7 @@ def main():
     except Exception as e:
         st.error(f"Failed to initialize application: {e}")
         return
-
+    
     # Load CSS
     current_dir = os.path.dirname(os.path.abspath(__file__))
     style_path = os.path.join(current_dir, "style.css")

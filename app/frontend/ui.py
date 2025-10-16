@@ -53,9 +53,9 @@ class ResearchAssistantUI:
             except Exception as e:
                 print(f"Failed to load user data: {e}")
                 self._initialize_empty_user_data()
-        else:
-            # Initialize user-specific session state (fallback for default user or if data already loaded)
-            self._initialize_empty_user_data()
+        
+        # Initialize user-specific session state (fallback for default user)
+        self._initialize_empty_user_data()
         
         # Global session state (shared across users)
         if 'is_loading_analysis' not in st.session_state:
@@ -162,9 +162,6 @@ class ResearchAssistantUI:
         <meta name="theme-color" content="#0E1117">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-        <meta name="mobile-web-app-capable" content="yes">
-        <meta name="msapplication-TileColor" content="#0E1117">
-        <meta name="msapplication-navbutton-color" content="#0E1117">
         """, unsafe_allow_html=True)
     
     def create_responsive_layout(self):
@@ -472,6 +469,119 @@ class ResearchAssistantUI:
         # Create responsive layout
         self.create_responsive_layout()
         
+        # CSS styling
+        st.markdown("""
+        <style>
+        .citation-link {
+            color: #007bff;
+            cursor: pointer;
+            text-decoration: underline;
+            font-weight: bold;
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: all 0.2s ease;
+            display: inline-block;
+        }
+        .citation-link:hover {
+            color: #0056b3;
+            background-color: #e3f2fd;
+            transform: scale(1.05);
+        }
+        
+        /* Responsive sidebar */
+        .css-1d391kg {
+            width: 350px !important;
+            min-width: 300px !important;
+        }
+        
+        @media (max-width: 768px) {
+            .css-1d391kg {
+                width: 100% !important;
+                min-width: 100% !important;
+            }
+        }
+        
+        /* Responsive main content */
+        .main .block-container {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+            max-width: 100% !important;
+        }
+        
+        @media (max-width: 768px) {
+            .main .block-container {
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+        }
+        
+        /* Fix white bars */
+        .stApp > div {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        
+        /* Ensure full width */
+        .main {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        /* Responsive main content area - no fixed margins */
+        @media (min-width: 769px) {
+            .css-1y0tads {
+                margin-left: 350px !important;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .css-1y0tads {
+                margin-left: 0 !important;
+            }
+        }
+        
+        /* Style for all primary/default buttons (blue-green gradient) */
+        [data-testid="stButton"] > button {
+            background: linear-gradient(90deg, #2E8B57, #3CB371) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 5px !important;
+            font-weight: bold !important;
+            text-align: left;
+            padding: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+        [data-testid="stButton"] > button:hover {
+            background: linear-gradient(90deg, #228B22, #32CD32) !important;
+        }
+
+        /* Style for secondary buttons (subtle delete buttons) */
+        [data-testid="stSecondaryButton"] > button {
+            background-color: #f8f9fa !important;
+            color: #6c757d !important;
+            border: 1px solid #dee2e6 !important;
+            border-radius: 3px !important;
+            padding: 0.2rem 0.4rem !important;
+            font-size: 0.8rem !important;
+            min-height: 1.5rem !important;
+            width: 100% !important;
+            font-weight: bold !important;
+        }
+        [data-testid="stSecondaryButton"] > button:hover {
+            background-color: #e9ecef !important;
+            color: #495057 !important;
+            border-color: #adb5bd !important;
+        }
+        
+        /* Smaller warning messages */
+        .stAlert {
+            margin: 0.25rem 0;
+            padding: 0.5rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
         st.markdown("<h1>🧬 POLO-GGB RESEARCH ASSISTANT</h1>", unsafe_allow_html=True)
         
         # Show loading overlay if analysis is in progress
@@ -491,56 +601,44 @@ class ResearchAssistantUI:
         
         # Show default message only if no active conversation
         active_conversation_id = self.get_user_session('active_conversation_id')
-        
-        # DEBUG: Always show what's happening
-        st.write(f"🔍 DEBUG: Active conversation ID: {active_conversation_id}")
-        conversations = self.get_user_session('conversations', {})
-        st.write(f"🔍 DEBUG: Available conversations: {list(conversations.keys())}")
-        
         if active_conversation_id is None:
             st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
-        else:
-            if active_conversation_id in conversations:
-                active_conv = conversations[active_conversation_id]
-                st.write(f"🔍 DEBUG: Conversation found with {len(active_conv.get('messages', []))} messages")
-                
-                for message_index, message in enumerate(active_conv["messages"]):
-                    avatar = self.BOT_AVATAR if message["role"] == "assistant" else self.USER_AVATAR
-                    with st.chat_message(message["role"], avatar=avatar):
-                        st.markdown(message["content"], unsafe_allow_html=True)
-                        
-                        # Show papers section only for the first assistant message and regular analyses
-                        if (message["role"] == "assistant" and message_index == 0 and 
-                            "retrieved_papers" in active_conv and active_conv["retrieved_papers"] and 
-                            active_conv.get("search_mode") != "custom"):
-                            with st.expander("View and Download Retrieved Papers for this Analysis"):
-                                for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
-                                    meta = paper.get('metadata', {})
-                                    title = meta.get('title', 'N/A')
-                                    paper_id = paper.get('paper_id')
-                                    
-                                    col1, col2 = st.columns([4, 1])
-                                    with col1:
-                                        st.markdown(f"**{paper_index+1}. {title}**")
-                                    with col2:
-                                        if paper_id:
-                                            pdf_bytes = self.api.get_pdf_from_gcs(self.api.config['gcs_bucket_name'], paper_id)
-                                            if pdf_bytes:
-                                                st.download_button(
-                                                    label="Download PDF",
-                                                    data=pdf_bytes,
-                                                    file_name=paper_id,
-                                                    mime="application/pdf",
-                                                    key=f"download_{active_conversation_id}_{paper_id}"
-                                                )
-            else:
-                st.error(f"❌ Conversation {active_conversation_id} not found in conversations!")
-                st.write(f"🔍 DEBUG: Available conversation IDs: {list(conversations.keys())}")
-        
-        # Chat input for follow-up questions (only if we have an active conversation)
-        if active_conversation_id and active_conversation_id in conversations:
+        elif active_conversation_id is not None:
+            conversations = self.get_user_session('conversations', {})
+            active_conv = conversations[active_conversation_id]
+            
+            for message_index, message in enumerate(active_conv["messages"]):
+                avatar = self.BOT_AVATAR if message["role"] == "assistant" else self.USER_AVATAR
+                with st.chat_message(message["role"], avatar=avatar):
+                    st.markdown(message["content"], unsafe_allow_html=True)
+                    
+                    # Show papers section only for the first assistant message and regular analyses
+                    if (message["role"] == "assistant" and message_index == 0 and 
+                        "retrieved_papers" in active_conv and active_conv["retrieved_papers"] and 
+                        active_conv.get("search_mode") != "custom"):
+                        with st.expander("View and Download Retrieved Papers for this Analysis"):
+                            for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
+                                meta = paper.get('metadata', {})
+                                title = meta.get('title', 'N/A')
+                                paper_id = paper.get('paper_id')
+                                
+                                col1, col2 = st.columns([4, 1])
+                                with col1:
+                                    st.markdown(f"**{paper_index+1}. {title}**")
+                                with col2:
+                                    if paper_id:
+                                        pdf_bytes = self.api.get_pdf_from_gcs(self.api.config['gcs_bucket_name'], paper_id)
+                                        if pdf_bytes:
+                                            st.download_button(
+                                                label="Download PDF",
+                                                data=pdf_bytes,
+                                                file_name=paper_id,
+                                                mime="application/pdf",
+                                                key=f"download_{active_conversation_id}_{paper_id}"
+                                            )
+            
+            # Chat input for follow-up questions
             if prompt := st.chat_input("Ask a follow-up question..."):
-                active_conv = conversations[active_conversation_id]
                 active_conv["messages"].append({"role": "user", "content": prompt})
                 active_conv['last_interaction_time'] = time.time()
                 self.set_user_session('conversations', conversations)
@@ -553,14 +651,42 @@ class ResearchAssistantUI:
                 st.rerun()
         
         # Handle follow-up responses
-        if active_conversation_id and active_conversation_id in conversations:
-            conversations = self.get_user_session('conversations', {})
-            if conversations[active_conversation_id]["messages"][-1]["role"] == "user":
-                active_conv = conversations[active_conversation_id]
-                with st.spinner("Thinking..."):
-                    # Simple follow-up response
-                    response = "I'm processing your follow-up question..."
-                    active_conv["messages"].append({"role": "assistant", "content": response})
+        if active_conversation_id and conversations[active_conversation_id]["messages"][-1]["role"] == "user":
+            active_conv = conversations[active_conversation_id]
+            with st.spinner("Thinking..."):
+                chat_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in active_conv["messages"]])
+                full_context = ""
+                if active_conv.get("retrieved_papers"):
+                    full_context += "Here is the full context of every paper found in the initial analysis:\n\n"
+                    for i, paper in enumerate(active_conv["retrieved_papers"]):
+                        meta = paper.get('metadata', {})
+                        title = meta.get('title', 'N/A')
+                        link = self.api._get_paper_link(meta)
+                        content_preview = (meta.get('abstract') or paper.get('content') or '')[:4000]
+                        full_context += f"SOURCE [{i+1}]:\nTitle: {title}\nLink: {link}\nContent: {content_preview}\n---\n\n"
+                
+                full_prompt = f"""Continue our conversation. You are the Polo-GGB Research Assistant.
+Your task is to answer the user's last message based on the chat history and the full context from the paper sources provided below.
+
+**CITATION INSTRUCTIONS:** When referencing sources, use citation markers in square brackets like [1], [2], [3], etc. Separate multiple citations with individual brackets like [2][3][4]. **IMPORTANT:** Limit citations to a maximum of 3 per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
+
+--- CHAT HISTORY ---
+{chat_history}
+--- END CHAT HISTORY ---
+
+--- FULL LITERATURE CONTEXT FOR THIS ANALYSIS ---
+{full_context}
+--- END FULL LITERATURE CONTEXT FOR THIS ANALYSIS ---
+
+Assistant Response:"""
+                
+                response_text = self.api.generate_ai_response(full_prompt)
+                if response_text:
+                    retrieved_papers = active_conv.get("retrieved_papers", [])
+                    search_mode = active_conv.get("search_mode", "all_keywords")
+                    
+                    response_text = self.api._display_citations_separately(response_text, retrieved_papers, retrieved_papers, search_mode, include_references=False)
+                    active_conv["messages"].append({"role": "assistant", "content": response_text})
                     active_conv['last_interaction_time'] = time.time()
                     self.set_user_session('conversations', conversations)
                     
