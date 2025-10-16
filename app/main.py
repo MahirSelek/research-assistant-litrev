@@ -107,6 +107,32 @@ def main():
         }
     )
     
+    # Hide Streamlit's default UI elements
+    st.markdown("""
+    <style>
+    /* Hide Streamlit's default header and footer */
+    header[data-testid="stHeader"] { display: none !important; }
+    footer[data-testid="stFooter"] { display: none !important; }
+    
+    /* Hide Streamlit's toolbar and menu */
+    [data-testid="stToolbar"] { display: none !important; }
+    [data-testid="stUserMenu"] { display: none !important; }
+    
+    /* Hide Streamlit's top bar elements */
+    .css-1rs6os { display: none !important; }
+    .css-17eq0hr { display: none !important; }
+    
+    /* Force dark theme for entire app */
+    .stApp { background-color: #0E1117 !important; }
+    .main { background-color: #0E1117 !important; }
+    .main .block-container { background-color: #0E1117 !important; }
+    
+    /* Ensure all text is visible on dark background */
+    .stApp * { color: #FAFAFA !important; }
+    .stApp a { color: #3b82f6 !important; }
+    </style>
+    """, unsafe_allow_html=True)
+    
     # Check authentication
     if not auth_manager.require_auth():
         show_login_page()

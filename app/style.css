@@ -23,14 +23,34 @@ html, body {
     padding: 0;
 }
 
-/* --- Main Content Area --- */
+/* --- Main Content Area - Force Dark Theme --- */
 .main .block-container {
+    background-color: #0E1117 !important;
+    color: #FAFAFA !important;
     padding-top: 1rem;
     padding-bottom: 1rem;
     padding-left: 1rem;
     padding-right: 1rem;
     max-width: 100%;
     width: 100%;
+}
+
+/* Force dark theme for all main content */
+.main {
+    background-color: #0E1117 !important;
+}
+
+.main * {
+    color: #FAFAFA !important;
+}
+
+/* Override any white backgrounds */
+.stApp > div {
+    background-color: #0E1117 !important;
+}
+
+.stApp > div > div {
+    background-color: #0E1117 !important;
 }
 
 /* --- Sidebar Styling --- */
@@ -50,6 +70,132 @@ header[data-testid="stHeader"] {
     border-bottom: 1px solid #2c313a !important;
 }
 
+/* --- Hide Unwanted Streamlit UI Elements --- */
+/* Hide Streamlit header elements */
+header[data-testid="stHeader"] {
+    display: none !important;
+}
+
+/* Hide Streamlit footer */
+footer[data-testid="stFooter"] {
+    display: none !important;
+}
+
+/* Hide Streamlit menu button */
+[data-testid="stToolbar"] {
+    display: none !important;
+}
+
+/* Hide Streamlit user menu */
+[data-testid="stUserMenu"] {
+    display: none !important;
+}
+
+/* Hide Streamlit hamburger menu */
+[data-testid="stToolbar"] button {
+    display: none !important;
+}
+
+/* Hide any Streamlit branding */
+.stApp > header {
+    display: none !important;
+}
+
+/* Hide Streamlit's default top bar */
+.css-1rs6os {
+    display: none !important;
+}
+
+/* Hide Streamlit's default bottom bar */
+.css-17eq0hr {
+    display: none !important;
+}
+
+/* Hide any Streamlit icons */
+[data-testid="stToolbar"] svg {
+    display: none !important;
+}
+
+/* Hide Streamlit's fork button and GitHub elements */
+.css-1rs6os .css-1rs6os {
+    display: none !important;
+}
+
+/* Hide Streamlit's user profile elements */
+.css-1rs6os [data-testid="stUserMenu"] {
+    display: none !important;
+}
+
+/* Hide any remaining Streamlit UI chrome */
+.css-1rs6os,
+.css-17eq0hr,
+.css-1rs6os > div {
+    display: none !important;
+}
+
+/* Additional comprehensive hiding of Streamlit elements */
+/* Hide Streamlit's top navigation */
+.css-1rs6os,
+.css-1rs6os > div,
+.css-1rs6os > div > div {
+    display: none !important;
+}
+
+/* Hide Streamlit's bottom elements */
+.css-17eq0hr,
+.css-17eq0hr > div,
+.css-17eq0hr > div > div {
+    display: none !important;
+}
+
+/* Hide Streamlit's toolbar and menu elements */
+.css-1rs6os [data-testid="stToolbar"],
+.css-1rs6os [data-testid="stUserMenu"],
+.css-1rs6os button,
+.css-1rs6os svg {
+    display: none !important;
+}
+
+/* Hide any Streamlit branding or icons */
+.stApp > div > div:first-child {
+    display: none !important;
+}
+
+/* Hide Streamlit's default header completely */
+.stApp header,
+.stApp > header,
+.stApp > div > header {
+    display: none !important;
+}
+
+/* Hide Streamlit's default footer completely */
+.stApp footer,
+.stApp > footer,
+.stApp > div > footer {
+    display: none !important;
+}
+
+/* Ensure no white backgrounds anywhere */
+.stApp,
+.stApp > div,
+.stApp > div > div,
+.main,
+.main > div,
+.main > div > div {
+    background-color: #0E1117 !important;
+}
+
+/* Force dark theme for all Streamlit components */
+.stSelectbox > div > div,
+.stMultiselect > div > div,
+.stTextInput > div > div > input,
+.stExpander,
+.stExpander header {
+    background-color: #262730 !important;
+    border: 1px solid #2c313a !important;
+    color: #D1D5DB !important;
+}
+
 /* --- Footer/Chat Input Area --- */
 [data-testid="stChatInput"] {
     background-color: #1a1e29 !important;
@@ -61,7 +207,7 @@ header[data-testid="stHeader"] {
     z-index: 1000;
 }
 
-/* --- Typography --- */
+/* --- Typography - Force Dark Theme --- */
 h1, h2, h3, h4, h5, h6 {
     color: #FAFAFA !important;
     font-family: 'Inter', sans-serif !important;
@@ -69,6 +215,25 @@ h1, h2, h3, h4, h5, h6 {
 
 .stMarkdown, .stText, .stSelectbox, .stMultiselect, .stTextInput {
     color: #D1D5DB !important;
+}
+
+/* Force all text to be light colored */
+.stApp * {
+    color: #FAFAFA !important;
+}
+
+/* Override any white text on dark backgrounds */
+.stApp p, .stApp div, .stApp span, .stApp a {
+    color: #FAFAFA !important;
+}
+
+/* Ensure links are visible */
+.stApp a {
+    color: #3b82f6 !important;
+}
+
+.stApp a:hover {
+    color: #60a5fa !important;
 }
 
 /* --- Button Styles --- */

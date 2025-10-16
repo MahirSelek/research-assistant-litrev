@@ -501,8 +501,10 @@ class ResearchAssistantUI:
             }
         }
         
-        /* Responsive main content */
+        /* Responsive main content - Force Dark Theme */
         .main .block-container {
+            background-color: #0E1117 !important;
+            color: #FAFAFA !important;
             padding-left: 1rem !important;
             padding-right: 1rem !important;
             max-width: 100% !important;
@@ -515,17 +517,32 @@ class ResearchAssistantUI:
             }
         }
         
-        /* Fix white bars */
+        /* Fix white bars and force dark theme */
         .stApp > div {
             width: 100% !important;
             max-width: 100% !important;
+            background-color: #0E1117 !important;
         }
         
-        /* Ensure full width */
+        /* Ensure full width and dark theme */
         .main {
             width: 100% !important;
             max-width: 100% !important;
+            background-color: #0E1117 !important;
         }
+        
+        /* Force dark theme for all content */
+        .main * {
+            color: #FAFAFA !important;
+        }
+        
+        /* Hide Streamlit UI elements */
+        header[data-testid="stHeader"] { display: none !important; }
+        footer[data-testid="stFooter"] { display: none !important; }
+        [data-testid="stToolbar"] { display: none !important; }
+        [data-testid="stUserMenu"] { display: none !important; }
+        .css-1rs6os { display: none !important; }
+        .css-17eq0hr { display: none !important; }
         /* Responsive main content area - no fixed margins */
         @media (min-width: 769px) {
             .css-1y0tads {
