@@ -41,8 +41,15 @@ class ResearchAssistantUI:
                 user_data = self.api.get_user_data(current_user)
                 if user_data:
                     # Set all user data from backend
-                    self.set_user_session('conversations', user_data.get('conversations', {}))
-                    self.set_user_session('active_conversation_id', user_data.get('active_conversation_id'))
+                    conversations = user_data.get('conversations', {})
+                    active_conversation_id = user_data.get('active_conversation_id')
+                    
+                    # Validate that active_conversation_id exists in conversations
+                    if active_conversation_id and active_conversation_id not in conversations:
+                        active_conversation_id = None
+                    
+                    self.set_user_session('conversations', conversations)
+                    self.set_user_session('active_conversation_id', active_conversation_id)
                     self.set_user_session('selected_keywords', user_data.get('selected_keywords', []))
                     self.set_user_session('search_mode', user_data.get('search_mode', 'all_keywords'))
                     self.set_user_session('uploaded_papers', user_data.get('uploaded_papers', []))
@@ -605,6 +612,12 @@ class ResearchAssistantUI:
             st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
         elif active_conversation_id is not None:
             conversations = self.get_user_session('conversations', {})
+            # Check if the active conversation actually exists
+            if active_conversation_id not in conversations:
+                # Clear the invalid active conversation ID
+                self.set_user_session('active_conversation_id', None)
+                st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
+                return
             active_conv = conversations[active_conversation_id]
             
             for message_index, message in enumerate(active_conv["messages"]):
@@ -651,7 +664,7 @@ class ResearchAssistantUI:
                 st.rerun()
         
         # Handle follow-up responses
-        if active_conversation_id and conversations[active_conversation_id]["messages"][-1]["role"] == "user":
+        if active_conversation_id and active_conversation_id in conversations and conversations[active_conversation_id]["messages"][-1]["role"] == "user":
             active_conv = conversations[active_conversation_id]
             with st.spinner("Thinking..."):
                 chat_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in active_conv["messages"]])
