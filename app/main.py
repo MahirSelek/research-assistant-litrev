@@ -799,7 +799,7 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
     """
     Performs a search with different strategies based on search_mode:
     1. "all_keywords": Elasticsearch AND search with relevance scoring
-    2. "any_keyword": Single-stage search (Elasticsearch OR only, return ALL papers)
+    2. "any_keyword": Single-stage search (Elasticsearch OR only, limited to n_results)
     Returns a tuple: (list of papers, total number of papers found).
     """
     # Determine the operator based on search mode
@@ -809,7 +809,7 @@ def perform_hybrid_search(keywords: list, time_filter_dict: dict | None = None, 
         # For AND queries: Use the original two-stage hybrid approach
         return perform_and_search(keywords, time_filter_dict, n_results, score_threshold, max_final_results)
     else:
-        # For OR queries: Return ALL papers found, no filtering
+        # For OR queries: Return papers found, limited to n_results
         return perform_or_search(keywords, time_filter_dict, n_results)
 
 def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100, score_threshold: float = 0.005, max_final_results: int = 15) -> tuple[list, int]:
@@ -855,9 +855,9 @@ def perform_and_search(keywords: list, time_filter_dict: dict | None = None, n_r
 
 def perform_or_search(keywords: list, time_filter_dict: dict | None = None, n_results: int = 100) -> tuple[list, int]:
     """
-    Performs an OR search returning ALL papers found, sorted by Elasticsearch relevance score.
+    Performs an OR search returning up to 100 papers found, sorted by Elasticsearch relevance score.
     """
-    # Get ALL papers that contain at least one keyword
+    # Get papers that contain at least one keyword (limited to n_results)
     es_results = st.session_state.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="OR")
     
     # Convert to the expected format and preserve relevance scores
@@ -878,7 +878,7 @@ def perform_or_search(keywords: list, time_filter_dict: dict | None = None, n_re
     
     total_papers_found = len(all_papers)
     
-    # Return ALL papers found, sorted by relevance
+    # Return papers found (limited to n_results), sorted by relevance
     return all_papers, total_papers_found
 
 
@@ -924,9 +924,8 @@ def process_keyword_search(keywords: list, time_filter_type: str | None, search_
         time_filter_dict = {"gte": f"01 {month_abbr} {data_year}", "lt": f"01 {next_month_abbr} {next_year}"}
     
     # Skip Elasticsearch time filtering - we'll use GCS instead
-    # For OR searches, increase the result limit to capture more papers
-    # For AND searches, keep the original limit as they're more restrictive
-    n_results_limit = 1000 if search_mode == "any_keyword" else 100
+    # For both OR and AND searches, limit to 100 papers to prevent app errors
+    n_results_limit = 100
     
     all_papers, total_found = perform_hybrid_search(
         keywords, 
