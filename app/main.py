@@ -930,6 +930,38 @@ def display_paper_management():
     
 
 
+def delete_conversation(conv_id: str):
+    """Delete a conversation from both local session and GCS"""
+    try:
+        # Get current conversations
+        conversations = get_user_session('conversations', {})
+        
+        if conv_id not in conversations:
+            st.error("Conversation not found")
+            return False
+        
+        # Remove from local session
+        del conversations[conv_id]
+        set_user_session('conversations', conversations)
+        
+        # If this was the active conversation, clear it
+        if get_user_session('active_conversation_id') == conv_id:
+            set_user_session('active_conversation_id', None)
+        
+        # Remove from GCS
+        username = st.session_state.get('username')
+        if username:
+            try:
+                gcs_storage.delete_conversation(username, conv_id)
+            except Exception as e:
+                print(f"Failed to delete conversation from GCS: {e}")
+                # Don't show error to user, just log it
+        
+        return True
+    except Exception as e:
+        st.error(f"Failed to delete conversation: {e}")
+        return False
+
 def display_chat_history():
     st.markdown("<h3>Chat History</h3>", unsafe_allow_html=True)
     
@@ -938,6 +970,39 @@ def display_chat_history():
     if not conversations:
         st.caption("No past analyses found.")
         return
+    
+    # Add bulk actions
+    col1, col2, col3 = st.columns([2, 1, 1])
+    with col1:
+        st.caption(f"📊 {len(conversations)} conversations found")
+    with col2:
+        if st.button("🗑️ Clear All", help="Delete all conversations", key="clear_all_btn", type="secondary"):
+            if "confirm_clear_all" not in st.session_state:
+                st.session_state["confirm_clear_all"] = True
+                st.rerun()
+            else:
+                # Clear all conversations
+                username = st.session_state.get('username')
+                deleted_count = 0
+                for conv_id in list(conversations.keys()):
+                    if delete_conversation(conv_id):
+                        deleted_count += 1
+                
+                if deleted_count > 0:
+                    st.success(f"Deleted {deleted_count} conversations!")
+                    # Clear confirmation state
+                    if "confirm_clear_all" in st.session_state:
+                        del st.session_state["confirm_clear_all"]
+                    st.rerun()
+                else:
+                    st.error("Failed to delete conversations")
+    
+    with col3:
+        if st.session_state.get("confirm_clear_all", False):
+            st.warning("Click 'Clear All' again to confirm")
+    
+    if st.session_state.get("confirm_clear_all", False):
+        st.markdown("⚠️ **Warning:** This will permanently delete ALL your conversations!")
 
     grouped_convs = defaultdict(list)
     
@@ -990,22 +1055,47 @@ def display_chat_history():
             st.markdown(f"<h5>{display_date.strftime('%B %Y')}</h5>", unsafe_allow_html=True)
 
         for conv_id, title in grouped_convs[month_key]:
-            if st.button(title, key=f"btn_{conv_id}", use_container_width=True):
-                if get_user_session('active_conversation_id') != conv_id:
-                    set_user_session('active_conversation_id', conv_id)
-                    # Update last interaction time for this conversation
-                    conversations[conv_id]['last_interaction_time'] = time.time()
-                    set_user_session('conversations', conversations)
-                    
-                    # Save conversation to GCS
-                    username = st.session_state.get('username')
-                    if username:
-                        try:
-                            gcs_storage.save_conversation(username, conv_id, conversations[conv_id])
-                        except Exception as e:
-                            print(f"Failed to save conversation to GCS: {e}")
-                    
-                    st.rerun()
+            # Create columns for the conversation button and delete button
+            col1, col2 = st.columns([4, 1])
+            
+            with col1:
+                if st.button(title, key=f"btn_{conv_id}", use_container_width=True):
+                    if get_user_session('active_conversation_id') != conv_id:
+                        set_user_session('active_conversation_id', conv_id)
+                        # Update last interaction time for this conversation
+                        conversations[conv_id]['last_interaction_time'] = time.time()
+                        set_user_session('conversations', conversations)
+                        
+                        # Save conversation to GCS
+                        username = st.session_state.get('username')
+                        if username:
+                            try:
+                                gcs_storage.save_conversation(username, conv_id, conversations[conv_id])
+                            except Exception as e:
+                                print(f"Failed to save conversation to GCS: {e}")
+                        
+                        st.rerun()
+            
+            with col2:
+                if st.button("🗑️", key=f"delete_{conv_id}", help="Delete this conversation", use_container_width=True, type="secondary"):
+                    # Show confirmation dialog
+                    if f"confirm_delete_{conv_id}" not in st.session_state:
+                        st.session_state[f"confirm_delete_{conv_id}"] = True
+                        st.rerun()
+                    else:
+                        # Actually delete the conversation
+                        if delete_conversation(conv_id):
+                            st.success("Conversation deleted successfully!")
+                            # Clear the confirmation state
+                            if f"confirm_delete_{conv_id}" in st.session_state:
+                                del st.session_state[f"confirm_delete_{conv_id}"]
+                            st.rerun()
+                        else:
+                            st.error("Failed to delete conversation")
+                
+                # Show confirmation message if delete was clicked
+                if st.session_state.get(f"confirm_delete_{conv_id}", False):
+                    st.warning("Click 🗑️ again to confirm deletion")
 
 def main():
     # Check authentication first
@@ -1224,6 +1314,36 @@ def main():
     /* Ensure sidebar content fits better */
     .css-1lcbmhc .css-1y0tads {
         padding-left: 1rem;
+    }
+    
+    /* Style delete buttons */
+    .stButton > button[kind="secondary"] {
+        background-color: #ff4444;
+        color: white;
+        border: 1px solid #ff4444;
+        border-radius: 4px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+        min-height: 2rem;
+    }
+    
+    .stButton > button[kind="secondary"]:hover {
+        background-color: #cc3333;
+        border-color: #cc3333;
+    }
+    
+    /* Style conversation buttons */
+    .stButton > button:not([kind="secondary"]) {
+        text-align: left;
+        padding: 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    /* Warning messages */
+    .stAlert {
+        margin: 0.5rem 0;
+        padding: 0.75rem;
+        border-radius: 4px;
     }
     </style>
     """, unsafe_allow_html=True)
