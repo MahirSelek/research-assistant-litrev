@@ -53,9 +53,9 @@ class ResearchAssistantUI:
             except Exception as e:
                 print(f"Failed to load user data: {e}")
                 self._initialize_empty_user_data()
-        
-        # Initialize user-specific session state (fallback for default user)
-        self._initialize_empty_user_data()
+        else:
+            # Initialize user-specific session state (fallback for default user or if data already loaded)
+            self._initialize_empty_user_data()
         
         # Global session state (shared across users)
         if 'is_loading_analysis' not in st.session_state:
@@ -492,13 +492,17 @@ class ResearchAssistantUI:
         # Show default message only if no active conversation
         active_conversation_id = self.get_user_session('active_conversation_id')
         
+        # DEBUG: Always show what's happening
+        st.write(f"🔍 DEBUG: Active conversation ID: {active_conversation_id}")
+        conversations = self.get_user_session('conversations', {})
+        st.write(f"🔍 DEBUG: Available conversations: {list(conversations.keys())}")
+        
         if active_conversation_id is None:
             st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
         else:
-            conversations = self.get_user_session('conversations', {})
-            
             if active_conversation_id in conversations:
                 active_conv = conversations[active_conversation_id]
+                st.write(f"🔍 DEBUG: Conversation found with {len(active_conv.get('messages', []))} messages")
                 
                 for message_index, message in enumerate(active_conv["messages"]):
                     avatar = self.BOT_AVATAR if message["role"] == "assistant" else self.USER_AVATAR
@@ -531,6 +535,7 @@ class ResearchAssistantUI:
                                                 )
             else:
                 st.error(f"❌ Conversation {active_conversation_id} not found in conversations!")
+                st.write(f"🔍 DEBUG: Available conversation IDs: {list(conversations.keys())}")
         
         # Chat input for follow-up questions (only if we have an active conversation)
         if active_conversation_id and active_conversation_id in conversations:

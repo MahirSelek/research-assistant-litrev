@@ -17,14 +17,14 @@ html, body {
 
 /* --- STREAMLIT APP CONTAINER - FULL WIDTH --- */
 .stApp {
-    background-color: #0E1117 !important;
+    background-color: #ffffff !important;
     min-height: 100vh;
     width: 100vw !important;
     margin: 0 !important;
     padding: 0 !important;
 }
 
-/* Force dark theme for ALL containers */
+/* Force light theme for ALL containers */
 .stApp,
 .stApp > div,
 .stApp > div > div,
@@ -36,14 +36,14 @@ html, body {
 .block-container,
 .block-container > div,
 .block-container > div > div {
-    background-color: #0E1117 !important;
-    color: #FAFAFA !important;
+    background-color: #ffffff !important;
+    color: #262730 !important;
 }
 
 /* --- MAIN CONTENT AREA - RESPONSIVE --- */
 .main .block-container {
-    background-color: #0E1117 !important;
-    color: #FAFAFA !important;
+    background-color: #ffffff !important;
+    color: #262730 !important;
     padding-top: 1rem !important;
     padding-bottom: 1rem !important;
     padding-left: 1rem !important;
@@ -55,13 +55,13 @@ html, body {
 
 /* --- SIDEBAR STYLING --- */
 [data-testid="stSidebar"] {
-    background-color: #1a1e29 !important;
-    border-right: 1px solid #2c313a !important;
+    background-color: #f8f9fa !important;
+    border-right: 1px solid #e9ecef !important;
     min-height: 100vh;
 }
 
 [data-testid="stSidebar"] > div {
-    background-color: #1a1e29 !important;
+    background-color: #f8f9fa !important;
 }
 
 /* --- HIDE UNWANTED STREAMLIT ELEMENTS --- */
@@ -86,30 +86,30 @@ footer[data-testid="stFooter"] {
     display: none !important;
 }
 
-/* --- TYPOGRAPHY - DARK THEME --- */
+/* --- TYPOGRAPHY - LIGHT THEME --- */
 h1, h2, h3, h4, h5, h6 {
-    color: #FAFAFA !important;
+    color: #262730 !important;
     font-family: 'Inter', sans-serif !important;
     background-color: transparent !important;
 }
 
 .stMarkdown, .stText, .stSelectbox, .stMultiselect, .stTextInput {
-    color: #FAFAFA !important;
+    color: #262730 !important;
     background-color: transparent !important;
 }
 
-/* Force all text to be light colored */
+/* Force all text to be dark colored */
 .stApp * {
-    color: #FAFAFA !important;
+    color: #262730 !important;
 }
 
 /* Ensure links are visible */
 .stApp a {
-    color: #3b82f6 !important;
+    color: #0066cc !important;
 }
 
 .stApp a:hover {
-    color: #60a5fa !important;
+    color: #004499 !important;
 }
 
 /* --- BUTTON STYLES --- */
@@ -155,70 +155,70 @@ h1, h2, h3, h4, h5, h6 {
 
 /* --- CHAT INTERFACE --- */
 [data-testid="stChatMessage"] {
-    background-color: #1a1e29 !important;
+    background-color: #f8f9fa !important;
     border-radius: 0.75rem !important;
     padding: 1rem !important;
     margin-bottom: 1rem !important;
-    border: 1px solid #2c313a !important;
-    color: #FAFAFA !important;
+    border: 1px solid #e9ecef !important;
+    color: #262730 !important;
 }
 
 /* --- FORM ELEMENTS --- */
 .stSelectbox > div > div {
-    background-color: #262730 !important;
-    border: 1px solid #2c313a !important;
-    color: #FAFAFA !important;
+    background-color: #ffffff !important;
+    border: 1px solid #ced4da !important;
+    color: #262730 !important;
 }
 
 .stMultiselect > div > div {
-    background-color: #262730 !important;
-    border: 1px solid #2c313a !important;
+    background-color: #ffffff !important;
+    border: 1px solid #ced4da !important;
 }
 
 .stTextInput > div > div > input {
-    background-color: #262730 !important;
-    border: 1px solid #2c313a !important;
-    color: #FAFAFA !important;
+    background-color: #ffffff !important;
+    border: 1px solid #ced4da !important;
+    color: #262730 !important;
 }
 
 /* --- EXPANDER STYLING --- */
 .stExpander {
-    border: 1px solid #2c313a !important;
+    border: 1px solid #e9ecef !important;
     border-radius: 0.5rem !important;
-    background-color: #1a1e29 !important;
+    background-color: #ffffff !important;
 }
 
 .stExpander header {
-    background-color: #1a1e29 !important;
-    color: #FAFAFA !important;
+    background-color: #f8f9fa !important;
+    color: #262730 !important;
 }
 
 /* --- ALERTS AND INFO --- */
 .stAlert {
     border-radius: 0.5rem !important;
-    background-color: #1a1e29 !important;
-    color: #FAFAFA !important;
-    border: 1px solid #2c313a !important;
+    background-color: #d1ecf1 !important;
+    color: #0c5460 !important;
+    border: 1px solid #bee5eb !important;
 }
 
 .stInfo {
-    background-color: #1a1e29 !important;
-    color: #FAFAFA !important;
+    background-color: #d1ecf1 !important;
+    color: #0c5460 !important;
 }
 
 .stSuccess {
-    background-color: #1a1e29 !important;
-    color: #FAFAFA !important;
+    background-color: #d4edda !important;
+    color: #155724 !important;
 }
 
 .stError {
-    background-color: #1a1e29 !important;
-    color: #FAFAFA !important;
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
 }
 
 .stWarning {
-    background-color: #1a1e29 !important;
-    color: #FAFAFA !important;
+    background-color: #fff3cd !important;
+    color: #856404 !important;
 }
 
 /* --- RESPONSIVE DESIGN - MOBILE FIRST --- */
@@ -316,21 +316,21 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-track {
-    background: #1a1e29;
+    background: #f8f9fa;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #2c313a;
+    background: #ced4da;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #374151;
+    background: #adb5bd;
 }
 
 /* --- CITATION LINKS --- */
 .citation-link {
-    color: #3b82f6 !important;
+    color: #0066cc !important;
     cursor: pointer;
     text-decoration: underline;
     font-weight: bold;
@@ -341,8 +341,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .citation-link:hover {
-    color: #60a5fa !important;
-    background-color: rgba(59, 130, 246, 0.1);
+    color: #004499 !important;
+    background-color: #e3f2fd;
     transform: scale(1.05);
 }
 
@@ -366,7 +366,7 @@ h1, h2, h3, h4, h5, h6 {
 .main > div,
 .main > div > div,
 .main > div > div > div {
-    background-color: #0E1117 !important;
+    background-color: #ffffff !important;
 }
 
 /* --- RESPONSIVE CONTAINER FIXES --- */
