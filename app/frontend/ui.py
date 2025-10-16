@@ -353,7 +353,14 @@ class ResearchAssistantUI:
     
     def process_keyword_search(self, keywords: List[str], time_filter_type: str, search_mode: str = "all_keywords"):
         """Process keyword search via backend"""
-        analysis_result, retrieved_papers, total_found = self.api.search_papers(keywords, time_filter_type, search_mode)
+        try:
+            print(f"Processing keyword search for {len(keywords)} keywords: {keywords}")
+            analysis_result, retrieved_papers, total_found = self.api.search_papers(keywords, time_filter_type, search_mode)
+            print(f"Search completed. Analysis result length: {len(analysis_result) if analysis_result else 0}")
+        except Exception as e:
+            print(f"Error in process_keyword_search: {e}")
+            st.error(f"Error processing keyword search: {e}")
+            return
         
         if analysis_result:
             conv_id = f"conv_{time.time()}"
@@ -790,14 +797,19 @@ Assistant Response:"""
             if st.session_state.get('is_loading_analysis', False):
                 self.show_loading_overlay(st.session_state.loading_message)
                 
-                self.process_keyword_search(
-                    self.get_user_session('selected_keywords', []), 
-                    time_filter_type, 
-                    self.get_user_session('search_mode', 'all_keywords')
-                )
-                
-                st.session_state.is_loading_analysis = False
-                st.rerun()
+                try:
+                    self.process_keyword_search(
+                        self.get_user_session('selected_keywords', []), 
+                        time_filter_type, 
+                        self.get_user_session('search_mode', 'all_keywords')
+                    )
+                except Exception as e:
+                    st.error(f"Error processing keyword search: {e}")
+                    print(f"Keyword search error: {e}")
+                finally:
+                    # Always clear loading state
+                    st.session_state.is_loading_analysis = False
+                    st.rerun()
             
             st.markdown("---")
             

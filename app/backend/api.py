@@ -82,15 +82,36 @@ class ResearchAssistantAPI:
         try:
             print(f"Generating AI response for prompt length: {len(prompt)}")
             generation_config = {"temperature": 0.2, "max_output_tokens": 8192}
-            response = self.model.generate_content([prompt], generation_config=generation_config)
-            print(f"AI response generated successfully, length: {len(response.text) if response.text else 0}")
-            return response.text
+            
+            # Add timeout to prevent hanging
+            import signal
+            
+            def timeout_handler(signum, frame):
+                raise TimeoutError("AI API call timed out")
+            
+            # Set timeout to 5 minutes
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(300)  # 5 minutes timeout
+            
+            try:
+                response = self.model.generate_content([prompt], generation_config=generation_config)
+                signal.alarm(0)  # Cancel timeout
+                print(f"AI response generated successfully, length: {len(response.text) if response.text else 0}")
+                return response.text
+            except TimeoutError:
+                print("AI API call timed out after 5 minutes")
+                return None
+            finally:
+                signal.alarm(0)  # Ensure timeout is cancelled
+                
         except Exception as e:
             print(f"AI API error: {e}")
             return None
     
     def search_papers(self, keywords: List[str], time_filter_type: str, search_mode: str = "all_keywords") -> Tuple[Optional[str], List[Dict], int]:
         """Search papers and generate analysis"""
+        print(f"Starting search_papers with keywords: {keywords}, time_filter: {time_filter_type}, mode: {search_mode}")
+        
         if not keywords:
             return None, [], 0
         
@@ -123,7 +144,9 @@ class ResearchAssistantAPI:
             papers_for_references = all_papers
         
         # Generate analysis
+        print(f"Generating analysis for {len(top_papers_for_analysis)} papers")
         analysis = self._generate_analysis(top_papers_for_analysis, keywords, search_mode)
+        print(f"Analysis generation completed. Length: {len(analysis) if analysis else 0}")
         
         # Reload metadata and make citations clickable
         papers_for_references = self._reload_paper_metadata(papers_for_references)
