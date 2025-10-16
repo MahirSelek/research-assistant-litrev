@@ -162,6 +162,9 @@ class ResearchAssistantUI:
         <meta name="theme-color" content="#0E1117">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="msapplication-TileColor" content="#0E1117">
+        <meta name="msapplication-navbutton-color" content="#0E1117">
         """, unsafe_allow_html=True)
     
     def create_responsive_layout(self):
@@ -471,9 +474,6 @@ class ResearchAssistantUI:
         
         st.markdown("<h1>🧬 POLO-GGB RESEARCH ASSISTANT</h1>", unsafe_allow_html=True)
         
-        # TEST: Always show something to verify main area is working
-        st.write("🔍 MAIN AREA IS WORKING - TEST MESSAGE")
-        
         # Show loading overlay if analysis is in progress
         if st.session_state.get('is_loading_analysis', False):
             self.show_loading_overlay(st.session_state.loading_message)
@@ -491,22 +491,44 @@ class ResearchAssistantUI:
         
         # Show default message only if no active conversation
         active_conversation_id = self.get_user_session('active_conversation_id')
-        st.write(f"🔍 Active conversation ID: {active_conversation_id}")
         
         if active_conversation_id is None:
             st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
         else:
             conversations = self.get_user_session('conversations', {})
-            st.write(f"🔍 Available conversations: {list(conversations.keys())}")
             
             if active_conversation_id in conversations:
                 active_conv = conversations[active_conversation_id]
-                st.write(f"🔍 Conversation found with {len(active_conv.get('messages', []))} messages")
                 
                 for message_index, message in enumerate(active_conv["messages"]):
                     avatar = self.BOT_AVATAR if message["role"] == "assistant" else self.USER_AVATAR
                     with st.chat_message(message["role"], avatar=avatar):
                         st.markdown(message["content"], unsafe_allow_html=True)
+                        
+                        # Show papers section only for the first assistant message and regular analyses
+                        if (message["role"] == "assistant" and message_index == 0 and 
+                            "retrieved_papers" in active_conv and active_conv["retrieved_papers"] and 
+                            active_conv.get("search_mode") != "custom"):
+                            with st.expander("View and Download Retrieved Papers for this Analysis"):
+                                for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
+                                    meta = paper.get('metadata', {})
+                                    title = meta.get('title', 'N/A')
+                                    paper_id = paper.get('paper_id')
+                                    
+                                    col1, col2 = st.columns([4, 1])
+                                    with col1:
+                                        st.markdown(f"**{paper_index+1}. {title}**")
+                                    with col2:
+                                        if paper_id:
+                                            pdf_bytes = self.api.get_pdf_from_gcs(self.api.config['gcs_bucket_name'], paper_id)
+                                            if pdf_bytes:
+                                                st.download_button(
+                                                    label="Download PDF",
+                                                    data=pdf_bytes,
+                                                    file_name=paper_id,
+                                                    mime="application/pdf",
+                                                    key=f"download_{active_conversation_id}_{paper_id}"
+                                                )
             else:
                 st.error(f"❌ Conversation {active_conversation_id} not found in conversations!")
         
