@@ -155,6 +155,30 @@ class ResearchAssistantUI:
         except FileNotFoundError:
             st.warning(f"CSS file '{file_name}' not found. Using default styles.")
     
+    def add_responsive_meta_tags(self):
+        """Add responsive meta tags for better mobile experience"""
+        st.markdown("""
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="theme-color" content="#0E1117">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        """, unsafe_allow_html=True)
+    
+    def create_responsive_layout(self):
+        """Create responsive layout containers"""
+        # Add responsive container
+        st.markdown("""
+        <div class="responsive-container">
+            <div class="main-content">
+        """, unsafe_allow_html=True)
+    
+    def close_responsive_layout(self):
+        """Close responsive layout containers"""
+        st.markdown("""
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
     def delete_conversation(self, conv_id: str):
         """Delete conversation via backend"""
         try:
@@ -439,6 +463,12 @@ class ResearchAssistantUI:
     
     def render_main_interface(self):
         """Render the main application interface"""
+        # Add responsive meta tags
+        self.add_responsive_meta_tags()
+        
+        # Create responsive layout
+        self.create_responsive_layout()
+        
         # CSS styling
         st.markdown("""
         <style>
@@ -458,19 +488,55 @@ class ResearchAssistantUI:
             transform: scale(1.05);
         }
         
-        /* Make sidebar wider */
+        /* Responsive sidebar */
         .css-1d391kg {
             width: 350px !important;
+            min-width: 300px !important;
         }
         
-        /* Adjust main content area */
-        .css-1y0tads {
-            margin-left: 350px !important;
+        @media (max-width: 768px) {
+            .css-1d391kg {
+                width: 100% !important;
+                min-width: 100% !important;
+            }
         }
         
-        /* Ensure sidebar content fits better */
-        .css-1lcbmhc .css-1y0tads {
-            padding-left: 1rem;
+        /* Responsive main content */
+        .main .block-container {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+            max-width: 100% !important;
+        }
+        
+        @media (max-width: 768px) {
+            .main .block-container {
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+        }
+        
+        /* Fix white bars */
+        .stApp > div {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        
+        /* Ensure full width */
+        .main {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        /* Responsive main content area - no fixed margins */
+        @media (min-width: 769px) {
+            .css-1y0tads {
+                margin-left: 350px !important;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .css-1y0tads {
+                margin-left: 0 !important;
+            }
         }
         
         /* Style for all primary/default buttons (blue-green gradient) */
@@ -630,6 +696,9 @@ Assistant Response:"""
                         self.api.save_conversation(username, active_conversation_id, active_conv)
                     
                     st.rerun()
+        
+        # Close responsive layout
+        self.close_responsive_layout()
     
     def render_sidebar(self):
         """Render the sidebar interface"""

@@ -94,17 +94,23 @@ def initialize_application():
 
 def main():
     """Main application entry point"""
-    # Check authentication first
-    if not auth_manager.require_auth():
-        show_login_page()
-        return
-    
-    # Set page configuration
+    # Set page configuration FIRST (must be before any other Streamlit calls)
     st.set_page_config(
         layout="wide", 
         page_title="Polo GGB Research Assistant", 
-        page_icon="polo-ggb-logo.png"
+        page_icon="polo-ggb-logo.png",
+        initial_sidebar_state="expanded",
+        menu_items={
+            'Get Help': None,
+            'Report a bug': None,
+            'About': "Polo GGB Research Assistant - AI-powered literature review tool"
+        }
     )
+    
+    # Check authentication
+    if not auth_manager.require_auth():
+        show_login_page()
+        return
     
     # Initialize application
     try:
@@ -121,7 +127,7 @@ def main():
     # Initialize session state
     ui.initialize_session_state()
     
-    # Render the application
+    # Render the application with responsive design
     ui.render_sidebar()
     ui.render_main_interface()
 
