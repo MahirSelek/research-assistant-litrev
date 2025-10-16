@@ -404,10 +404,11 @@ class ResearchAssistantUI:
     
     def generate_custom_summary(self, uploaded_papers: List[Dict]):
         """Generate custom summary via backend"""
-        summary = self.api.generate_custom_summary(uploaded_papers)
-        
-        if summary:
-            conv_id = f"custom_summary_{time.time()}"
+        try:
+            summary = self.api.generate_custom_summary(uploaded_papers)
+            
+            if summary:
+                conv_id = f"custom_summary_{time.time()}"
             
             def generate_custom_summary_title(papers, summary_text):
                 paper_count = len(papers)
@@ -464,9 +465,12 @@ class ResearchAssistantUI:
             if username:
                 self.api.save_conversation(username, conv_id, conversations[conv_id])
             
-            self.set_user_session('active_conversation_id', conv_id)
-        else:
-            st.error("Failed to generate summary. Please try again.")
+                self.set_user_session('active_conversation_id', conv_id)
+            else:
+                st.error("Failed to generate summary. Please try again.")
+        except Exception as e:
+            st.error(f"Error generating custom summary: {e}")
+            print(f"Custom summary generation error: {e}")
     
     def render_main_interface(self):
         """Render the main application interface"""
@@ -594,17 +598,30 @@ class ResearchAssistantUI:
         # Show loading overlay if analysis is in progress
         if st.session_state.get('is_loading_analysis', False):
             self.show_loading_overlay(st.session_state.loading_message)
+            
+            # Add a stop button to clear loading state
+            col1, col2, col3 = st.columns([1, 1, 1])
+            with col2:
+                if st.button("🛑 Stop", key="stop_loading", type="secondary"):
+                    st.session_state.is_loading_analysis = False
+                    st.session_state.generate_custom_summary = False
+                    st.rerun()
             return
         
         # Handle custom summary generation
         if st.session_state.get('generate_custom_summary', False):
             st.session_state.generate_custom_summary = False
             
-            uploaded_papers = self.get_user_session('uploaded_papers', [])
-            self.generate_custom_summary(uploaded_papers)
-            
-            st.session_state.is_loading_analysis = False
-            st.rerun()
+            try:
+                uploaded_papers = self.get_user_session('uploaded_papers', [])
+                self.generate_custom_summary(uploaded_papers)
+            except Exception as e:
+                st.error(f"Error generating custom summary: {e}")
+                print(f"Custom summary generation error: {e}")
+            finally:
+                # Always clear loading state
+                st.session_state.is_loading_analysis = False
+                st.rerun()
         
         # Show default message only if no active conversation
         active_conversation_id = self.get_user_session('active_conversation_id')

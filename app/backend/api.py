@@ -80,8 +80,10 @@ class ResearchAssistantAPI:
     def generate_ai_response(self, prompt: str) -> Optional[str]:
         """Generate AI response using Vertex AI"""
         try:
+            print(f"Generating AI response for prompt length: {len(prompt)}")
             generation_config = {"temperature": 0.2, "max_output_tokens": 8192}
             response = self.model.generate_content([prompt], generation_config=generation_config)
+            print(f"AI response generated successfully, length: {len(response.text) if response.text else 0}")
             return response.text
         except Exception as e:
             print(f"AI API error: {e}")
@@ -134,6 +136,8 @@ class ResearchAssistantAPI:
     
     def generate_custom_summary(self, uploaded_papers: List[Dict]) -> Optional[str]:
         """Generate summary of uploaded papers"""
+        print(f"Generating custom summary for {len(uploaded_papers)} papers")
+        
         if not uploaded_papers:
             return "No papers uploaded."
         
@@ -146,6 +150,8 @@ class ResearchAssistantAPI:
             content = paper.get('content', '')
             paper_titles.append(title)
             all_content += f"\n\n--- {title} ---\n{content}"
+        
+        print(f"Combined content length: {len(all_content)}")
         
         # Create summary prompt
         prompt = f"""
