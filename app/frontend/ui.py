@@ -769,14 +769,6 @@ Assistant Response:"""
                 
                 selected_keywords = st.multiselect("Select keywords", self.GENETICS_KEYWORDS, default=self.get_user_session('selected_keywords', []))
                 
-                # Add clear keywords button
-                if selected_keywords:
-                    col1, col2 = st.columns([3, 1])
-                    with col2:
-                        if st.button("Clear", key="clear_keywords", help="Clear all selected keywords"):
-                            self.set_user_session('selected_keywords', [])
-                            st.rerun()
-                
                 search_mode_options = {
                     "all_keywords": "Find papers containing ALL keywords",
                     "any_keyword": "Find papers containing AT LEAST ONE keyword"
@@ -803,6 +795,15 @@ Assistant Response:"""
                     st.session_state.is_loading_analysis = True
                     st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
                     st.rerun()
+            
+            # Add clear keywords button outside the form
+            current_keywords = self.get_user_session('selected_keywords', [])
+            if current_keywords:
+                col1, col2 = st.columns([3, 1])
+                with col2:
+                    if st.button("Clear Keywords", key="clear_keywords", help="Clear all selected keywords"):
+                        self.set_user_session('selected_keywords', [])
+                        st.rerun()
             
             # Handle loading state and process analysis
             if st.session_state.get('is_loading_analysis', False):
