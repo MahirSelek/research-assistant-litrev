@@ -41,18 +41,10 @@ class ResearchAssistantUI:
                 user_data = self.api.get_user_data(current_user)
                 if user_data:
                     # Set all user data from backend
-                    conversations = user_data.get('conversations', {})
-                    active_conversation_id = user_data.get('active_conversation_id')
-                    
-                    # Validate that active_conversation_id exists in conversations
-                    if active_conversation_id and active_conversation_id not in conversations:
-                        active_conversation_id = None
-                    
-                    self.set_user_session('conversations', conversations)
-                    self.set_user_session('active_conversation_id', active_conversation_id)
-                    # Don't restore keywords on login - start fresh
-                    self.set_user_session('selected_keywords', [])
-                    self.set_user_session('search_mode', 'all_keywords')
+                    self.set_user_session('conversations', user_data.get('conversations', {}))
+                    self.set_user_session('active_conversation_id', user_data.get('active_conversation_id'))
+                    self.set_user_session('selected_keywords', user_data.get('selected_keywords', []))
+                    self.set_user_session('search_mode', user_data.get('search_mode', 'all_keywords'))
                     self.set_user_session('uploaded_papers', user_data.get('uploaded_papers', []))
                     self.set_user_session('custom_summary_chat', user_data.get('custom_summary_chat', []))
                 else:
@@ -354,14 +346,7 @@ class ResearchAssistantUI:
     
     def process_keyword_search(self, keywords: List[str], time_filter_type: str, search_mode: str = "all_keywords"):
         """Process keyword search via backend"""
-        try:
-            print(f"Processing keyword search for {len(keywords)} keywords: {keywords}")
-            analysis_result, retrieved_papers, total_found = self.api.search_papers(keywords, time_filter_type, search_mode)
-            print(f"Search completed. Analysis result length: {len(analysis_result) if analysis_result else 0}")
-        except Exception as e:
-            print(f"Error in process_keyword_search: {e}")
-            st.error(f"Error processing keyword search: {e}")
-            return
+        analysis_result, retrieved_papers, total_found = self.api.search_papers(keywords, time_filter_type, search_mode)
         
         if analysis_result:
             conv_id = f"conv_{time.time()}"
@@ -405,17 +390,17 @@ class ResearchAssistantUI:
             
             self.set_user_session('active_conversation_id', conv_id)
             self.set_user_session('custom_summary_chat', [])
+            st.rerun()
         else:
             search_mode_text = "ALL of the selected keywords" if search_mode == "all_keywords" else "AT LEAST ONE of the selected keywords"
             st.error(f"No papers found that contain {search_mode_text} within the specified time window. Please try a different combination of keywords.")
     
     def generate_custom_summary(self, uploaded_papers: List[Dict]):
         """Generate custom summary via backend"""
-        try:
-            summary = self.api.generate_custom_summary(uploaded_papers)
-            
-            if summary:
-                conv_id = f"custom_summary_{time.time()}"
+        summary = self.api.generate_custom_summary(uploaded_papers)
+        
+        if summary:
+            conv_id = f"custom_summary_{time.time()}"
             
             def generate_custom_summary_title(papers, summary_text):
                 paper_count = len(papers)
@@ -472,12 +457,9 @@ class ResearchAssistantUI:
             if username:
                 self.api.save_conversation(username, conv_id, conversations[conv_id])
             
-                self.set_user_session('active_conversation_id', conv_id)
-            else:
-                st.error("Failed to generate summary. Please try again.")
-        except Exception as e:
-            st.error(f"Error generating custom summary: {e}")
-            print(f"Custom summary generation error: {e}")
+            self.set_user_session('active_conversation_id', conv_id)
+        else:
+            st.error("Failed to generate summary. Please try again.")
     
     def render_main_interface(self):
         """Render the main application interface"""
@@ -605,48 +587,17 @@ class ResearchAssistantUI:
         # Show loading overlay if analysis is in progress
         if st.session_state.get('is_loading_analysis', False):
             self.show_loading_overlay(st.session_state.loading_message)
-            
-            # Add a stop button to clear loading state
-            col1, col2, col3 = st.columns([1, 1, 1])
-            with col2:
-                if st.button("🛑 Stop", key="stop_loading", type="secondary"):
-                    st.session_state.is_loading_analysis = False
-                    st.session_state.generate_custom_summary = False
-                    st.rerun()
             return
-        
-        # Handle keyword search analysis
-        if st.session_state.get('is_loading_analysis', False) and not st.session_state.get('generate_custom_summary', False):
-            try:
-                # Get the time filter from session state
-                time_filter_type = self.get_user_session('time_filter', 'Current year')
-                self.process_keyword_search(
-                    self.get_user_session('selected_keywords', []), 
-                    time_filter_type, 
-                    self.get_user_session('search_mode', 'all_keywords')
-                )
-            except Exception as e:
-                st.error(f"Error processing keyword search: {e}")
-                print(f"Keyword search error: {e}")
-            finally:
-                # Always clear loading state
-                st.session_state.is_loading_analysis = False
-                st.rerun()
         
         # Handle custom summary generation
         if st.session_state.get('generate_custom_summary', False):
             st.session_state.generate_custom_summary = False
             
-            try:
-                uploaded_papers = self.get_user_session('uploaded_papers', [])
-                self.generate_custom_summary(uploaded_papers)
-            except Exception as e:
-                st.error(f"Error generating custom summary: {e}")
-                print(f"Custom summary generation error: {e}")
-            finally:
-                # Always clear loading state
-                st.session_state.is_loading_analysis = False
-                st.rerun()
+            uploaded_papers = self.get_user_session('uploaded_papers', [])
+            self.generate_custom_summary(uploaded_papers)
+            
+            st.session_state.is_loading_analysis = False
+            st.rerun()
         
         # Show default message only if no active conversation
         active_conversation_id = self.get_user_session('active_conversation_id')
@@ -654,12 +605,6 @@ class ResearchAssistantUI:
             st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
         elif active_conversation_id is not None:
             conversations = self.get_user_session('conversations', {})
-            # Check if the active conversation actually exists
-            if active_conversation_id not in conversations:
-                # Clear the invalid active conversation ID
-                self.set_user_session('active_conversation_id', None)
-                st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
-                return
             active_conv = conversations[active_conversation_id]
             
             for message_index, message in enumerate(active_conv["messages"]):
@@ -706,7 +651,7 @@ class ResearchAssistantUI:
                 st.rerun()
         
         # Handle follow-up responses
-        if active_conversation_id and active_conversation_id in conversations and conversations[active_conversation_id]["messages"][-1]["role"] == "user":
+        if active_conversation_id and conversations[active_conversation_id]["messages"][-1]["role"] == "user":
             active_conv = conversations[active_conversation_id]
             with st.spinner("Thinking..."):
                 chat_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in active_conv["messages"]])
@@ -772,9 +717,6 @@ Assistant Response:"""
                 self.set_user_session('selected_keywords', [])
                 self.set_user_session('search_mode', "all_keywords")
                 self.set_user_session('custom_summary_chat', [])
-                # Clear any loading states
-                st.session_state.is_loading_analysis = False
-                st.session_state.generate_custom_summary = False
                 st.rerun()
             
             self.display_chat_history()
@@ -809,21 +751,23 @@ Assistant Response:"""
                 if st.form_submit_button("Search & Analyze"):
                     self.set_user_session('selected_keywords', selected_keywords)
                     self.set_user_session('search_mode', search_mode_display)
-                    self.set_user_session('time_filter', time_filter_type)
                     self.set_user_session('custom_summary_chat', [])
                     st.session_state.is_loading_analysis = True
                     st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
                     st.rerun()
             
-            # Add clear keywords button outside the form
-            current_keywords = self.get_user_session('selected_keywords', [])
-            if current_keywords:
-                col1, col2 = st.columns([3, 1])
-                with col2:
-                    if st.button("Clear Keywords", key="clear_keywords", help="Clear all selected keywords"):
-                        self.set_user_session('selected_keywords', [])
-                        st.rerun()
-            
+            # Handle loading state and process analysis
+            if st.session_state.get('is_loading_analysis', False):
+                self.show_loading_overlay(st.session_state.loading_message)
+                
+                self.process_keyword_search(
+                    self.get_user_session('selected_keywords', []), 
+                    time_filter_type, 
+                    self.get_user_session('search_mode', 'all_keywords')
+                )
+                
+                st.session_state.is_loading_analysis = False
+                st.rerun()
             
             st.markdown("---")
             

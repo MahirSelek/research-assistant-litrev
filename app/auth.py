@@ -131,7 +131,6 @@ class AuthenticationManager:
     
     def logout(self):
         """Logout user and clear session"""
-        # Clear authentication-related session state
         if 'authenticated' in st.session_state:
             del st.session_state.authenticated
         if 'username' in st.session_state:
@@ -140,23 +139,6 @@ class AuthenticationManager:
             del st.session_state.login_time
         if 'session_id' in st.session_state:
             del st.session_state.session_id
-        
-        # Clear all user-specific session data to prevent persistence
-        keys_to_remove = []
-        for key in st.session_state.keys():
-            if key.endswith('_default') or any(key.endswith(f'_{username}') for username in ['admin', 'user', 'test']):
-                keys_to_remove.append(key)
-        
-        for key in keys_to_remove:
-            del st.session_state[key]
-        
-        # Clear global loading states
-        if 'is_loading_analysis' in st.session_state:
-            st.session_state.is_loading_analysis = False
-        if 'loading_message' in st.session_state:
-            st.session_state.loading_message = ""
-        if 'generate_custom_summary' in st.session_state:
-            st.session_state.generate_custom_summary = False
     
     def require_auth(self) -> bool:
         """Require authentication - redirect to login if not authenticated"""
