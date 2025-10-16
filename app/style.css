@@ -291,3 +291,21 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar-thumb:hover {
     background: #adb5bd;
 }
+
+/* --- CITATION LINKS --- */
+.citation-link {
+    color: #0066cc !important;
+    cursor: pointer;
+    text-decoration: underline;
+    font-weight: bold;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+    display: inline-block;
+}
+
+.citation-link:hover {
+    color: #004499 !important;
+    background-color: #e3f2fd;
+    transform: scale(1.05);
+}

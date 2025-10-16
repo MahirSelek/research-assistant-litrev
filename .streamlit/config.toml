@@ -16,18 +16,8 @@ gatherUsageStats = false
 serverAddress = "0.0.0.0"
 serverPort = 8501
 
-[runner]
-magicEnabled = false
-installTracer = false
-fixMatplotlib = true
-
 [logger]
 level = "error"
-
-[client]
-caching = true
-displayEnabled = true
-showErrorDetails = false
 
 [global]
 developmentMode = false
@@ -35,4 +25,3 @@ showWarningOnDirectExecution = false
 
 [ui]
 hideTopBar = true
-hideSidebarNav = false

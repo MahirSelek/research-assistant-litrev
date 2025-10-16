@@ -469,107 +469,6 @@ class ResearchAssistantUI:
         # Create responsive layout
         self.create_responsive_layout()
         
-        # CSS styling
-        st.markdown("""
-        <style>
-        .citation-link {
-            color: #007bff;
-            cursor: pointer;
-            text-decoration: underline;
-            font-weight: bold;
-            padding: 2px 4px;
-            border-radius: 3px;
-            transition: all 0.2s ease;
-            display: inline-block;
-        }
-        .citation-link:hover {
-            color: #0056b3;
-            background-color: #e3f2fd;
-            transform: scale(1.05);
-        }
-        
-        /* Responsive sidebar */
-        .css-1d391kg {
-            width: 350px !important;
-            min-width: 300px !important;
-        }
-        
-        @media (max-width: 768px) {
-            .css-1d391kg {
-                width: 100% !important;
-                min-width: 100% !important;
-            }
-        }
-        
-        /* Responsive sidebar */
-        .css-1d391kg {
-            width: 350px !important;
-            min-width: 300px !important;
-        }
-        
-        @media (max-width: 768px) {
-            .css-1d391kg {
-                width: 100% !important;
-                min-width: 100% !important;
-            }
-        }
-        
-        /* Responsive main content area - no fixed margins */
-        @media (min-width: 769px) {
-            .css-1y0tads {
-                margin-left: 350px !important;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .css-1y0tads {
-                margin-left: 0 !important;
-            }
-        }
-        
-        /* Style for all primary/default buttons (blue-green gradient) */
-        [data-testid="stButton"] > button {
-            background: linear-gradient(90deg, #2E8B57, #3CB371) !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 5px !important;
-            font-weight: bold !important;
-            text-align: left;
-            padding: 0.5rem;
-            margin-bottom: 0.25rem;
-        }
-        [data-testid="stButton"] > button:hover {
-            background: linear-gradient(90deg, #228B22, #32CD32) !important;
-        }
-
-        /* Style for secondary buttons (subtle delete buttons) */
-        [data-testid="stSecondaryButton"] > button {
-            background-color: #f8f9fa !important;
-            color: #6c757d !important;
-            border: 1px solid #dee2e6 !important;
-            border-radius: 3px !important;
-            padding: 0.2rem 0.4rem !important;
-            font-size: 0.8rem !important;
-            min-height: 1.5rem !important;
-            width: 100% !important;
-            font-weight: bold !important;
-        }
-        [data-testid="stSecondaryButton"] > button:hover {
-            background-color: #e9ecef !important;
-            color: #495057 !important;
-            border-color: #adb5bd !important;
-        }
-        
-        /* Smaller warning messages */
-        .stAlert {
-            margin: 0.25rem 0;
-            padding: 0.5rem;
-            border-radius: 3px;
-            font-size: 0.8rem;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        
         st.markdown("<h1>🧬 POLO-GGB RESEARCH ASSISTANT</h1>", unsafe_allow_html=True)
         
         # Show loading overlay if analysis is in progress
@@ -593,12 +492,19 @@ class ResearchAssistantUI:
             st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
         elif active_conversation_id is not None:
             conversations = self.get_user_session('conversations', {})
-            active_conv = conversations[active_conversation_id]
             
-            for message_index, message in enumerate(active_conv["messages"]):
-                avatar = self.BOT_AVATAR if message["role"] == "assistant" else self.USER_AVATAR
-                with st.chat_message(message["role"], avatar=avatar):
-                    st.markdown(message["content"], unsafe_allow_html=True)
+            # Debug: Show conversation info
+            st.write(f"Debug: Active conversation ID: {active_conversation_id}")
+            st.write(f"Debug: Available conversations: {list(conversations.keys())}")
+            
+            if active_conversation_id in conversations:
+                active_conv = conversations[active_conversation_id]
+                st.write(f"Debug: Conversation found, messages: {len(active_conv.get('messages', []))}")
+                
+                for message_index, message in enumerate(active_conv["messages"]):
+                    avatar = self.BOT_AVATAR if message["role"] == "assistant" else self.USER_AVATAR
+                    with st.chat_message(message["role"], avatar=avatar):
+                        st.markdown(message["content"], unsafe_allow_html=True)
                     
                     # Show papers section only for the first assistant message and regular analyses
                     if (message["role"] == "assistant" and message_index == 0 and 
