@@ -975,7 +975,7 @@ def display_chat_history():
     if len(conversations) > 1:
         col1, col2 = st.columns([3, 1])
         with col2:
-            if st.button("🗑️ Clear All", help="Delete all conversations", key="clear_all_btn", type="secondary"):
+            if st.button("× Clear All", help="Delete all conversations", key="clear_all_btn", type="secondary"):
                 if "confirm_clear_all" not in st.session_state:
                     st.session_state["confirm_clear_all"] = True
                     st.rerun()
@@ -997,7 +997,7 @@ def display_chat_history():
                         st.error("Failed to delete conversations")
         
         if st.session_state.get("confirm_clear_all", False):
-            st.warning("⚠️ Click 'Clear All' again to confirm deletion of ALL conversations")
+            st.warning("⚠️ Click '× Clear All' again to confirm deletion of ALL conversations")
 
     grouped_convs = defaultdict(list)
     
@@ -1072,7 +1072,7 @@ def display_chat_history():
                         st.rerun()
             
             with col2:
-                if st.button("🗑️", key=f"delete_{conv_id}", help="Delete", use_container_width=True, type="secondary"):
+                if st.button("×", key=f"delete_{conv_id}", help="Delete", use_container_width=True, type="secondary"):
                     # Show confirmation dialog
                     if f"confirm_delete_{conv_id}" not in st.session_state:
                         st.session_state[f"confirm_delete_{conv_id}"] = True
@@ -1090,7 +1090,7 @@ def display_chat_history():
                 
                 # Show confirmation message if delete was clicked
                 if st.session_state.get(f"confirm_delete_{conv_id}", False):
-                    st.caption("Click 🗑️ again to confirm")
+                    st.caption("Click × again to confirm")
 
 def main():
     # Check authentication first
@@ -1326,20 +1326,22 @@ def main():
         background: linear-gradient(90deg, #228B22, #32CD32) !important;
     }
 
-    /* Style for secondary buttons (red delete buttons) */
+    /* Style for secondary buttons (subtle delete buttons) */
     [data-testid="stSecondaryButton"] > button {
-        background-color: #ff4444 !important;
-        color: white !important;
-        border: 1px solid #ff4444 !important;
+        background-color: #f8f9fa !important;
+        color: #6c757d !important;
+        border: 1px solid #dee2e6 !important;
         border-radius: 3px !important;
         padding: 0.2rem 0.4rem !important;
-        font-size: 0.7rem !important;
+        font-size: 0.8rem !important;
         min-height: 1.5rem !important;
         width: 100% !important;
+        font-weight: bold !important;
     }
     [data-testid="stSecondaryButton"] > button:hover {
-        background-color: #cc3333 !important;
-        border-color: #cc3333 !important;
+        background-color: #e9ecef !important;
+        color: #495057 !important;
+        border-color: #adb5bd !important;
     }
     
     /* Smaller warning messages */
