@@ -12,6 +12,7 @@ html, body {
     width: 100%;
     height: 100%;
     overflow-x: hidden;
+    font-family: 'Inter', sans-serif;
 }
 
 /* --- STREAMLIT APP CONTAINER --- */
@@ -23,30 +24,40 @@ html, body {
     padding: 0;
 }
 
-/* --- MAIN CONTENT AREA --- */
+/* --- MAIN CONTENT AREA - CRITICAL FIX --- */
 .main .block-container {
     background-color: #ffffff !important;
     color: #262730 !important;
-    padding-top: 1rem;
-    padding-bottom: 1rem;
-    padding-left: 1rem;
-    padding-right: 1rem;
-    max-width: 100%;
-    width: 100%;
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
 }
 
-/* Force light theme for all containers */
+/* Ensure main content is visible */
+.main {
+    background-color: #ffffff !important;
+    color: #262730 !important;
+}
+
+.main > div {
+    background-color: #ffffff !important;
+    color: #262730 !important;
+}
+
+.main > div > div {
+    background-color: #ffffff !important;
+    color: #262730 !important;
+}
+
+/* Force visibility for all content */
 .stApp,
 .stApp > div,
 .stApp > div > div,
-.stApp > div > div > div,
-.main,
-.main > div,
-.main > div > div,
-.main > div > div > div,
-.block-container,
-.block-container > div,
-.block-container > div > div {
+.stApp > div > div > div {
     background-color: #ffffff !important;
     color: #262730 !important;
 }
@@ -62,64 +73,41 @@ html, body {
     background-color: #f8f9fa !important;
 }
 
-/* --- HIDE UNWANTED STREAMLIT ELEMENTS --- */
-/* Hide Streamlit header elements */
+/* --- HIDE UNWANTED STREAMLIT ELEMENTS ONLY --- */
 header[data-testid="stHeader"] {
     display: none !important;
 }
 
-/* Hide Streamlit footer */
 footer[data-testid="stFooter"] {
     display: none !important;
 }
 
-/* Hide Streamlit menu button */
 [data-testid="stToolbar"] {
     display: none !important;
 }
 
-/* Hide Streamlit user menu */
 [data-testid="stUserMenu"] {
     display: none !important;
 }
 
-/* Hide Streamlit's default top bar */
-.css-1rs6os {
+/* Hide bottom-right elements */
+.stApp > div > div:last-child {
     display: none !important;
 }
 
-/* Hide Streamlit's default bottom bar */
-.css-17eq0hr {
-    display: none !important;
-}
-
-/* Hide ALL profile pictures and avatars */
-[data-testid="stUserMenu"],
-[data-testid="stUserMenu"] *,
-.stApp button[aria-label*="profile"],
-.stApp button[aria-label*="user"],
-.stApp button[aria-label*="menu"],
-.stApp button[aria-label*="settings"] {
-    display: none !important;
-}
-
-/* Hide ALL bottom-right icons */
-.stApp > div > div:last-child,
-.stApp > div > div:nth-last-child(-n+3) {
-    display: none !important;
-}
-
-/* --- TYPOGRAPHY --- */
+/* --- TYPOGRAPHY - ENSURE VISIBILITY --- */
 h1, h2, h3, h4, h5, h6 {
     color: #262730 !important;
     font-family: 'Inter', sans-serif !important;
+    background-color: transparent !important;
 }
 
 .stMarkdown, .stText, .stSelectbox, .stMultiselect, .stTextInput {
     color: #262730 !important;
+    background-color: transparent !important;
 }
 
-/* Force all text to be dark colored */
+/* Force all text to be visible */
 .stApp * {
     color: #262730 !important;
 }
@@ -174,13 +162,14 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: none !important;
 }
 
-/* --- CHAT INTERFACE --- */
+/* --- CHAT INTERFACE - ENSURE VISIBILITY --- */
 [data-testid="stChatMessage"] {
     background-color: #f8f9fa !important;
     border-radius: 0.75rem !important;
     padding: 1rem !important;
     margin-bottom: 1rem !important;
     border: 1px solid #e9ecef !important;
+    color: #262730 !important;
 }
 
 /* --- FORM ELEMENTS --- */
@@ -211,6 +200,34 @@ h1, h2, h3, h4, h5, h6 {
 .stExpander header {
     background-color: #f8f9fa !important;
     color: #262730 !important;
+}
+
+/* --- ALERTS AND INFO --- */
+.stAlert {
+    border-radius: 0.5rem !important;
+    background-color: #d1ecf1 !important;
+    color: #0c5460 !important;
+    border: 1px solid #bee5eb !important;
+}
+
+.stInfo {
+    background-color: #d1ecf1 !important;
+    color: #0c5460 !important;
+}
+
+.stSuccess {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+}
+
+.stError {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+.stWarning {
+    background-color: #fff3cd !important;
+    color: #856404 !important;
 }
 
 /* --- RESPONSIVE DESIGN --- */
@@ -268,10 +285,6 @@ h1, h2, h3, h4, h5, h6 {
 /* --- LOADING AND ERROR STATES --- */
 .stSpinner {
     color: #28a745 !important;
-}
-
-.stAlert {
-    border-radius: 0.5rem !important;
 }
 
 /* --- CUSTOM SCROLLBAR --- */
