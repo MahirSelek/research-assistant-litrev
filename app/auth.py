@@ -156,23 +156,27 @@ auth_manager = AuthenticationManager()
 
 # Default users creation (only if no users exist)
 def initialize_default_users():
-    """Create default users if no users exist"""
+    """Create default users if they don't exist"""
     users = auth_manager.load_users()
-    if not users:
-        # Create 4 strong user accounts with secure passwords
-        user_credentials = [
-            ("admin", "PoloGGB2024!Admin"),
-            ("researcher1", "Genomics2024!Res1"),
-            ("researcher2", "Genetics2024!Res2"),
-            ("researcher3", "Biology2024!Res3"),
-            ("researcher4", "Science2024!Res4")
-        ]
-        
-        for username, password in user_credentials:
+    
+    # Create 4 strong user accounts with secure passwords
+    user_credentials = [
+        ("admin", "PoloGGB2024!Admin"),
+        ("researcher1", "Genomics2024!Res1"),
+        ("researcher2", "Genetics2024!Res2"),
+        ("researcher3", "Biology2024!Res3"),
+        ("researcher4", "Science2024!Res4")
+    ]
+    
+    users_created = []
+    for username, password in user_credentials:
+        if username not in users:
             auth_manager.create_user(username, password)
-        
-        # Store credentials for reference (in production, this should be shared securely)
-        print("Created users with strong credentials:")
+            users_created.append(username)
+    
+    if users_created:
+        print(f"Created new users: {', '.join(users_created)}")
+        print("All user credentials:")
         for username, password in user_credentials:
             print(f"Username: {username}, Password: {password}")
 
