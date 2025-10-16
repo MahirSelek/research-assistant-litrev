@@ -501,100 +501,19 @@ class ResearchAssistantUI:
             }
         }
         
-        /* FORCE DARK THEME EVERYWHERE - NO ADAPTABILITY */
-        .stApp { 
-            background-color: #0E1117 !important; 
-            color: #FAFAFA !important;
-        }
-        .stApp > div { 
-            background-color: #0E1117 !important; 
-            color: #FAFAFA !important;
-        }
-        .stApp > div > div { 
-            background-color: #0E1117 !important; 
-            color: #FAFAFA !important;
-        }
-        .main { 
-            background-color: #0E1117 !important; 
-            color: #FAFAFA !important;
-        }
-        .main > div { 
-            background-color: #0E1117 !important; 
-            color: #FAFAFA !important;
-        }
-        .main > div > div { 
-            background-color: #0E1117 !important; 
-            color: #FAFAFA !important;
-        }
-        .block-container { 
-            background-color: #0E1117 !important; 
-            color: #FAFAFA !important;
-        }
-        .block-container > div { 
-            background-color: #0E1117 !important; 
-            color: #FAFAFA !important;
-        }
-        
-        /* FORCE ALL ELEMENTS TO BE DARK */
-        .stApp * { 
-            background-color: #0E1117 !important; 
-            color: #FAFAFA !important;
-        }
-        
-        /* Responsive main content - Force Dark Theme */
-        .main .block-container {
-            background-color: #0E1117 !important;
-            color: #FAFAFA !important;
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-            max-width: 100% !important;
+        /* Responsive sidebar */
+        .css-1d391kg {
+            width: 350px !important;
+            min-width: 300px !important;
         }
         
         @media (max-width: 768px) {
-            .main .block-container {
-                padding-left: 0.5rem !important;
-                padding-right: 0.5rem !important;
+            .css-1d391kg {
+                width: 100% !important;
+                min-width: 100% !important;
             }
         }
         
-        /* Fix white bars and force dark theme */
-        .stApp > div {
-            width: 100% !important;
-            max-width: 100% !important;
-            background-color: #0E1117 !important;
-        }
-        
-        /* Ensure full width and dark theme */
-        .main {
-            width: 100% !important;
-            max-width: 100% !important;
-            background-color: #0E1117 !important;
-        }
-        
-        /* Force dark theme for all content */
-        .main * {
-            color: #FAFAFA !important;
-        }
-        
-        /* HIDE ALL UNWANTED ELEMENTS */
-        header[data-testid="stHeader"] { display: none !important; }
-        footer[data-testid="stFooter"] { display: none !important; }
-        [data-testid="stToolbar"] { display: none !important; }
-        [data-testid="stUserMenu"] { display: none !important; }
-        .css-1rs6os { display: none !important; }
-        .css-17eq0hr { display: none !important; }
-        
-        /* HIDE ALL PROFILE PICTURES AND BOTTOM-RIGHT ICONS */
-        [data-testid="stUserMenu"],
-        [data-testid="stUserMenu"] *,
-        .stApp button[aria-label*="profile"],
-        .stApp button[aria-label*="user"],
-        .stApp button[aria-label*="menu"],
-        .stApp button[aria-label*="settings"],
-        .stApp > div > div:last-child,
-        .stApp > div > div:nth-last-child(-n+3) {
-            display: none !important;
-        }
         /* Responsive main content area - no fixed margins */
         @media (min-width: 769px) {
             .css-1y0tads {

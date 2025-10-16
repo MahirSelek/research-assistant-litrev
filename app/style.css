@@ -1,7 +1,7 @@
 /* Import a modern font */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* --- Global Reset & Base Styles --- */
+/* --- GLOBAL RESET --- */
 * {
     box-sizing: border-box;
 }
@@ -28,13 +28,16 @@ html, body {
 .stApp > div,
 .stApp > div > div,
 .stApp > div > div > div,
+.stApp > div > div > div > div,
 .main,
 .main > div,
 .main > div > div,
 .main > div > div > div,
+.main > div > div > div > div,
 .block-container,
 .block-container > div,
-.block-container > div > div {
+.block-container > div > div,
+.block-container > div > div > div {
     background-color: #0E1117 !important;
     color: #FAFAFA !important;
 }
@@ -62,10 +65,12 @@ html, body {
 .stApp > div,
 .stApp > div > div,
 .stApp > div > div > div,
+.stApp > div > div > div > div,
 .main,
 .main > div,
 .main > div > div,
-.main > div > div > div {
+.main > div > div > div,
+.main > div > div > div > div {
     background-color: #0E1117 !important;
 }
 
@@ -81,12 +86,16 @@ html, body {
 .stSuccess,
 .stError,
 .stWarning,
-.stInfo {
+.stInfo,
+.stCaption,
+.stCode,
+.stDataFrame,
+.stTable {
     background-color: #0E1117 !important;
     color: #FAFAFA !important;
 }
 
-/* --- Sidebar Styling --- */
+/* --- SIDEBAR STYLING --- */
 [data-testid="stSidebar"] {
     background-color: #1a1e29 !important;
     border-right: 1px solid #2c313a !important;
@@ -97,13 +106,7 @@ html, body {
     background-color: #1a1e29 !important;
 }
 
-/* --- Header Styling --- */
-header[data-testid="stHeader"] {
-    background-color: #1a1e29 !important;
-    border-bottom: 1px solid #2c313a !important;
-}
-
-/* --- Hide Unwanted Streamlit UI Elements --- */
+/* --- HIDE ALL UNWANTED STREAMLIT ELEMENTS --- */
 /* Hide Streamlit header elements */
 header[data-testid="stHeader"] {
     display: none !important;
@@ -159,13 +162,6 @@ footer[data-testid="stFooter"] {
     display: none !important;
 }
 
-/* Hide any remaining Streamlit UI chrome */
-.css-1rs6os,
-.css-17eq0hr,
-.css-1rs6os > div {
-    display: none !important;
-}
-
 /* AGGRESSIVE HIDING OF ALL BOTTOM-RIGHT ELEMENTS */
 /* Hide ALL profile pictures and avatars */
 [data-testid="stUserMenu"],
@@ -207,6 +203,13 @@ footer[data-testid="stFooter"] {
 
 /* Force hide any remaining UI elements */
 .stApp > div > div:nth-last-child(-n+3) {
+    display: none !important;
+}
+
+/* Hide any remaining Streamlit UI chrome */
+.css-1rs6os,
+.css-17eq0hr,
+.css-1rs6os > div {
     display: none !important;
 }
 
@@ -252,39 +255,7 @@ footer[data-testid="stFooter"] {
     display: none !important;
 }
 
-/* Ensure no white backgrounds anywhere */
-.stApp,
-.stApp > div,
-.stApp > div > div,
-.main,
-.main > div,
-.main > div > div {
-    background-color: #0E1117 !important;
-}
-
-/* Force dark theme for all Streamlit components */
-.stSelectbox > div > div,
-.stMultiselect > div > div,
-.stTextInput > div > div > input,
-.stExpander,
-.stExpander header {
-    background-color: #262730 !important;
-    border: 1px solid #2c313a !important;
-    color: #D1D5DB !important;
-}
-
-/* --- Footer/Chat Input Area --- */
-[data-testid="stChatInput"] {
-    background-color: #1a1e29 !important;
-    border-top: 1px solid #2c313a !important;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-}
-
-/* --- Typography - Force Dark Theme --- */
+/* --- TYPOGRAPHY - FORCE DARK THEME --- */
 h1, h2, h3, h4, h5, h6 {
     color: #FAFAFA !important;
     font-family: 'Inter', sans-serif !important;
@@ -313,7 +284,7 @@ h1, h2, h3, h4, h5, h6 {
     color: #60a5fa !important;
 }
 
-/* --- Button Styles --- */
+/* --- BUTTON STYLES --- */
 .stButton > button {
     border-radius: 0.5rem !important;
     padding: 0.75rem 1.5rem !important;
@@ -354,7 +325,7 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: none !important;
 }
 
-/* --- Chat Interface --- */
+/* --- CHAT INTERFACE --- */
 [data-testid="stChatMessage"] {
     background-color: #262730 !important;
     border-radius: 0.75rem !important;
@@ -363,7 +334,7 @@ h1, h2, h3, h4, h5, h6 {
     border: 1px solid #30333d !important;
 }
 
-/* --- Form Elements --- */
+/* --- FORM ELEMENTS --- */
 .stSelectbox > div > div {
     background-color: #262730 !important;
     border: 1px solid #2c313a !important;
@@ -381,7 +352,7 @@ h1, h2, h3, h4, h5, h6 {
     color: #D1D5DB !important;
 }
 
-/* --- Expander Styling --- */
+/* --- EXPANDER STYLING --- */
 .stExpander {
     border: 1px solid #2c313a !important;
     border-radius: 0.5rem !important;
@@ -393,7 +364,7 @@ h1, h2, h3, h4, h5, h6 {
     color: #FAFAFA !important;
 }
 
-/* --- Responsive Design --- */
+/* --- RESPONSIVE DESIGN --- */
 @media (max-width: 768px) {
     .main .block-container {
         padding-left: 0.5rem;
@@ -425,64 +396,7 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
-/* --- Dark Mode Compatibility --- */
-@media (prefers-color-scheme: dark) {
-    .stApp {
-        background-color: #0E1117 !important;
-    }
-}
-
-@media (prefers-color-scheme: light) {
-    .stApp {
-        background-color: #ffffff !important;
-    }
-    
-    h1, h2, h3, h4, h5, h6 {
-        color: #1f2937 !important;
-    }
-    
-    .stMarkdown, .stText, .stSelectbox, .stMultiselect, .stTextInput {
-        color: #374151 !important;
-    }
-    
-    [data-testid="stSidebar"] {
-        background-color: #f9fafb !important;
-        border-right: 1px solid #e5e7eb !important;
-    }
-    
-    [data-testid="stChatMessage"] {
-        background-color: #f9fafb !important;
-        border: 1px solid #e5e7eb !important;
-    }
-}
-
-/* --- Fix for white bars and layout issues --- */
-.stApp > div {
-    width: 100% !important;
-    max-width: 100% !important;
-}
-
-.stApp > div > div {
-    width: 100% !important;
-    max-width: 100% !important;
-}
-
-/* Ensure full width for main content */
-.main .block-container {
-    width: 100% !important;
-    max-width: none !important;
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
-}
-
-/* Fix sidebar width issues */
-[data-testid="stSidebar"] {
-    width: 21rem !important;
-    min-width: 21rem !important;
-    max-width: 21rem !important;
-}
-
-/* --- Cross-browser compatibility --- */
+/* --- CROSS-BROWSER COMPATIBILITY --- */
 .stApp {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -502,7 +416,7 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
-/* --- Loading and Error States --- */
+/* --- LOADING AND ERROR STATES --- */
 .stSpinner {
     color: #3b82f6 !important;
 }
@@ -511,7 +425,7 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 0.5rem !important;
 }
 
-/* --- Custom scrollbar --- */
+/* --- CUSTOM SCROLLBAR --- */
 ::-webkit-scrollbar {
     width: 8px;
 }
