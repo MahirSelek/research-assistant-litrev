@@ -959,12 +959,6 @@ def main():
     initialize_session_state()
 
     with st.sidebar:
-        # Show user management for admin
-        if st.session_state.get('username') == 'admin':
-            if st.button("User Management", use_container_width=True):
-                st.session_state.show_user_management = True
-                st.rerun()
-        
         # Show user info for all users
         if st.session_state.get('authenticated', False):
             st.markdown("---")
