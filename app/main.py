@@ -971,38 +971,33 @@ def display_chat_history():
         st.caption("No past analyses found.")
         return
     
-    # Add bulk actions
-    col1, col2, col3 = st.columns([2, 1, 1])
-    with col1:
-        st.caption(f"📊 {len(conversations)} conversations found")
-    with col2:
-        if st.button("🗑️ Clear All", help="Delete all conversations", key="clear_all_btn", type="secondary"):
-            if "confirm_clear_all" not in st.session_state:
-                st.session_state["confirm_clear_all"] = True
-                st.rerun()
-            else:
-                # Clear all conversations
-                username = st.session_state.get('username')
-                deleted_count = 0
-                for conv_id in list(conversations.keys()):
-                    if delete_conversation(conv_id):
-                        deleted_count += 1
-                
-                if deleted_count > 0:
-                    st.success(f"Deleted {deleted_count} conversations!")
-                    # Clear confirmation state
-                    if "confirm_clear_all" in st.session_state:
-                        del st.session_state["confirm_clear_all"]
+    # Add bulk actions (only show if there are conversations)
+    if len(conversations) > 1:
+        col1, col2 = st.columns([3, 1])
+        with col2:
+            if st.button("🗑️ Clear All", help="Delete all conversations", key="clear_all_btn", type="secondary"):
+                if "confirm_clear_all" not in st.session_state:
+                    st.session_state["confirm_clear_all"] = True
                     st.rerun()
                 else:
-                    st.error("Failed to delete conversations")
-    
-    with col3:
+                    # Clear all conversations
+                    username = st.session_state.get('username')
+                    deleted_count = 0
+                    for conv_id in list(conversations.keys()):
+                        if delete_conversation(conv_id):
+                            deleted_count += 1
+                    
+                    if deleted_count > 0:
+                        st.success(f"Deleted {deleted_count} conversations!")
+                        # Clear confirmation state
+                        if "confirm_clear_all" in st.session_state:
+                            del st.session_state["confirm_clear_all"]
+                        st.rerun()
+                    else:
+                        st.error("Failed to delete conversations")
+        
         if st.session_state.get("confirm_clear_all", False):
-            st.warning("Click 'Clear All' again to confirm")
-    
-    if st.session_state.get("confirm_clear_all", False):
-        st.markdown("⚠️ **Warning:** This will permanently delete ALL your conversations!")
+            st.warning("⚠️ Click 'Clear All' again to confirm deletion of ALL conversations")
 
     grouped_convs = defaultdict(list)
     
@@ -1056,7 +1051,7 @@ def display_chat_history():
 
         for conv_id, title in grouped_convs[month_key]:
             # Create columns for the conversation button and delete button
-            col1, col2 = st.columns([4, 1])
+            col1, col2 = st.columns([5, 1])
             
             with col1:
                 if st.button(title, key=f"btn_{conv_id}", use_container_width=True):
@@ -1077,7 +1072,7 @@ def display_chat_history():
                         st.rerun()
             
             with col2:
-                if st.button("🗑️", key=f"delete_{conv_id}", help="Delete this conversation", use_container_width=True, type="secondary"):
+                if st.button("🗑️", key=f"delete_{conv_id}", help="Delete", use_container_width=True, type="secondary"):
                     # Show confirmation dialog
                     if f"confirm_delete_{conv_id}" not in st.session_state:
                         st.session_state[f"confirm_delete_{conv_id}"] = True
@@ -1085,7 +1080,7 @@ def display_chat_history():
                     else:
                         # Actually delete the conversation
                         if delete_conversation(conv_id):
-                            st.success("Conversation deleted successfully!")
+                            st.success("Conversation deleted!")
                             # Clear the confirmation state
                             if f"confirm_delete_{conv_id}" in st.session_state:
                                 del st.session_state[f"confirm_delete_{conv_id}"]
@@ -1095,7 +1090,7 @@ def display_chat_history():
                 
                 # Show confirmation message if delete was clicked
                 if st.session_state.get(f"confirm_delete_{conv_id}", False):
-                    st.warning("Click 🗑️ again to confirm deletion")
+                    st.caption("Click 🗑️ again to confirm")
 
 def main():
     # Check authentication first
@@ -1316,15 +1311,16 @@ def main():
         padding-left: 1rem;
     }
     
-    /* Style delete buttons */
+    /* Style delete buttons - smaller and cleaner */
     .stButton > button[kind="secondary"] {
         background-color: #ff4444;
         color: white;
         border: 1px solid #ff4444;
-        border-radius: 4px;
-        padding: 0.25rem 0.5rem;
-        font-size: 0.8rem;
-        min-height: 2rem;
+        border-radius: 3px;
+        padding: 0.2rem 0.4rem;
+        font-size: 0.7rem;
+        min-height: 1.5rem;
+        width: 100%;
     }
     
     .stButton > button[kind="secondary"]:hover {
@@ -1339,11 +1335,12 @@ def main():
         margin-bottom: 0.25rem;
     }
     
-    /* Warning messages */
+    /* Smaller warning messages */
     .stAlert {
-        margin: 0.5rem 0;
-        padding: 0.75rem;
-        border-radius: 4px;
+        margin: 0.25rem 0;
+        padding: 0.5rem;
+        border-radius: 3px;
+        font-size: 0.8rem;
     }
     </style>
     """, unsafe_allow_html=True)
