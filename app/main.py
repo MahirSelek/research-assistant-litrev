@@ -1311,37 +1311,35 @@ def main():
         padding-left: 1rem;
     }
     
-    /* Style delete buttons - smaller and cleaner */
-    .stButton > button[kind="secondary"] {
-        background-color: #ff4444;
-        color: white;
-        border: 1px solid #ff4444;
-        border-radius: 3px;
-        padding: 0.2rem 0.4rem;
-        font-size: 0.7rem;
-        min-height: 1.5rem;
-        width: 100%;
-    }
-    
-    .stButton > button[kind="secondary"]:hover {
-        background-color: #cc3333;
-        border-color: #cc3333;
-    }
-    
-    /* Style conversation buttons - keep them blue */
-    .stButton > button:not([kind="secondary"]) {
-        text-align: left;
-        padding: 0.5rem;
-        margin-bottom: 0.25rem;
+    /* Style for all primary/default buttons (blue-green gradient) */
+    [data-testid="stButton"] > button {
         background: linear-gradient(90deg, #2E8B57, #3CB371) !important;
         color: white !important;
         border: none !important;
         border-radius: 5px !important;
         font-weight: bold !important;
+        text-align: left;
+        padding: 0.5rem;
+        margin-bottom: 0.25rem;
     }
-    
-    .stButton > button:not([kind="secondary"]):hover {
+    [data-testid="stButton"] > button:hover {
         background: linear-gradient(90deg, #228B22, #32CD32) !important;
+    }
+
+    /* Style for secondary buttons (red delete buttons) */
+    [data-testid="stSecondaryButton"] > button {
+        background-color: #ff4444 !important;
+        color: white !important;
+        border: 1px solid #ff4444 !important;
+        border-radius: 3px !important;
+        padding: 0.2rem 0.4rem !important;
+        font-size: 0.7rem !important;
+        min-height: 1.5rem !important;
+        width: 100% !important;
+    }
+    [data-testid="stSecondaryButton"] > button:hover {
+        background-color: #cc3333 !important;
+        border-color: #cc3333 !important;
     }
     
     /* Smaller warning messages */
