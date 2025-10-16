@@ -176,9 +176,7 @@ def initialize_default_users():
     
     if users_created:
         print(f"Created new users: {', '.join(users_created)}")
-        print("All user credentials:")
-        for username, password in user_credentials:
-            print(f"Username: {username}, Password: {password}")
+        print("Users created successfully. Credentials should be shared securely.")
 
 def show_login_page():
     """Display the login page"""
