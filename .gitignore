@@ -1,7 +1,9 @@
 .env
 app/literature-review.json
 app/literature-review-464920-5086e8ab1996.json
+
 .streamlit/secrets.toml
 
 gcp_credentials.json
+literature-review-464920-5086e8ab1996.json
 .DS_Store
