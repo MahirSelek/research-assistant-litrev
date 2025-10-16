@@ -12,6 +12,5 @@ literature-review-464920-a80476f0c475.json
 # Security: Never commit user credentials
 users.json
 USER_CREDENTIALS.md
-CREDENTIALS_TEMPLATE.md
 get_credentials.py
 
