@@ -184,7 +184,13 @@ def load_conversations_from_gcs():
                     conv_data = json.loads(content)
                     conv_id = conv_data.get('conversation_id')
                     if conv_id:
-                        conversations[conv_id] = conv_data.get('conversation_data', {})
+                        conversation_data = conv_data.get('conversation_data', {})
+                        # Ensure the conversation has required fields
+                        if 'messages' not in conversation_data:
+                            conversation_data['messages'] = []
+                        if 'title' not in conversation_data:
+                            conversation_data['title'] = f"Chat {conv_id}"
+                        conversations[conv_id] = conversation_data
                 except Exception as e:
                     print(f"Error loading conversation {blob.name}: {e}")
                     continue
@@ -1342,7 +1348,22 @@ def main():
     elif active_conversation_id is not None:
         active_id = active_conversation_id
         conversations = get_user_session('conversations', {})
+        
+        # Safety check for conversation existence and structure
+        if active_id not in conversations:
+            st.error(f"Conversation {active_id} not found. Please select a different conversation.")
+            set_user_session('active_conversation_id', None)
+            st.rerun()
+            return
+            
         active_conv = conversations[active_id]
+        
+        # Safety check for messages field
+        if 'messages' not in active_conv or not active_conv['messages']:
+            st.error("This conversation has no messages. Please select a different conversation.")
+            set_user_session('active_conversation_id', None)
+            st.rerun()
+            return
         
         for message_index, message in enumerate(active_conv["messages"]):
             avatar = BOT_AVATAR if message["role"] == "assistant" else USER_AVATAR
@@ -1394,7 +1415,11 @@ def main():
 
     active_conversation_id = get_user_session('active_conversation_id')
     conversations = get_user_session('conversations', {})
-    if active_conversation_id and conversations[active_conversation_id]["messages"][-1]["role"] == "user":
+    if (active_conversation_id and 
+        active_conversation_id in conversations and 
+        'messages' in conversations[active_conversation_id] and 
+        conversations[active_conversation_id]["messages"] and
+        conversations[active_conversation_id]["messages"][-1]["role"] == "user"):
         active_conv = conversations[active_conversation_id]
         with st.spinner("Thinking..."):
             chat_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in active_conv["messages"]])
