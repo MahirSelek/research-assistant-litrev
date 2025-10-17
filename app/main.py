@@ -16,6 +16,9 @@ import datetime
 from dateutil import parser as date_parser
 from collections import defaultdict
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="vertexai")
+
 import vertexai
 from vertexai.generative_models import GenerativeModel
 from google.cloud import storage
@@ -1292,15 +1295,18 @@ def main():
                                 st.markdown(f"**{paper_index+1}. {title}**")
                             with col2:
                                 if paper_id:
-                                    pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
-                                    if pdf_bytes:
-                                        st.download_button(
-                                            label="Download PDF",
-                                            data=pdf_bytes,
-                                            file_name=paper_id,
-                                            mime="application/pdf",
-                                            key=f"download_{active_id}_{paper_id}"
-                                        )
+                                    try:
+                                        pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
+                                        if pdf_bytes:
+                                            st.download_button(
+                                                label="Download PDF",
+                                                data=pdf_bytes,
+                                                file_name=paper_id,
+                                                mime="application/pdf",
+                                                key=f"download_{active_id}_{paper_id}"
+                                            )
+                                    except Exception as e:
+                                        st.error(f"Error loading PDF: {paper_id}")
 
 
 
