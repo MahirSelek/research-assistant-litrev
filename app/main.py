@@ -16,9 +16,6 @@ import datetime
 from dateutil import parser as date_parser
 from collections import defaultdict
 
-import warnings
-warnings.filterwarnings("ignore", category=UserWarning, module="vertexai")
-
 import vertexai
 from vertexai.generative_models import GenerativeModel
 from google.cloud import storage
@@ -131,84 +128,13 @@ def set_user_session(key, value):
     user_key = get_user_key(key)
     st.session_state[user_key] = value
 
-def save_conversations_to_gcs(conversations):
-    """Save conversations to GCS"""
-    try:
-        from google.cloud import storage
-        storage_client = storage.Client()
-        bucket = storage_client.bucket(GCS_BUCKET_NAME)
-        
-        current_user = st.session_state.get('username', 'default')
-        
-        # Save each conversation individually
-        for conv_id, conv_data in conversations.items():
-            conv_path = f"user-data/users/{current_user}/conversations/{conv_id}.json"
-            blob = bucket.blob(conv_path)
-            
-            # Add metadata
-            conv_data_with_metadata = {
-                "conversation_id": conv_id,
-                "username": current_user,
-                "last_updated": time.time(),
-                "conversation_data": conv_data
-            }
-            
-            blob.upload_from_string(
-                json.dumps(conv_data_with_metadata, indent=2),
-                content_type='application/json'
-            )
-        
-        return True
-    except Exception as e:
-        st.error(f"Failed to save conversations to GCS: {e}")
-        return False
-
-def load_conversations_from_gcs():
-    """Load conversations from GCS"""
-    try:
-        from google.cloud import storage
-        storage_client = storage.Client()
-        bucket = storage_client.bucket(GCS_BUCKET_NAME)
-        
-        current_user = st.session_state.get('username', 'default')
-        conversations = {}
-        
-        # List all conversation files for this user
-        prefix = f"user-data/users/{current_user}/conversations/"
-        blobs = bucket.list_blobs(prefix=prefix)
-        
-        for blob in blobs:
-            if blob.name.endswith('.json'):
-                try:
-                    content = blob.download_as_text()
-                    conv_data = json.loads(content)
-                    conv_id = conv_data.get('conversation_id')
-                    if conv_id:
-                        conversation_data = conv_data.get('conversation_data', {})
-                        # Ensure the conversation has required fields
-                        if 'messages' not in conversation_data:
-                            conversation_data['messages'] = []
-                        if 'title' not in conversation_data:
-                            conversation_data['title'] = f"Chat {conv_id}"
-                        conversations[conv_id] = conversation_data
-                except Exception as e:
-                    print(f"Error loading conversation {blob.name}: {e}")
-                    continue
-        
-        return conversations
-    except Exception as e:
-        st.error(f"Failed to load conversations from GCS: {e}")
-        return {}
-
 def initialize_session_state():
     # Get current username for user-specific data
     current_user = st.session_state.get('username', 'default')
     
     # Initialize user-specific session state
     if get_user_key('conversations') not in st.session_state:
-        # Load conversations from GCS
-        conversations = load_conversations_from_gcs()
-        set_user_session('conversations', conversations)
+        set_user_session('conversations', {})
     if get_user_key('active_conversation_id') not in st.session_state:
         set_user_session('active_conversation_id', None)
     if get_user_key('selected_keywords') not in st.session_state:
@@ -1018,8 +944,6 @@ def display_chat_history():
                     # Update last interaction time for this conversation
                     conversations[conv_id]['last_interaction_time'] = time.time()
                     set_user_session('conversations', conversations)
-                    # Save to GCS
-                    save_conversations_to_gcs(conversations)
                     st.rerun()
 
 def main():
@@ -1147,8 +1071,6 @@ def main():
                     "last_interaction_time": time.time()
                 }
                 set_user_session('conversations', conversations)
-                # Save to GCS
-                save_conversations_to_gcs(conversations)
                 # Clear any previous analysis and set new one
                 set_user_session('active_conversation_id', conv_id)
                 # Custom summaries are now in chat history
@@ -1325,8 +1247,6 @@ def main():
                 "paper_count": len(uploaded_papers)
             }
             set_user_session('conversations', conversations)
-            # Save to GCS
-            save_conversations_to_gcs(conversations)
             
             # Set this as the active conversation so user can immediately interact
             set_user_session('active_conversation_id', conv_id)
@@ -1348,22 +1268,7 @@ def main():
     elif active_conversation_id is not None:
         active_id = active_conversation_id
         conversations = get_user_session('conversations', {})
-        
-        # Safety check for conversation existence and structure
-        if active_id not in conversations:
-            st.error(f"Conversation {active_id} not found. Please select a different conversation.")
-            set_user_session('active_conversation_id', None)
-            st.rerun()
-            return
-            
         active_conv = conversations[active_id]
-        
-        # Safety check for messages field
-        if 'messages' not in active_conv or not active_conv['messages']:
-            st.error("This conversation has no messages. Please select a different conversation.")
-            set_user_session('active_conversation_id', None)
-            st.rerun()
-            return
         
         for message_index, message in enumerate(active_conv["messages"]):
             avatar = BOT_AVATAR if message["role"] == "assistant" else USER_AVATAR
@@ -1387,18 +1292,15 @@ def main():
                                 st.markdown(f"**{paper_index+1}. {title}**")
                             with col2:
                                 if paper_id:
-                                    try:
-                                        pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
-                                        if pdf_bytes:
-                                            st.download_button(
-                                                label="Download PDF",
-                                                data=pdf_bytes,
-                                                file_name=paper_id,
-                                                mime="application/pdf",
-                                                key=f"download_{active_id}_{paper_id}"
-                                            )
-                                    except Exception as e:
-                                        st.error(f"Error loading PDF: {paper_id}")
+                                    pdf_bytes = get_pdf_bytes_from_gcs(GCS_BUCKET_NAME, paper_id)
+                                    if pdf_bytes:
+                                        st.download_button(
+                                            label="Download PDF",
+                                            data=pdf_bytes,
+                                            file_name=paper_id,
+                                            mime="application/pdf",
+                                            key=f"download_{active_id}_{paper_id}"
+                                        )
 
 
 
@@ -1409,17 +1311,11 @@ def main():
             active_conv['last_interaction_time'] = time.time()
             # Save updated conversations
             set_user_session('conversations', conversations)
-            # Save to GCS
-            save_conversations_to_gcs(conversations)
             st.rerun()
 
     active_conversation_id = get_user_session('active_conversation_id')
     conversations = get_user_session('conversations', {})
-    if (active_conversation_id and 
-        active_conversation_id in conversations and 
-        'messages' in conversations[active_conversation_id] and 
-        conversations[active_conversation_id]["messages"] and
-        conversations[active_conversation_id]["messages"][-1]["role"] == "user"):
+    if active_conversation_id and conversations[active_conversation_id]["messages"][-1]["role"] == "user":
         active_conv = conversations[active_conversation_id]
         with st.spinner("Thinking..."):
             chat_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in active_conv["messages"]])
@@ -1461,8 +1357,6 @@ Assistant Response:"""
                 active_conv['last_interaction_time'] = time.time()
                 # Save updated conversations
                 set_user_session('conversations', conversations)
-                # Save to GCS
-                save_conversations_to_gcs(conversations)
                 st.rerun()
 
 if __name__ == "__main__":

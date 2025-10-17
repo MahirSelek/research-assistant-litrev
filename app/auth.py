@@ -154,29 +154,14 @@ class AuthenticationManager:
 # Initialize authentication manager
 auth_manager = AuthenticationManager()
 
-# Default users creation (only if no users exist)
-def initialize_default_users():
-    """Create default users if they don't exist"""
+# Default admin user creation (only if no users exist)
+def initialize_default_admin():
+    """Create default admin user if no users exist"""
     users = auth_manager.load_users()
-    
-    # Create 4 strong user accounts with secure passwords
-    user_credentials = [
-        ("admin", "PoloGGB2024!Admin"),
-        ("researcher1", "Genomics2024!Res1"),
-        ("researcher2", "Genetics2024!Res2"),
-        ("researcher3", "Biology2024!Res3"),
-        ("researcher4", "Science2024!Res4")
-    ]
-    
-    users_created = []
-    for username, password in user_credentials:
-        if username not in users:
-            auth_manager.create_user(username, password)
-            users_created.append(username)
-    
-    if users_created:
-        print(f"Created new users: {', '.join(users_created)}")
-        print("Users created successfully. Credentials should be shared securely.")
+    if not users:
+        # Create default admin user
+        auth_manager.create_user("admin", "pologgb2024")
+        # Don't show success message to avoid confusion
 
 def show_login_page():
     """Display the login page"""
@@ -219,30 +204,79 @@ def show_login_page():
     </style>
     """, unsafe_allow_html=True)
     
-    # Simple header
-    st.markdown("---")
-    
-    # Login form only
-    st.markdown("### Research Assistant Login")
-    st.info("Please log in to access the Polo GGB Research Assistant")
-    
-    with st.form("login_form"):
-        username = st.text_input("Username", placeholder="Enter your username", key="login_username")
-        password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
+    # Logo and company name
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        # Try to display logo
+        try:
+            st.image("polo-ggb-logo.png", width=120)
+        except:
+            st.markdown("🧬 **Polo GGB**")
         
-        submitted = st.form_submit_button("Login", use_container_width=True)
+        st.markdown("**Polo d'Innovazione di Genomica, Genetica e Biologia**")
+        st.markdown("---")
+    # Login/Register tabs
+    tab1, tab2 = st.tabs(["Log in", "Sign in"])
     
-    if submitted:
-        if username and password:
-            success, message = auth_manager.login(username, password)
+    with tab1:
+        st.markdown("### Research Assistant Log in")
+        st.info("Please log in to access the Polo GGB Research Assistant")
+        
+        with st.form("login_form"):
+            username = st.text_input("Username", placeholder="Enter your username", key="login_username")
+            password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
             
-            if success:
-                st.markdown(f'<div class="success-message">✅ {message}</div>', unsafe_allow_html=True)
-                st.rerun()
+            submitted = st.form_submit_button("Login", use_container_width=True)
+    
+    with tab2:
+        st.markdown("### Create New Account")
+        st.info("Register for access to the Polo GGB Research Assistant")
+        
+        with st.form("register_form"):
+            new_username = st.text_input("New Username", placeholder="Choose a username", key="register_username")
+            new_password = st.text_input("New Password", type="password", placeholder="Choose a password", key="register_password")
+            confirm_password = st.text_input("Confirm Password", type="password", placeholder="Confirm your password", key="confirm_password")
+            
+            # Password requirements
+            st.markdown("**Password Requirements:**")
+            st.markdown("- At least 8 characters long")
+            st.markdown("- Contains letters and numbers")
+            
+            register_submitted = st.form_submit_button("Create Account", use_container_width=True)
+        
+        if submitted:
+            if username and password:
+                success, message = auth_manager.login(username, password)
+                
+                if success:
+                    st.markdown(f'<div class="success-message">✅ {message}</div>', unsafe_allow_html=True)
+                    st.rerun()
+                else:
+                    st.markdown(f'<div class="error-message">❌ {message}</div>', unsafe_allow_html=True)
             else:
-                st.markdown(f'<div class="error-message">❌ {message}</div>', unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="error-message">❌ Please enter both username and password</div>', unsafe_allow_html=True)
+                st.markdown('<div class="error-message">❌ Please enter both username and password</div>', unsafe_allow_html=True)
+        
+        if register_submitted:
+            if new_username and new_password and confirm_password:
+                # Validate password
+                if len(new_password) < 8:
+                    st.markdown('<div class="error-message">❌ Password must be at least 8 characters long</div>', unsafe_allow_html=True)
+                elif not any(c.isalpha() for c in new_password) or not any(c.isdigit() for c in new_password):
+                    st.markdown('<div class="error-message">❌ Password must contain both letters and numbers</div>', unsafe_allow_html=True)
+                elif new_password != confirm_password:
+                    st.markdown('<div class="error-message">❌ Passwords do not match</div>', unsafe_allow_html=True)
+                else:
+                    # Create new user
+                    success = auth_manager.create_user(new_username, new_password)
+                    if success:
+                        st.markdown('<div class="success-message">✅ Account created successfully! You can now login.</div>', unsafe_allow_html=True)
+                        # Auto-login the new user
+                        auth_manager.login(new_username, new_password)
+                        st.rerun()
+                    else:
+                        st.markdown('<div class="error-message">❌ Username already exists. Please choose a different username.</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="error-message">❌ Please fill in all fields</div>', unsafe_allow_html=True)
     
     # Footer
     st.markdown("---")
@@ -253,8 +287,8 @@ def show_login_page():
     </div>
     """, unsafe_allow_html=True)
     
-    # Initialize default users on first run
-    initialize_default_users()
+    # Initialize default admin on first run
+    initialize_default_admin()
 
 def show_logout_button():
     """Show logout button in sidebar"""
