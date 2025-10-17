@@ -616,21 +616,10 @@ class ResearchAssistantUI:
         # Show loading overlay if analysis is in progress
         if st.session_state.get('is_loading_analysis', False):
             self.show_loading_overlay(st.session_state.loading_message)
-            return
+            # Don't return here - let the sidebar handle the processing
+            # The sidebar will clear the loading state when done
         
-        # Handle custom summary generation
-        if st.session_state.get('generate_custom_summary', False):
-            st.session_state.generate_custom_summary = False
-            
-            uploaded_papers = self.get_user_session('uploaded_papers', [])
-            success = self.generate_custom_summary(uploaded_papers)
-            
-            st.session_state.is_loading_analysis = False
-            
-            if success:
-                st.rerun()
-            else:
-                st.error("Custom summary generation failed. Please try again.")
+        # Custom summary generation is now handled directly in the sidebar
         
         # Show default message only if no active conversation
         active_conversation_id = self.get_user_session('active_conversation_id')
@@ -787,27 +776,21 @@ Assistant Response:"""
                     self.set_user_session('custom_summary_chat', [])
                     st.session_state.is_loading_analysis = True
                     st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
-                    st.rerun()
-            
-            # Handle loading state and process analysis
-            if st.session_state.get('is_loading_analysis', False):
-                self.show_loading_overlay(st.session_state.loading_message)
-                
-                # Process the analysis with proper error handling
-                success = self.process_keyword_search(
-                    self.get_user_session('selected_keywords', []), 
-                    time_filter_type, 
-                    self.get_user_session('search_mode', 'all_keywords')
-                )
-                
-                # Always clear loading state to prevent infinite loading
-                st.session_state.is_loading_analysis = False
-                
-                if success:
-                    st.rerun()
-                else:
-                    # If processing failed, show error and don't rerun
-                    st.error("Analysis failed. Please try again.")
+                    
+                    # Process the analysis immediately (like in the old implementation)
+                    success = self.process_keyword_search(
+                        selected_keywords, 
+                        time_filter_type, 
+                        search_mode_display
+                    )
+                    
+                    # Always clear loading state
+                    st.session_state.is_loading_analysis = False
+                    
+                    if success:
+                        st.rerun()
+                    else:
+                        st.error("Analysis failed. Please try again.")
             
             st.markdown("---")
             
@@ -822,10 +805,19 @@ Assistant Response:"""
                 
                 if st.button("Generate Custom Summary", use_container_width=True, type="primary"):
                     self.set_user_session('active_conversation_id', None)
-                    st.session_state.generate_custom_summary = True
                     st.session_state.is_loading_analysis = True
                     st.session_state.loading_message = "Generating summary of your uploaded papers..."
-                    st.rerun()
+                    
+                    # Process the custom summary immediately
+                    success = self.generate_custom_summary(uploaded_papers)
+                    
+                    # Always clear loading state
+                    st.session_state.is_loading_analysis = False
+                    
+                    if success:
+                        st.rerun()
+                    else:
+                        st.error("Custom summary generation failed. Please try again.")
                 
                 custom_summary_chat = self.get_user_session('custom_summary_chat', [])
                 if custom_summary_chat:
