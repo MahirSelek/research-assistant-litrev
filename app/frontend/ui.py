@@ -45,13 +45,15 @@ class ResearchAssistantUI:
                 user_data = self.api.get_user_data(current_user)
                 if user_data:
                     print(f"Loaded user data: {list(user_data.keys())}")
-                    # Set all user data from backend
+                    # Set persistent user data from backend (conversations, active conversation)
                     self.set_user_session('conversations', user_data.get('conversations', {}))
                     self.set_user_session('active_conversation_id', user_data.get('active_conversation_id'))
-                    self.set_user_session('selected_keywords', user_data.get('selected_keywords', []))
-                    self.set_user_session('search_mode', user_data.get('search_mode', 'all_keywords'))
-                    self.set_user_session('uploaded_papers', user_data.get('uploaded_papers', []))
-                    self.set_user_session('custom_summary_chat', user_data.get('custom_summary_chat', []))
+                    
+                    # Clear session-specific data on each login (like in old implementation)
+                    self.set_user_session('selected_keywords', [])
+                    self.set_user_session('search_mode', 'all_keywords')
+                    self.set_user_session('uploaded_papers', [])
+                    self.set_user_session('custom_summary_chat', [])
                     
                     # Mark user data as loaded
                     st.session_state[user_data_loaded_key] = True
@@ -359,8 +361,9 @@ class ResearchAssistantUI:
     def process_keyword_search(self, keywords: List[str], time_filter_type: str, search_mode: str = "all_keywords"):
         """Process keyword search via backend"""
         try:
-            print(f"Processing keyword search with {len(keywords)} keywords")
+            print(f"Processing keyword search with {len(keywords)} keywords: {keywords}")
             analysis_result, retrieved_papers, total_found = self.api.search_papers(keywords, time_filter_type, search_mode)
+            print(f"API returned: analysis_result={bool(analysis_result)}, papers={len(retrieved_papers)}, total_found={total_found}")
             
             if analysis_result:
                 conv_id = f"conv_{time.time()}"
@@ -667,8 +670,10 @@ class ResearchAssistantUI:
                                                 key=f"download_{active_conversation_id}_{paper_id}"
                                             )
             
-            # Chat input for follow-up questions
+            # Chat input for follow-up questions - always show when there's an active conversation
+            print(f"Showing chat input for conversation {active_conversation_id}")
             if prompt := st.chat_input("Ask a follow-up question..."):
+                print(f"User asked: {prompt}")
                 active_conv["messages"].append({"role": "user", "content": prompt})
                 active_conv['last_interaction_time'] = time.time()
                 self.set_user_session('conversations', conversations)
@@ -786,18 +791,23 @@ Assistant Response:"""
                     st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
                     
                     # Process the analysis immediately (like in the old implementation)
+                    print(f"Starting analysis with keywords: {selected_keywords}")
                     success = self.process_keyword_search(
                         selected_keywords, 
                         time_filter_type, 
                         search_mode_display
                     )
+                    print(f"Analysis completed with success: {success}")
                     
                     # Always clear loading state
                     st.session_state.is_loading_analysis = False
+                    print(f"Loading state cleared: {st.session_state.is_loading_analysis}")
                     
                     if success:
+                        print("Rerunning after successful analysis")
                         st.rerun()
                     else:
+                        print("Analysis failed, showing error")
                         st.error("Analysis failed. Please try again.")
             
             st.markdown("---")
