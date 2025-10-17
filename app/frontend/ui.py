@@ -35,11 +35,16 @@ class ResearchAssistantUI:
         current_user = st.session_state.get('username', 'default')
         
         # Check if this is a new login (user data not loaded yet)
-        if current_user != 'default' and self.get_user_key('conversations') not in st.session_state:
+        # Use a more reliable check for whether user data has been loaded
+        user_data_loaded_key = f"user_data_loaded_{current_user}"
+        
+        if current_user != 'default' and not st.session_state.get(user_data_loaded_key, False):
             # Load user data from backend
             try:
+                print(f"Loading user data for: {current_user}")
                 user_data = self.api.get_user_data(current_user)
                 if user_data:
+                    print(f"Loaded user data: {list(user_data.keys())}")
                     # Set all user data from backend
                     self.set_user_session('conversations', user_data.get('conversations', {}))
                     self.set_user_session('active_conversation_id', user_data.get('active_conversation_id'))
@@ -47,12 +52,19 @@ class ResearchAssistantUI:
                     self.set_user_session('search_mode', user_data.get('search_mode', 'all_keywords'))
                     self.set_user_session('uploaded_papers', user_data.get('uploaded_papers', []))
                     self.set_user_session('custom_summary_chat', user_data.get('custom_summary_chat', []))
+                    
+                    # Mark user data as loaded
+                    st.session_state[user_data_loaded_key] = True
+                    print(f"Successfully loaded data for {current_user}")
                 else:
                     # Initialize empty user data if none exists
+                    print(f"No data found for {current_user}, initializing empty data")
                     self._initialize_empty_user_data()
+                    st.session_state[user_data_loaded_key] = True
             except Exception as e:
-                print(f"Failed to load user data: {e}")
+                print(f"Failed to load user data for {current_user}: {e}")
                 self._initialize_empty_user_data()
+                st.session_state[user_data_loaded_key] = True
         
         # Initialize user-specific session state (fallback for default user)
         self._initialize_empty_user_data()
@@ -346,15 +358,17 @@ class ResearchAssistantUI:
     
     def process_keyword_search(self, keywords: List[str], time_filter_type: str, search_mode: str = "all_keywords"):
         """Process keyword search via backend"""
-        analysis_result, retrieved_papers, total_found = self.api.search_papers(keywords, time_filter_type, search_mode)
-        
-        if analysis_result:
-            conv_id = f"conv_{time.time()}"
-            search_mode_display = self.get_user_session('search_mode', 'all_keywords')
-            selected_keywords = self.get_user_session('selected_keywords', [])
-            search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
+        try:
+            print(f"Processing keyword search with {len(keywords)} keywords")
+            analysis_result, retrieved_papers, total_found = self.api.search_papers(keywords, time_filter_type, search_mode)
             
-            initial_message = {"role": "assistant", "content": f"""
+            if analysis_result:
+                conv_id = f"conv_{time.time()}"
+                search_mode_display = self.get_user_session('search_mode', 'all_keywords')
+                selected_keywords = self.get_user_session('selected_keywords', [])
+                search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
+                
+                initial_message = {"role": "assistant", "content": f"""
 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
     <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px; font-weight: 600;">Analysis Report</h2>
     <div style="color: #f0f0f0; font-size: 16px; margin-bottom: 8px;">
@@ -367,99 +381,114 @@ class ResearchAssistantUI:
 
 {analysis_result}
 """}
-            
-            title = self.api.generate_conversation_title(analysis_result)
-            
-            conversations = self.get_user_session('conversations', {})
-            conversations[conv_id] = {
-                "title": title, 
-                "messages": [initial_message], 
-                "keywords": selected_keywords,
-                "search_mode": search_mode_display,
-                "retrieved_papers": retrieved_papers,
-                "total_papers_found": total_found,
-                "created_at": time.time(),
-                "last_interaction_time": time.time()
-            }
-            self.set_user_session('conversations', conversations)
-            
-            # Save conversation to backend
-            username = st.session_state.get('username')
-            if username:
-                self.api.save_conversation(username, conv_id, conversations[conv_id])
-            
-            self.set_user_session('active_conversation_id', conv_id)
-            self.set_user_session('custom_summary_chat', [])
-            st.rerun()
-        else:
-            search_mode_text = "ALL of the selected keywords" if search_mode == "all_keywords" else "AT LEAST ONE of the selected keywords"
-            st.error(f"No papers found that contain {search_mode_text} within the specified time window. Please try a different combination of keywords.")
+                
+                title = self.api.generate_conversation_title(analysis_result)
+                
+                conversations = self.get_user_session('conversations', {})
+                conversations[conv_id] = {
+                    "title": title, 
+                    "messages": [initial_message], 
+                    "keywords": selected_keywords,
+                    "search_mode": search_mode_display,
+                    "retrieved_papers": retrieved_papers,
+                    "total_papers_found": total_found,
+                    "created_at": time.time(),
+                    "last_interaction_time": time.time()
+                }
+                self.set_user_session('conversations', conversations)
+                
+                # Save conversation to backend
+                username = st.session_state.get('username')
+                if username:
+                    self.api.save_conversation(username, conv_id, conversations[conv_id])
+                
+                self.set_user_session('active_conversation_id', conv_id)
+                self.set_user_session('custom_summary_chat', [])
+                print(f"Successfully created conversation: {conv_id}")
+                return True
+            else:
+                search_mode_text = "ALL of the selected keywords" if search_mode == "all_keywords" else "AT LEAST ONE of the selected keywords"
+                st.error(f"No papers found that contain {search_mode_text} within the specified time window. Please try a different combination of keywords.")
+                return False
+        except Exception as e:
+            print(f"Error in process_keyword_search: {e}")
+            st.error(f"An error occurred while processing the search: {str(e)}")
+            return False
     
     def generate_custom_summary(self, uploaded_papers: List[Dict]):
         """Generate custom summary via backend"""
-        summary = self.api.generate_custom_summary(uploaded_papers)
-        
-        if summary:
-            conv_id = f"custom_summary_{time.time()}"
+        try:
+            print(f"Generating custom summary for {len(uploaded_papers)} papers")
+            summary = self.api.generate_custom_summary(uploaded_papers)
             
-            def generate_custom_summary_title(papers, summary_text):
-                paper_count = len(papers)
-                summary_lower = summary_text.lower()
-                topics = []
+            if summary:
+                conv_id = f"custom_summary_{time.time()}"
                 
-                if any(word in summary_lower for word in ['sustainability', 'sustainable', 'environment']):
-                    topics.append('Sustainability')
-                if any(word in summary_lower for word in ['machine learning', 'ai', 'artificial intelligence', 'ml']):
-                    topics.append('AI/ML')
-                if any(word in summary_lower for word in ['genetics', 'genetic', 'dna', 'genome']):
-                    topics.append('Genetics')
-                if any(word in summary_lower for word in ['disease', 'medical', 'health', 'clinical']):
-                    topics.append('Medical')
-                if any(word in summary_lower for word in ['prediction', 'predictive', 'modeling']):
-                    topics.append('Prediction')
-                if any(word in summary_lower for word in ['risk', 'risk assessment']):
-                    topics.append('Risk Analysis')
-                if any(word in summary_lower for word in ['leather', 'industry', 'manufacturing']):
-                    topics.append('Industry')
-                if any(word in summary_lower for word in ['reporting', 'disclosure', 'transparency']):
-                    topics.append('Reporting')
+                def generate_custom_summary_title(papers, summary_text):
+                    paper_count = len(papers)
+                    summary_lower = summary_text.lower()
+                    topics = []
+                    
+                    if any(word in summary_lower for word in ['sustainability', 'sustainable', 'environment']):
+                        topics.append('Sustainability')
+                    if any(word in summary_lower for word in ['machine learning', 'ai', 'artificial intelligence', 'ml']):
+                        topics.append('AI/ML')
+                    if any(word in summary_lower for word in ['genetics', 'genetic', 'dna', 'genome']):
+                        topics.append('Genetics')
+                    if any(word in summary_lower for word in ['disease', 'medical', 'health', 'clinical']):
+                        topics.append('Medical')
+                    if any(word in summary_lower for word in ['prediction', 'predictive', 'modeling']):
+                        topics.append('Prediction')
+                    if any(word in summary_lower for word in ['risk', 'risk assessment']):
+                        topics.append('Risk Analysis')
+                    if any(word in summary_lower for word in ['leather', 'industry', 'manufacturing']):
+                        topics.append('Industry')
+                    if any(word in summary_lower for word in ['reporting', 'disclosure', 'transparency']):
+                        topics.append('Reporting')
+                    
+                    if topics:
+                        topic_str = ', '.join(topics[:2])
+                        return topic_str
+                    else:
+                        first_words = ' '.join(summary_text.split()[:4])
+                        return f"{first_words}..."
                 
-                if topics:
-                    topic_str = ', '.join(topics[:2])
-                    return topic_str
-                else:
-                    first_words = ' '.join(summary_text.split()[:4])
-                    return f"{first_words}..."
-            
-            title = generate_custom_summary_title(uploaded_papers, summary)
-            
-            initial_message = {
-                "role": "assistant", 
-                "content": f"**Custom Summary of {len(uploaded_papers)} Uploaded Papers**\n\n{summary}"
-            }
-            
-            conversations = self.get_user_session('conversations', {})
-            conversations[conv_id] = {
-                "title": title,
-                "messages": [initial_message],
-                "keywords": ["Custom Summary"],
-                "search_mode": "custom",
-                "retrieved_papers": uploaded_papers,
-                "total_papers_found": len(uploaded_papers),
-                "created_at": time.time(),
-                "last_interaction_time": time.time(),
-                "paper_count": len(uploaded_papers)
-            }
-            self.set_user_session('conversations', conversations)
-            
-            # Save conversation to backend
-            username = st.session_state.get('username')
-            if username:
-                self.api.save_conversation(username, conv_id, conversations[conv_id])
-            
-            self.set_user_session('active_conversation_id', conv_id)
-        else:
-            st.error("Failed to generate summary. Please try again.")
+                title = generate_custom_summary_title(uploaded_papers, summary)
+                
+                initial_message = {
+                    "role": "assistant", 
+                    "content": f"**Custom Summary of {len(uploaded_papers)} Uploaded Papers**\n\n{summary}"
+                }
+                
+                conversations = self.get_user_session('conversations', {})
+                conversations[conv_id] = {
+                    "title": title,
+                    "messages": [initial_message],
+                    "keywords": ["Custom Summary"],
+                    "search_mode": "custom",
+                    "retrieved_papers": uploaded_papers,
+                    "total_papers_found": len(uploaded_papers),
+                    "created_at": time.time(),
+                    "last_interaction_time": time.time(),
+                    "paper_count": len(uploaded_papers)
+                }
+                self.set_user_session('conversations', conversations)
+                
+                # Save conversation to backend
+                username = st.session_state.get('username')
+                if username:
+                    self.api.save_conversation(username, conv_id, conversations[conv_id])
+                
+                self.set_user_session('active_conversation_id', conv_id)
+                print(f"Successfully generated custom summary: {conv_id}")
+                return True
+            else:
+                st.error("Failed to generate summary. Please try again.")
+                return False
+        except Exception as e:
+            print(f"Error in generate_custom_summary: {e}")
+            st.error(f"An error occurred while generating the summary: {str(e)}")
+            return False
     
     def render_main_interface(self):
         """Render the main application interface"""
@@ -594,10 +623,14 @@ class ResearchAssistantUI:
             st.session_state.generate_custom_summary = False
             
             uploaded_papers = self.get_user_session('uploaded_papers', [])
-            self.generate_custom_summary(uploaded_papers)
+            success = self.generate_custom_summary(uploaded_papers)
             
             st.session_state.is_loading_analysis = False
-            st.rerun()
+            
+            if success:
+                st.rerun()
+            else:
+                st.error("Custom summary generation failed. Please try again.")
         
         # Show default message only if no active conversation
         active_conversation_id = self.get_user_session('active_conversation_id')
@@ -760,14 +793,21 @@ Assistant Response:"""
             if st.session_state.get('is_loading_analysis', False):
                 self.show_loading_overlay(st.session_state.loading_message)
                 
-                self.process_keyword_search(
+                # Process the analysis with proper error handling
+                success = self.process_keyword_search(
                     self.get_user_session('selected_keywords', []), 
                     time_filter_type, 
                     self.get_user_session('search_mode', 'all_keywords')
                 )
                 
+                # Always clear loading state to prevent infinite loading
                 st.session_state.is_loading_analysis = False
-                st.rerun()
+                
+                if success:
+                    st.rerun()
+                else:
+                    # If processing failed, show error and don't rerun
+                    st.error("Analysis failed. Please try again.")
             
             st.markdown("---")
             

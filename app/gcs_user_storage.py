@@ -213,18 +213,24 @@ class GCSUserStorage:
     def load_user_data_from_gcs(self, username: str) -> Dict[str, Any]:
         """Load all user data from GCS"""
         try:
+            print(f"Loading user data from GCS for user: {username}")
+            
             # Load user preferences
             user_preferences = self.load_user_data(username, 'user_preferences') or {}
+            print(f"Loaded user preferences: {list(user_preferences.keys())}")
             
             # Load conversations
             conversation_ids = self.list_user_conversations(username)
+            print(f"Found {len(conversation_ids)} conversations for user {username}")
+            
             conversations = {}
             for conv_id in conversation_ids:
                 conv_data = self.load_conversation(username, conv_id)
                 if conv_data:
                     conversations[conv_id] = conv_data
+                    print(f"Loaded conversation: {conv_id}")
             
-            return {
+            result = {
                 'conversations': conversations,
                 'selected_keywords': user_preferences.get('selected_keywords', []),
                 'search_mode': user_preferences.get('search_mode', 'all_keywords'),
@@ -232,6 +238,10 @@ class GCSUserStorage:
                 'custom_summary_chat': user_preferences.get('custom_summary_chat', []),
                 'active_conversation_id': user_preferences.get('active_conversation_id')
             }
+            
+            print(f"Successfully loaded user data for {username}: {len(conversations)} conversations")
+            return result
         except Exception as e:
+            print(f"Failed to load user data from GCS for {username}: {e}")
             st.error(f"Failed to load user data from GCS: {e}")
             return {}
