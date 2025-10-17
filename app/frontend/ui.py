@@ -766,6 +766,9 @@ Assistant Response:"""
                     self.get_user_session('search_mode', 'all_keywords')
                 )
                 
+                # Clear loading state IMMEDIATELY after processing (like hardcoded version)
+                st.session_state.is_loading_analysis = False
+                
                 if analysis_result:
                     conv_id = f"conv_{time.time()}"
                     search_mode_display = self.get_user_session('search_mode', 'all_keywords')
@@ -803,14 +806,9 @@ Assistant Response:"""
                     self.set_user_session('active_conversation_id', conv_id)
                     # Custom summaries are now in chat history
                     self.set_user_session('custom_summary_chat', [])  # Clear custom summary chat
-                    
-                    # Clear loading state after conversation is created
-                    st.session_state.is_loading_analysis = False
                     st.rerun()
                 else:
                     st.error("Failed to generate analysis. Please try again.")
-                    # Clear loading state even on failure
-                    st.session_state.is_loading_analysis = False
             
             st.markdown("---")
             
