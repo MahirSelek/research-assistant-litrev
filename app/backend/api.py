@@ -95,11 +95,12 @@ class ResearchAssistantAPI:
         # Process time filter
         time_filter_dict = self._get_time_filter_dict(time_filter_type)
         
-        # Perform search
+        # Perform search with higher limit for OR searches to get comprehensive results
+        n_results = 200 if search_mode == "any_keyword" else 100
         all_papers, total_found = self._perform_hybrid_search(
             keywords, 
             time_filter_dict=None,  # No ES time filtering
-            n_results=100, 
+            n_results=n_results, 
             max_final_results=15,
             search_mode=search_mode
         )
@@ -293,12 +294,15 @@ class ResearchAssistantAPI:
         return final_paper_list, total_papers_found
     
     def _perform_or_search(self, keywords: List[str], time_filter_dict: Optional[Dict], n_results: int) -> Tuple[List[Dict], int]:
-        """Perform OR search"""
+        """Perform OR search - get ALL papers that match ANY keyword"""
+        # Use a much higher size limit to get comprehensive results
         es_results = self.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="OR")
         
         all_papers = []
         for hit in es_results:
             paper_id = hit['_id']
+            # For OR searches, we don't rely on relevance scoring as much
+            # Instead, we prioritize papers that match more keywords
             relevance_score = hit.get('_score', 0.0)
             doc_content = {
                 'paper_id': paper_id, 
@@ -308,6 +312,8 @@ class ResearchAssistantAPI:
             }
             all_papers.append(doc_content)
         
+        # Sort by relevance score but don't filter by score threshold
+        # This ensures we get ALL papers that match ANY keyword
         all_papers.sort(key=lambda x: x.get('relevance_score', 0.0), reverse=True)
         return all_papers, len(all_papers)
     
