@@ -131,13 +131,78 @@ def set_user_session(key, value):
     user_key = get_user_key(key)
     st.session_state[user_key] = value
 
+def save_conversations_to_gcs(conversations):
+    """Save conversations to GCS"""
+    try:
+        from google.cloud import storage
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(GCS_BUCKET_NAME)
+        
+        current_user = st.session_state.get('username', 'default')
+        
+        # Save each conversation individually
+        for conv_id, conv_data in conversations.items():
+            conv_path = f"user-data/users/{current_user}/conversations/{conv_id}.json"
+            blob = bucket.blob(conv_path)
+            
+            # Add metadata
+            conv_data_with_metadata = {
+                "conversation_id": conv_id,
+                "username": current_user,
+                "last_updated": time.time(),
+                "conversation_data": conv_data
+            }
+            
+            blob.upload_from_string(
+                json.dumps(conv_data_with_metadata, indent=2),
+                content_type='application/json'
+            )
+        
+        return True
+    except Exception as e:
+        st.error(f"Failed to save conversations to GCS: {e}")
+        return False
+
+def load_conversations_from_gcs():
+    """Load conversations from GCS"""
+    try:
+        from google.cloud import storage
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(GCS_BUCKET_NAME)
+        
+        current_user = st.session_state.get('username', 'default')
+        conversations = {}
+        
+        # List all conversation files for this user
+        prefix = f"user-data/users/{current_user}/conversations/"
+        blobs = bucket.list_blobs(prefix=prefix)
+        
+        for blob in blobs:
+            if blob.name.endswith('.json'):
+                try:
+                    content = blob.download_as_text()
+                    conv_data = json.loads(content)
+                    conv_id = conv_data.get('conversation_id')
+                    if conv_id:
+                        conversations[conv_id] = conv_data.get('conversation_data', {})
+                except Exception as e:
+                    print(f"Error loading conversation {blob.name}: {e}")
+                    continue
+        
+        return conversations
+    except Exception as e:
+        st.error(f"Failed to load conversations from GCS: {e}")
+        return {}
+
 def initialize_session_state():
     # Get current username for user-specific data
     current_user = st.session_state.get('username', 'default')
     
     # Initialize user-specific session state
     if get_user_key('conversations') not in st.session_state:
-        set_user_session('conversations', {})
+        # Load conversations from GCS
+        conversations = load_conversations_from_gcs()
+        set_user_session('conversations', conversations)
     if get_user_key('active_conversation_id') not in st.session_state:
         set_user_session('active_conversation_id', None)
     if get_user_key('selected_keywords') not in st.session_state:
@@ -947,6 +1012,8 @@ def display_chat_history():
                     # Update last interaction time for this conversation
                     conversations[conv_id]['last_interaction_time'] = time.time()
                     set_user_session('conversations', conversations)
+                    # Save to GCS
+                    save_conversations_to_gcs(conversations)
                     st.rerun()
 
 def main():
@@ -1074,6 +1141,8 @@ def main():
                     "last_interaction_time": time.time()
                 }
                 set_user_session('conversations', conversations)
+                # Save to GCS
+                save_conversations_to_gcs(conversations)
                 # Clear any previous analysis and set new one
                 set_user_session('active_conversation_id', conv_id)
                 # Custom summaries are now in chat history
@@ -1250,6 +1319,8 @@ def main():
                 "paper_count": len(uploaded_papers)
             }
             set_user_session('conversations', conversations)
+            # Save to GCS
+            save_conversations_to_gcs(conversations)
             
             # Set this as the active conversation so user can immediately interact
             set_user_session('active_conversation_id', conv_id)
@@ -1317,6 +1388,8 @@ def main():
             active_conv['last_interaction_time'] = time.time()
             # Save updated conversations
             set_user_session('conversations', conversations)
+            # Save to GCS
+            save_conversations_to_gcs(conversations)
             st.rerun()
 
     active_conversation_id = get_user_session('active_conversation_id')
@@ -1363,6 +1436,8 @@ Assistant Response:"""
                 active_conv['last_interaction_time'] = time.time()
                 # Save updated conversations
                 set_user_session('conversations', conversations)
+                # Save to GCS
+                save_conversations_to_gcs(conversations)
                 st.rerun()
 
 if __name__ == "__main__":
