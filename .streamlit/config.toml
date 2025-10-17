@@ -18,20 +18,13 @@ serverPort = 8501
 
 [runner]
 magicEnabled = false
-installTracer = false
-fixMatplotlib = true
 
 [logger]
 level = "error"
 
 [client]
-caching = true
-displayEnabled = true
 showErrorDetails = false
 
 [global]
 developmentMode = false
 showWarningOnDirectExecution = false
-
-[layout]
-wideMode = true
