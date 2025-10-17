@@ -382,6 +382,64 @@ Assistant Response:"""
             else:
                 st.caption("No past analyses found.")
             
+            # Uploaded papers section
+            st.markdown("### Uploaded Papers")
+            uploaded_papers = self.get_user_session('uploaded_papers', [])
+            
+            if uploaded_papers:
+                st.info(f"{len(uploaded_papers)} papers uploaded")
+                with st.expander("View uploaded papers"):
+                    for i, paper in enumerate(uploaded_papers):
+                        title = paper['metadata'].get('title', 'Unknown title')
+                        st.write(f"{i+1}. {title}")
+                
+                # Custom summary button
+                if st.button("Generate Custom Summary", type="primary", use_container_width=True):
+                    st.session_state.is_loading_analysis = True
+                    st.session_state.loading_message = "Generating summary of your uploaded papers..."
+                    
+                    success = self.generate_custom_summary(uploaded_papers)
+                    st.session_state.is_loading_analysis = False
+                    
+                    if success:
+                        st.rerun()
+                    else:
+                        st.error("Custom summary generation failed. Please try again.")
+                
+                # Clear uploaded papers button
+                if st.button("Clear uploaded papers", type="secondary", use_container_width=True):
+                    self.set_user_session('uploaded_papers', [])
+                    st.rerun()
+            else:
+                st.caption("No papers uploaded yet")
+            
+            # PDF upload section
+            with st.expander("Upload PDF Files"):
+                st.info("Upload PDF files to generate custom summary of your documents.")
+                
+                uploaded_pdfs = st.file_uploader(
+                    "Choose PDF files", 
+                    accept_multiple_files=True, 
+                    type=['pdf'], 
+                    key="pdf_uploader_html"
+                )
+                
+                if uploaded_pdfs and st.button("Add PDFs", type="primary"):
+                    with st.spinner("Processing PDF files..."):
+                        for uploaded_file in uploaded_pdfs:
+                            # Process PDF using backend API
+                            paper_data = self.api.process_uploaded_pdf(uploaded_file, uploaded_file.name)
+                            
+                            if paper_data:
+                                # Store in user-specific session state
+                                uploaded_papers = self.get_user_session('uploaded_papers', [])
+                                uploaded_papers.append(paper_data)
+                                self.set_user_session('uploaded_papers', uploaded_papers)
+                                st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_data['content'])} chars)")
+                            else:
+                                st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
+                        st.rerun()
+            
             # Logout
             if st.button("Logout", type="secondary", use_container_width=True):
                 # Clear session state
