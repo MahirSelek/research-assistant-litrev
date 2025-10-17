@@ -94,13 +94,23 @@ class GCSUserStorage:
             blob = self.bucket.blob(path)
             
             if not blob.exists():
+                print(f"Conversation blob does not exist: {path}")
                 return None
             
             content = blob.download_as_string()
             data_with_metadata = json.loads(content)
-            return data_with_metadata.get("conversation", {})
+            conversation_data = data_with_metadata.get("conversation", {})
+            
+            if not conversation_data:
+                print(f"Empty conversation data for {conversation_id}")
+                return None
+                
+            return conversation_data
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error for conversation {conversation_id}: {e}")
+            return None
         except Exception as e:
-            st.error(f"Failed to load conversation from GCS: {e}")
+            print(f"Failed to load conversation {conversation_id} from GCS: {e}")
             return None
     
     def list_user_conversations(self, username: str) -> List[str]:
@@ -224,11 +234,18 @@ class GCSUserStorage:
             print(f"Found {len(conversation_ids)} conversations for user {username}")
             
             conversations = {}
+            failed_conversations = []
             for conv_id in conversation_ids:
                 conv_data = self.load_conversation(username, conv_id)
                 if conv_data:
                     conversations[conv_id] = conv_data
                     print(f"Loaded conversation: {conv_id}")
+                else:
+                    failed_conversations.append(conv_id)
+                    print(f"Failed to load conversation: {conv_id}")
+            
+            if failed_conversations:
+                print(f"Failed to load {len(failed_conversations)} conversations: {failed_conversations}")
             
             result = {
                 'conversations': conversations,
