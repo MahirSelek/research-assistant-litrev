@@ -16,7 +16,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
 from auth import auth_manager, show_login_page
-from frontend.ui import ResearchAssistantUI
+from frontend.html_ui import HTMLResearchAssistantUI
 from backend.api import ResearchAssistantAPI
 
 def load_configuration() -> Dict[str, Any]:
@@ -88,8 +88,8 @@ def initialize_application():
     # Initialize backend API
     api = ResearchAssistantAPI(full_config)
     
-    # Initialize frontend UI
-    ui = ResearchAssistantUI(api)
+    # Initialize HTML frontend UI
+    ui = HTMLResearchAssistantUI(api)
     
     return api, ui
 
@@ -128,8 +128,10 @@ def main():
     # Initialize session state
     ui.initialize_session_state()
     
-    # Render the application with responsive design
-    ui.render_sidebar()
+    # Handle form submissions first
+    ui.handle_form_submissions()
+    
+    # Render the HTML application
     ui.render_main_interface()
 
 if __name__ == "__main__":
