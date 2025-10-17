@@ -22,6 +22,7 @@ from google.cloud import storage
 from google.api_core.exceptions import NotFound
 from auth import auth_manager, show_login_page, show_logout_button
 from user_management import show_user_management
+from gcs_user_storage import GCSUserStorage
 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -85,6 +86,9 @@ GENETICS_KEYWORDS = [
 USER_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM0OTUwNTciIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0iZmVhdGhlciBmZWF0aGVyLXVzZXIiPjxwYXRoIGQ9Ik0yMCAyMWMwLTMuODctMy4xMy03LTctN3MtNyAzLjEzLTcgN1oiPjwvcGF0aD48Y2lyY2xlIGN4PSIxMiIgY3k9IjciIHI9IjQiPjwvY2lyY2xlPjwvc3ZnPg=="
 BOT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDdiZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNOS41IDEyLjVsLTggNkw5LjUgMjEgMTEgMTRsMS41IDcgNy41LTEuNS03LjUgMy4vTDE0IDQuNSA5LjUgOHoiLz48cGF0aCBkPSJNMy41IDEwLjVMOCA1bDIgMy41Ii8+PHBhdGggZD0iTTE4IDNMMTAuNSAxMC41Ii8+PC9zdmc+"
 
+# Initialize GCS storage
+gcs_storage = GCSUserStorage(GCS_BUCKET_NAME)
+
 # API and Helper Functions
 def post_message_vertexai(input_text: str) -> str | None:
     try:
@@ -128,11 +132,60 @@ def set_user_session(key, value):
     user_key = get_user_key(key)
     st.session_state[user_key] = value
 
+def sync_user_data_to_gcs(username: str):
+    """Sync current user session data to GCS"""
+    try:
+        # Get current user data from session state
+        local_data = {
+            'conversations': get_user_session('conversations'),
+            'selected_keywords': get_user_session('selected_keywords'),
+            'search_mode': get_user_session('search_mode'),
+            'uploaded_papers': get_user_session('uploaded_papers'),
+            'custom_summary_chat': get_user_session('custom_summary_chat'),
+            'active_conversation_id': get_user_session('active_conversation_id')
+        }
+        
+        # Sync to GCS
+        gcs_storage.sync_user_data_to_gcs(username, local_data)
+    except Exception as e:
+        print(f"Failed to sync user data to GCS: {e}")
+
 def initialize_session_state():
     # Get current username for user-specific data
     current_user = st.session_state.get('username', 'default')
     
-    # Initialize user-specific session state
+    # Check if this is a new login (user data not loaded yet)
+    if current_user != 'default' and get_user_key('conversations') not in st.session_state:
+        # Load user data from GCS
+        try:
+            user_data = gcs_storage.load_user_data_from_gcs(current_user)
+            if user_data:
+                # Set all user data from GCS
+                set_user_session('conversations', user_data.get('conversations', {}))
+                set_user_session('active_conversation_id', user_data.get('active_conversation_id'))
+                set_user_session('selected_keywords', user_data.get('selected_keywords', []))
+                set_user_session('search_mode', user_data.get('search_mode', 'all_keywords'))
+                set_user_session('uploaded_papers', user_data.get('uploaded_papers', []))
+                set_user_session('custom_summary_chat', user_data.get('custom_summary_chat', []))
+            else:
+                # Initialize empty user data if none exists in GCS
+                set_user_session('conversations', {})
+                set_user_session('active_conversation_id', None)
+                set_user_session('selected_keywords', [])
+                set_user_session('search_mode', "all_keywords")
+                set_user_session('uploaded_papers', [])
+                set_user_session('custom_summary_chat', [])
+        except Exception as e:
+            # Fallback to local initialization if GCS fails
+            print(f"Failed to load user data from GCS: {e}")
+            set_user_session('conversations', {})
+            set_user_session('active_conversation_id', None)
+            set_user_session('selected_keywords', [])
+            set_user_session('search_mode', "all_keywords")
+            set_user_session('uploaded_papers', [])
+            set_user_session('custom_summary_chat', [])
+    
+    # Initialize user-specific session state (fallback for default user)
     if get_user_key('conversations') not in st.session_state:
         set_user_session('conversations', {})
     if get_user_key('active_conversation_id') not in st.session_state:
@@ -834,6 +887,38 @@ def generate_custom_summary(uploaded_papers):
     
     return post_message_vertexai(prompt)
 
+def delete_conversation(conv_id: str):
+    """Delete a conversation from both local session and GCS"""
+    try:
+        # Get current conversations
+        conversations = get_user_session('conversations', {})
+        
+        if conv_id not in conversations:
+            st.error("Conversation not found")
+            return False
+        
+        # Remove from local session
+        del conversations[conv_id]
+        set_user_session('conversations', conversations)
+        
+        # If this was the active conversation, clear it
+        if get_user_session('active_conversation_id') == conv_id:
+            set_user_session('active_conversation_id', None)
+        
+        # Remove from GCS
+        username = st.session_state.get('username')
+        if username:
+            try:
+                gcs_storage.delete_conversation(username, conv_id)
+            except Exception as e:
+                print(f"Failed to delete conversation from GCS: {e}")
+                # Don't show error to user, just log it
+        
+        return True
+    except Exception as e:
+        print(f"Failed to delete conversation: {e}")
+        return False
+
 def display_paper_management():
     st.subheader("Upload PDF Files")
     st.info("Upload PDF files to generate custom summary of your documents.")
@@ -887,6 +972,34 @@ def display_chat_history():
         st.caption("No past analyses found.")
         return
 
+    # Add bulk actions (only show if there are conversations)
+    if len(conversations) > 1:
+        col1, col2 = st.columns([3, 1])
+        with col2:
+            if st.button("× Clear All", help="Delete all conversations", key="clear_all_btn", type="secondary"):
+                if "confirm_clear_all" not in st.session_state:
+                    st.session_state["confirm_clear_all"] = True
+                    st.rerun()
+                else:
+                    # Clear all conversations
+                    username = st.session_state.get('username')
+                    deleted_count = 0
+                    for conv_id in list(conversations.keys()):
+                        if delete_conversation(conv_id):
+                            deleted_count += 1
+                    
+                    if deleted_count > 0:
+                        st.success(f"Deleted {deleted_count} conversations!")
+                        # Clear confirmation state
+                        if "confirm_clear_all" in st.session_state:
+                            del st.session_state["confirm_clear_all"]
+                        st.rerun()
+                    else:
+                        st.error("Failed to delete conversations")
+        
+        if st.session_state.get("confirm_clear_all", False):
+            st.warning("⚠️ Click '× Clear All' again to confirm deletion of ALL conversations")
+
     grouped_convs = defaultdict(list)
     
     # Sort conversations by last interaction time (most recent first)
@@ -938,13 +1051,44 @@ def display_chat_history():
             st.markdown(f"<h5>{display_date.strftime('%B %Y')}</h5>", unsafe_allow_html=True)
 
         for conv_id, title in grouped_convs[month_key]:
-            if st.button(title, key=f"btn_{conv_id}", use_container_width=True):
-                if get_user_session('active_conversation_id') != conv_id:
-                    set_user_session('active_conversation_id', conv_id)
-                    # Update last interaction time for this conversation
-                    conversations[conv_id]['last_interaction_time'] = time.time()
-                    set_user_session('conversations', conversations)
-                    st.rerun()
+            # Create columns for the conversation button and delete button
+            col1, col2 = st.columns([5, 1])
+            
+            with col1:
+                if st.button(title, key=f"btn_{conv_id}", use_container_width=True):
+                    if get_user_session('active_conversation_id') != conv_id:
+                        set_user_session('active_conversation_id', conv_id)
+                        # Update last interaction time for this conversation
+                        conversations[conv_id]['last_interaction_time'] = time.time()
+                        set_user_session('conversations', conversations)
+                        
+                        # Sync user data to GCS
+                        username = st.session_state.get('username')
+                        if username:
+                            sync_user_data_to_gcs(username)
+                        
+                        st.rerun()
+            
+            with col2:
+                if st.button("×", key=f"delete_{conv_id}", help="Delete", use_container_width=True, type="secondary"):
+                    # Show confirmation dialog
+                    if f"confirm_delete_{conv_id}" not in st.session_state:
+                        st.session_state[f"confirm_delete_{conv_id}"] = True
+                        st.rerun()
+                    else:
+                        # Actually delete the conversation
+                        if delete_conversation(conv_id):
+                            st.success("Conversation deleted!")
+                            # Clear the confirmation state
+                            if f"confirm_delete_{conv_id}" in st.session_state:
+                                del st.session_state[f"confirm_delete_{conv_id}"]
+                            st.rerun()
+                        else:
+                            st.error("Failed to delete conversation")
+                
+                # Show confirmation message if delete was clicked
+                if st.session_state.get(f"confirm_delete_{conv_id}", False):
+                    st.caption("Click × again to confirm")
 
 def main():
     # Check authentication first
@@ -1075,6 +1219,12 @@ def main():
                 set_user_session('active_conversation_id', conv_id)
                 # Custom summaries are now in chat history
                 set_user_session('custom_summary_chat', [])  # Clear custom summary chat
+                
+                # Sync user data to GCS
+                username = st.session_state.get('username')
+                if username:
+                    sync_user_data_to_gcs(username)
+                
                 st.rerun()
             else:
                 st.error("Failed to generate analysis. Please try again.")
@@ -1251,6 +1401,11 @@ def main():
             # Set this as the active conversation so user can immediately interact
             set_user_session('active_conversation_id', conv_id)
             
+            # Sync user data to GCS
+            username = st.session_state.get('username')
+            if username:
+                sync_user_data_to_gcs(username)
+            
             # Summary is now permanently stored in chat history
         else:
             st.error("Failed to generate summary. Please try again.")
@@ -1311,6 +1466,12 @@ def main():
             active_conv['last_interaction_time'] = time.time()
             # Save updated conversations
             set_user_session('conversations', conversations)
+            
+            # Sync user data to GCS
+            username = st.session_state.get('username')
+            if username:
+                sync_user_data_to_gcs(username)
+            
             st.rerun()
 
     active_conversation_id = get_user_session('active_conversation_id')
@@ -1357,6 +1518,12 @@ Assistant Response:"""
                 active_conv['last_interaction_time'] = time.time()
                 # Save updated conversations
                 set_user_session('conversations', conversations)
+                
+                # Sync user data to GCS
+                username = st.session_state.get('username')
+                if username:
+                    sync_user_data_to_gcs(username)
+                
                 st.rerun()
 
 if __name__ == "__main__":
