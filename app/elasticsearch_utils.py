@@ -62,25 +62,43 @@ class ElasticsearchManager:
     def search_papers(self, keywords: List[str], time_filter: Dict = None, size: int = 10, operator: str = "AND") -> List[Dict[str, Any]]:
         if not keywords:
             return []
-        bool_operator = "must" if operator.upper() == "AND" else "should"
         
-        # The base query structure
-        query = {
-            "query": {
-                "bool": {
-                    bool_operator: [
-                        # Search across title, abstract, and content for better results.
-                        {"multi_match": {"query": keyword, "fields": ["title", "abstract", "content"]}} for keyword in keywords
-                    ],
-                    "filter": []
-                }
-            },
-            "size": size
-        }
-        
-        # For OR queries, we need to specify minimum_should_match to ensure at least one keyword matches
         if operator.upper() == "OR":
-            query["query"]["bool"]["minimum_should_match"] = 1
+            # For OR searches, use constant scoring to avoid relevance bias
+            query = {
+                "query": {
+                    "bool": {
+                        "should": [
+                            # Use constant_score to avoid relevance scoring bias
+                            {"constant_score": {
+                                "filter": {
+                                    "multi_match": {
+                                        "query": keyword, 
+                                        "fields": ["title", "abstract", "content"]
+                                    }
+                                },
+                                "boost": 1.0
+                            }} for keyword in keywords
+                        ],
+                        "minimum_should_match": 1,
+                        "filter": []
+                    }
+                },
+                "size": size
+            }
+        else:
+            # For AND searches, use normal scoring
+            query = {
+                "query": {
+                    "bool": {
+                        "must": [
+                            {"multi_match": {"query": keyword, "fields": ["title", "abstract", "content"]}} for keyword in keywords
+                        ],
+                        "filter": []
+                    }
+                },
+                "size": size
+            }
         if time_filter:
             query["query"]["bool"]["filter"].append({
                 "range": {
