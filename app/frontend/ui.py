@@ -396,6 +396,7 @@ class ResearchAssistantUI:
                     "last_interaction_time": time.time()
                 }
                 self.set_user_session('conversations', conversations)
+                print(f"Created conversation {conv_id} with message: {initial_message['content'][:100]}...")
                 
                 # Save conversation to backend
                 username = st.session_state.get('username')
@@ -473,6 +474,7 @@ class ResearchAssistantUI:
                     "paper_count": len(uploaded_papers)
                 }
                 self.set_user_session('conversations', conversations)
+                print(f"Created custom summary conversation {conv_id} with message: {initial_message['content'][:100]}...")
                 
                 # Save conversation to backend
                 username = st.session_state.get('username')
@@ -627,9 +629,15 @@ class ResearchAssistantUI:
             st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
         elif active_conversation_id is not None:
             conversations = self.get_user_session('conversations', {})
-            active_conv = conversations[active_conversation_id]
+            if active_conversation_id not in conversations:
+                st.error(f"Active conversation {active_conversation_id} not found in conversations.")
+                return
             
-            for message_index, message in enumerate(active_conv["messages"]):
+            active_conv = conversations[active_conversation_id]
+            print(f"Displaying conversation {active_conversation_id} with {len(active_conv.get('messages', []))} messages")
+            
+            # Display all messages in the conversation
+            for message_index, message in enumerate(active_conv.get("messages", [])):
                 avatar = self.BOT_AVATAR if message["role"] == "assistant" else self.USER_AVATAR
                 with st.chat_message(message["role"], avatar=avatar):
                     st.markdown(message["content"], unsafe_allow_html=True)
