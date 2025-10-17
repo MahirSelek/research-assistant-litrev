@@ -1,0 +1,16 @@
+.env
+app/literature-review.json
+app/literature-review-464920-08252bb0f72b.json
+
+
+.streamlit/secrets.toml
+
+gcp_credentials.json
+literature-review-464920-a669da1bc7c4.json
+.DS_Store
+
+# Security: Never commit user credentials
+users.json
+USER_CREDENTIALS.md
+get_credentials.py
+
