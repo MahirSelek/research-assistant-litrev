@@ -587,7 +587,7 @@ class ResearchAssistantUI:
         # Show loading overlay if analysis is in progress
         if st.session_state.get('is_loading_analysis', False):
             self.show_loading_overlay(st.session_state.loading_message)
-            return
+            return  # Don't render the rest of the page while loading
         
         # Handle custom summary generation
         if st.session_state.get('generate_custom_summary', False):
@@ -758,16 +758,59 @@ Assistant Response:"""
             
             # Handle loading state and process analysis
             if st.session_state.get('is_loading_analysis', False):
+                # Show loading overlay
                 self.show_loading_overlay(st.session_state.loading_message)
                 
-                self.process_keyword_search(
+                # Process the analysis
+                analysis_result, retrieved_papers, total_found = self.process_keyword_search(
                     self.get_user_session('selected_keywords', []), 
                     time_filter_type, 
                     self.get_user_session('search_mode', 'all_keywords')
                 )
                 
+                # Clear loading state
                 st.session_state.is_loading_analysis = False
-                st.rerun()
+                
+                if analysis_result:
+                    conv_id = f"conv_{time.time()}"
+                    search_mode_display = self.get_user_session('search_mode', 'all_keywords')
+                    selected_keywords = self.get_user_session('selected_keywords', [])
+                    search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
+                    initial_message = {"role": "assistant", "content": f"""
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+    <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px; font-weight: 600;">Analysis Report</h2>
+    <div style="color: #f0f0f0; font-size: 16px; margin-bottom: 8px;">
+        <strong>Keywords:</strong> {', '.join(selected_keywords)}
+    </div>
+    <div style="color: #e0e0e0; font-size: 14px;">
+        <strong>Search Mode:</strong> {search_mode_text}
+    </div>
+</div>
+
+{analysis_result}
+"""}
+                    title = self.api.generate_conversation_title(analysis_result)
+                    
+                    # Get user-specific conversations and add new one
+                    conversations = self.get_user_session('conversations', {})
+                    conversations[conv_id] = {
+                        "title": title, 
+                        "messages": [initial_message], 
+                        "keywords": selected_keywords,
+                        "search_mode": search_mode_display,
+                        "retrieved_papers": retrieved_papers,
+                        "total_papers_found": total_found,
+                        "created_at": time.time(),
+                        "last_interaction_time": time.time()
+                    }
+                    self.set_user_session('conversations', conversations)
+                    # Clear any previous analysis and set new one
+                    self.set_user_session('active_conversation_id', conv_id)
+                    # Custom summaries are now in chat history
+                    self.set_user_session('custom_summary_chat', [])  # Clear custom summary chat
+                    st.rerun()
+                else:
+                    st.error("Failed to generate analysis. Please try again.")
             
             st.markdown("---")
             
