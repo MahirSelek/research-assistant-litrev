@@ -158,8 +158,12 @@ def initialize_session_state():
     if current_user != 'default' and get_user_key('conversations') not in st.session_state:
         # Load user data from GCS
         try:
+            print(f"DEBUG: Loading user data for {current_user}")
             user_data = gcs_storage.load_user_data_from_gcs(current_user)
+            print(f"DEBUG: User data loaded: {bool(user_data)}")
             if user_data:
+                print(f"DEBUG: Conversations found: {len(user_data.get('conversations', {}))}")
+                print(f"DEBUG: Conversation keys: {list(user_data.get('conversations', {}).keys())}")
                 # Set all user data from GCS
                 set_user_session('conversations', user_data.get('conversations', {}))
                 set_user_session('active_conversation_id', user_data.get('active_conversation_id'))
@@ -168,6 +172,7 @@ def initialize_session_state():
                 set_user_session('uploaded_papers', user_data.get('uploaded_papers', []))
                 set_user_session('custom_summary_chat', user_data.get('custom_summary_chat', []))
             else:
+                print(f"DEBUG: No user data found for {current_user}")
                 # Initialize empty user data if none exists in GCS
                 set_user_session('conversations', {})
                 set_user_session('active_conversation_id', None)
@@ -177,7 +182,7 @@ def initialize_session_state():
                 set_user_session('custom_summary_chat', [])
         except Exception as e:
             # Fallback to local initialization if GCS fails
-            print(f"Failed to load user data from GCS: {e}")
+            print(f"DEBUG: Failed to load user data from GCS: {e}")
             set_user_session('conversations', {})
             set_user_session('active_conversation_id', None)
             set_user_session('selected_keywords', [])
@@ -1115,6 +1120,39 @@ def main():
             st.markdown(f"**Logged in as:** {st.session_state.username}")
             if st.session_state.get('username') == 'admin':
                 st.markdown("**Role:** Administrator")
+                # Debug button for admin
+                if st.button("🔄 Reload from GCS", help="Reload user data from GCS", key="reload_gcs"):
+                    # Clear current session data and reload from GCS
+                    current_user = st.session_state.get('username')
+                    if current_user:
+                        # Clear user session data
+                        user_keys = ['conversations', 'active_conversation_id', 'selected_keywords', 'search_mode', 'uploaded_papers', 'custom_summary_chat']
+                        for key in user_keys:
+                            user_key = get_user_key(key)
+                            if user_key in st.session_state:
+                                del st.session_state[user_key]
+                        
+                        # Force reload from GCS
+                        try:
+                            print(f"DEBUG: Manual reload for {current_user}")
+                            user_data = gcs_storage.load_user_data_from_gcs(current_user)
+                            print(f"DEBUG: User data loaded: {bool(user_data)}")
+                            if user_data:
+                                print(f"DEBUG: Conversations found: {len(user_data.get('conversations', {}))}")
+                                print(f"DEBUG: Conversation keys: {list(user_data.get('conversations', {}).keys())}")
+                                set_user_session('conversations', user_data.get('conversations', {}))
+                                set_user_session('active_conversation_id', user_data.get('active_conversation_id'))
+                                set_user_session('selected_keywords', user_data.get('selected_keywords', []))
+                                set_user_session('search_mode', user_data.get('search_mode', 'all_keywords'))
+                                set_user_session('uploaded_papers', user_data.get('uploaded_papers', []))
+                                set_user_session('custom_summary_chat', user_data.get('custom_summary_chat', []))
+                                st.success("Data reloaded from GCS!")
+                            else:
+                                st.warning("No data found in GCS")
+                        except Exception as e:
+                            st.error(f"Failed to reload from GCS: {e}")
+                            print(f"DEBUG: Manual reload error: {e}")
+                        st.rerun()
             else:
                 st.markdown("**Role:** User")
         
