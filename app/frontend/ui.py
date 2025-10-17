@@ -43,8 +43,9 @@ class ResearchAssistantUI:
                     # Set all user data from backend
                     self.set_user_session('conversations', user_data.get('conversations', {}))
                     self.set_user_session('active_conversation_id', user_data.get('active_conversation_id'))
-                    self.set_user_session('selected_keywords', user_data.get('selected_keywords', []))
-                    self.set_user_session('search_mode', user_data.get('search_mode', 'all_keywords'))
+                    # Don't restore keywords on login - start fresh like hardcoded version
+                    self.set_user_session('selected_keywords', [])
+                    self.set_user_session('search_mode', 'all_keywords')
                     self.set_user_session('uploaded_papers', user_data.get('uploaded_papers', []))
                     self.set_user_session('custom_summary_chat', user_data.get('custom_summary_chat', []))
                 else:
@@ -404,7 +405,7 @@ class ResearchAssistantUI:
             
             def generate_custom_summary_title(papers, summary_text):
                 paper_count = len(papers)
-                summary_lower = summary_text.lower()
+                summary_lower = summary_text.lower() if summary_text else ""
                 topics = []
                 
                 if any(word in summary_lower for word in ['sustainability', 'sustainable', 'environment']):
@@ -758,18 +759,12 @@ Assistant Response:"""
             
             # Handle loading state and process analysis
             if st.session_state.get('is_loading_analysis', False):
-                # Show loading overlay
-                self.show_loading_overlay(st.session_state.loading_message)
-                
                 # Process the analysis
                 analysis_result, retrieved_papers, total_found = self.process_keyword_search(
                     self.get_user_session('selected_keywords', []), 
                     time_filter_type, 
                     self.get_user_session('search_mode', 'all_keywords')
                 )
-                
-                # Clear loading state
-                st.session_state.is_loading_analysis = False
                 
                 if analysis_result:
                     conv_id = f"conv_{time.time()}"
@@ -808,9 +803,14 @@ Assistant Response:"""
                     self.set_user_session('active_conversation_id', conv_id)
                     # Custom summaries are now in chat history
                     self.set_user_session('custom_summary_chat', [])  # Clear custom summary chat
+                    
+                    # Clear loading state after conversation is created
+                    st.session_state.is_loading_analysis = False
                     st.rerun()
                 else:
                     st.error("Failed to generate analysis. Please try again.")
+                    # Clear loading state even on failure
+                    st.session_state.is_loading_analysis = False
             
             st.markdown("---")
             
