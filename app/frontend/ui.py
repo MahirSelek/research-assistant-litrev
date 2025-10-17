@@ -757,8 +757,11 @@ Assistant Response:"""
                     st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
                     st.rerun()
             
-            # Handle loading state and process analysis
-            if st.session_state.get('is_loading_analysis', False):
+            # Handle loading state and process analysis - EXACT COPY FROM HARDCODED VERSION
+            if st.session_state.get('is_loading_analysis', False) and not st.session_state.get('generate_custom_summary', False):
+                # Show loading overlay
+                self.show_loading_overlay(st.session_state.loading_message)
+                
                 # Process the analysis
                 analysis_result, retrieved_papers, total_found = self.process_keyword_search(
                     self.get_user_session('selected_keywords', []), 
@@ -766,7 +769,7 @@ Assistant Response:"""
                     self.get_user_session('search_mode', 'all_keywords')
                 )
                 
-                # Clear loading state IMMEDIATELY after processing (like hardcoded version)
+                # Clear loading state
                 st.session_state.is_loading_analysis = False
                 
                 if analysis_result:
