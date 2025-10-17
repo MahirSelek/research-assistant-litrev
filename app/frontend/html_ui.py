@@ -121,672 +121,141 @@ class HTMLResearchAssistantUI:
                     print(f"Failed to sync to backend: {e}")
     
     def inject_css_and_js(self):
-        """Inject CSS and JavaScript for the HTML frontend"""
+        """Inject minimal CSS for styling"""
         st.markdown("""
         <style>
-        /* Hide Streamlit default elements */
-        .main .block-container {
-            padding: 0 !important;
-            max-width: 100% !important;
-        }
-        
+        /* Custom styling for better appearance */
         .stApp {
             background: #0e1117 !important;
         }
         
-        /* Custom CSS Variables */
-        :root {
-            --primary-color: #2E8B57;
-            --secondary-color: #3CB371;
-            --accent-color: #667eea;
-            --text-color: #ffffff;
-            --bg-color: #0e1117;
-            --sidebar-bg: #1e1e1e;
-            --card-bg: #2d2d2d;
-            --border-color: #404040;
+        .stSidebar {
+            background: #1e1e1e !important;
         }
         
-        /* Main Layout */
-        .app-container {
-            display: flex;
-            height: 100vh;
-            background: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        .stButton > button {
+            background: linear-gradient(90deg, #2E8B57, #3CB371) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 6px !important;
+            font-weight: bold !important;
         }
         
-        /* Sidebar */
-        .sidebar {
-            width: 350px;
-            background: var(--sidebar-bg);
-            border-right: 1px solid var(--border-color);
-            padding: 20px;
-            overflow-y: auto;
-            position: fixed;
-            height: 100vh;
-            left: 0;
-            top: 0;
-        }
-        
-        .main-content {
-            margin-left: 350px;
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            height: 100vh;
-        }
-        
-        /* User Info */
-        .user-info {
-            background: var(--card-bg);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid var(--border-color);
-        }
-        
-        .user-info h3 {
-            margin: 0 0 10px 0;
-            color: var(--primary-color);
-        }
-        
-        /* Buttons */
-        .btn {
-            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            width: 100%;
-            margin-bottom: 10px;
-        }
-        
-        .btn:hover {
-            background: linear-gradient(90deg, #228B22, #32CD32);
-            transform: translateY(-2px);
-        }
-        
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-        
-        /* Form Elements */
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: var(--text-color);
-        }
-        
-        .form-group select,
-        .form-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background: var(--card-bg);
-            color: var(--text-color);
-            font-size: 14px;
-        }
-        
-        .form-group select:focus,
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-        }
-        
-        /* Keywords */
-        .keywords-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-        
-        .keyword-tag {
-            background: var(--accent-color);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .keyword-tag .remove {
-            cursor: pointer;
-            font-weight: bold;
-        }
-        
-        .keyword-tag .remove:hover {
-            color: #ff6b6b;
-        }
-        
-        /* Chat Interface */
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            height: calc(100vh - 40px);
-        }
-        
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            background: var(--bg-color);
-        }
-        
-        .message {
-            margin-bottom: 20px;
-            padding: 15px;
-            border-radius: 10px;
-            max-width: 80%;
-        }
-        
-        .message.user {
-            background: var(--primary-color);
-            margin-left: auto;
-            text-align: right;
-        }
-        
-        .message.assistant {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-        }
-        
-        .message-header {
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: var(--accent-color);
-        }
-        
-        .message-content {
-            line-height: 1.6;
-        }
-        
-        /* Chat Input */
-        .chat-input-container {
-            padding: 20px;
-            background: var(--sidebar-bg);
-            border-top: 1px solid var(--border-color);
-        }
-        
-        .chat-input {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .chat-input input {
-            flex: 1;
-            padding: 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            background: var(--card-bg);
-            color: var(--text-color);
-            font-size: 14px;
-        }
-        
-        .chat-input input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-        }
-        
-        .chat-input button {
-            padding: 12px 20px;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        
-        .chat-input button:hover {
-            background: var(--secondary-color);
-        }
-        
-        /* Loading Overlay */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            color: white;
-            font-size: 18px;
-        }
-        
-        .loading-spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 2s linear infinite;
-            margin: 0 auto 20px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Chat History */
-        .chat-history {
-            margin-bottom: 20px;
-        }
-        
-        .chat-history h3 {
-            color: var(--primary-color);
-            margin-bottom: 15px;
-        }
-        
-        .chat-item {
-            background: var(--card-bg);
-            padding: 12px;
-            margin-bottom: 8px;
-            border-radius: 6px;
-            cursor: pointer;
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
-        }
-        
-        .chat-item:hover {
-            background: var(--primary-color);
-            transform: translateX(5px);
-        }
-        
-        .chat-item.active {
-            background: var(--primary-color);
-            border-color: var(--secondary-color);
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                position: relative;
-                height: auto;
-            }
-            
-            .main-content {
-                margin-left: 0;
-            }
-            
-            .app-container {
-                flex-direction: column;
-            }
-        }
-        
-        /* Hide Streamlit elements */
-        .stApp > header {
-            display: none !important;
-        }
-        
-        .stApp > div:first-child {
-            display: none !important;
+        .stButton > button:hover {
+            background: linear-gradient(90deg, #228B22, #32CD32) !important;
         }
         </style>
-        
-        <script>
-        // JavaScript for interactive functionality
-        function addKeyword(keyword) {
-            const container = document.getElementById('keywords-container');
-            const tag = document.createElement('div');
-            tag.className = 'keyword-tag';
-            tag.innerHTML = `
-                ${keyword}
-                <span class="remove" onclick="removeKeyword(this)">×</span>
-            `;
-            container.appendChild(tag);
-            updateKeywords();
-        }
-        
-        function removeKeyword(element) {
-            element.parentElement.remove();
-            updateKeywords();
-        }
-        
-        function updateKeywords() {
-            const tags = document.querySelectorAll('.keyword-tag');
-            const keywords = Array.from(tags).map(tag => tag.textContent.replace('×', '').trim());
-            
-            // Send to Streamlit
-            const keywordInput = document.getElementById('selected-keywords');
-            if (keywordInput) {
-                keywordInput.value = JSON.stringify(keywords);
-            }
-        }
-        
-        function startAnalysis() {
-            const keywords = Array.from(document.querySelectorAll('.keyword-tag'))
-                .map(tag => tag.textContent.replace('×', '').trim());
-            
-            if (keywords.length === 0) {
-                alert('Please select at least one keyword');
-                return;
-            }
-            
-            // Show loading
-            showLoading('Searching for highly relevant papers and generating a comprehensive, in-depth report...');
-            
-            // Send to Streamlit
-            const form = document.getElementById('analysis-form');
-            if (form) {
-                form.submit();
-            }
-        }
-        
-        function showLoading(message) {
-            const overlay = document.createElement('div');
-            overlay.className = 'loading-overlay';
-            overlay.innerHTML = `
-                <div style="text-align: center;">
-                    <div class="loading-spinner"></div>
-                    <p>${message}</p>
-                </div>
-            `;
-            document.body.appendChild(overlay);
-        }
-        
-        function hideLoading() {
-            const overlay = document.querySelector('.loading-overlay');
-            if (overlay) {
-                overlay.remove();
-            }
-        }
-        
-        function loadChatHistory() {
-            // This will be populated by Streamlit
-            const container = document.getElementById('chat-history-container');
-            return container ? container.innerHTML : '';
-        }
-        
-        function selectChat(chatId) {
-            // Remove active class from all items
-            document.querySelectorAll('.chat-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            // Add active class to selected item
-            event.target.closest('.chat-item').classList.add('active');
-            
-            // Send to Streamlit
-            const input = document.getElementById('selected-chat');
-            if (input) {
-                input.value = chatId;
-            }
-        }
-        
-        function sendMessage() {
-            const input = document.getElementById('chat-input');
-            const message = input.value.trim();
-            
-            if (message) {
-                // Add message to chat
-                addMessage('user', message);
-                input.value = '';
-                
-                // Send to Streamlit
-                const form = document.getElementById('chat-form');
-                if (form) {
-                    form.submit();
-                }
-            }
-        }
-        
-        function addMessage(role, content) {
-            const container = document.getElementById('chat-messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${role}`;
-            
-            const header = role === 'user' ? 'You' : 'Assistant';
-            messageDiv.innerHTML = `
-                <div class="message-header">${header}</div>
-                <div class="message-content">${content}</div>
-            `;
-            
-            container.appendChild(messageDiv);
-            container.scrollTop = container.scrollHeight;
-        }
-        
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Hide loading if it exists
-            hideLoading();
-            
-            // Set up keyword selection
-            const keywordSelect = document.getElementById('keyword-select');
-            if (keywordSelect) {
-                keywordSelect.addEventListener('change', function() {
-                    if (this.value) {
-                        addKeyword(this.value);
-                        this.value = '';
-                    }
-                });
-            }
-            
-            // Set up chat input
-            const chatInput = document.getElementById('chat-input');
-            if (chatInput) {
-                chatInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        sendMessage();
-                    }
-                });
-            }
-        });
-        </script>
         """, unsafe_allow_html=True)
     
     def render_main_interface(self):
-        """Render the main HTML interface"""
-        # Inject CSS and JavaScript
-        self.inject_css_and_js()
+        """Render the main interface using Streamlit components"""
+        # Show loading overlay if analysis is in progress
+        if st.session_state.get('is_loading_analysis', False):
+            loading_message = st.session_state.loading_message
+            st.markdown(f"""
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; font-size: 18px;">
+                <div style="text-align: center;">
+                    <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite; margin: 0 auto 20px;"></div>
+                    <p>{loading_message}</p>
+                </div>
+            </div>
+            <style>
+            @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
+            </style>
+            """, unsafe_allow_html=True)
+            return
+        
+        # Main content area
+        st.markdown("# 🧬 POLO-GGB RESEARCH ASSISTANT")
         
         # Get current state
         active_conversation_id = self.get_user_session('active_conversation_id')
         conversations = self.get_user_session('conversations', {})
         
-        # Show loading overlay if analysis is in progress
-        if st.session_state.get('is_loading_analysis', False):
-            st.markdown(f"""
-            <div class="loading-overlay">
-                <div style="text-align: center;">
-                    <div class="loading-spinner"></div>
-                    <p>{st.session_state.loading_message}</p>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            return
-        
-        # Main HTML Interface
-        st.markdown("""
-        <div class="app-container">
-            <div class="sidebar">
-                <div class="user-info">
-                    <h3>Research Assistant</h3>
-                    <p>Logged in as: """ + st.session_state.get('username', 'User') + """</p>
-                    <p>Role: """ + ('Administrator' if st.session_state.get('username') == 'admin' else 'User') + """</p>
-                </div>
-                
-                <button class="btn" onclick="window.location.reload()">➕ New Analysis</button>
-                
-                <div class="chat-history">
-                    <h3>Chat History</h3>
-                    <div id="chat-history-container">
-        """, unsafe_allow_html=True)
-        
-        # Render chat history
-        if conversations:
-            for conv_id, conv_data in conversations.items():
-                title = conv_data.get("title", "Chat...")
-                is_active = conv_id == active_conversation_id
-                active_class = "active" if is_active else ""
-                
-                st.markdown(f"""
-                <div class="chat-item {active_class}" onclick="selectChat('{conv_id}')">
-                    {title}
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.markdown('<p style="color: #666;">No past analyses found.</p>', unsafe_allow_html=True)
-        
-        st.markdown("""
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label>Start a New Analysis</label>
-                    <p style="color: #4CAF50; font-size: 12px; margin: 5px 0;">Data available until: end of September 2025</p>
-                </div>
-                
-                <div class="form-group">
-                    <label>Select Keywords</label>
-                    <select id="keyword-select">
-                        <option value="">Choose a keyword...</option>
-        """, unsafe_allow_html=True)
-        
-        # Add keyword options
-        for keyword in self.GENETICS_KEYWORDS:
-            st.markdown(f'<option value="{keyword}">{keyword}</option>', unsafe_allow_html=True)
-        
-        st.markdown("""
-                    </select>
-                    <div id="keywords-container" class="keywords-container">
-        """, unsafe_allow_html=True)
-        
-        # Show selected keywords
-        selected_keywords = self.get_user_session('selected_keywords', [])
-        for keyword in selected_keywords:
-            st.markdown(f"""
-            <div class="keyword-tag">
-                {keyword}
-                <span class="remove" onclick="removeKeyword(this)">×</span>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown("""
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label>Search Mode</label>
-                    <select id="search-mode">
-                        <option value="all_keywords">Find papers containing ALL keywords</option>
-                        <option value="any_keyword">Find papers containing AT LEAST ONE keyword</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Filter by Time Window</label>
-                    <select id="time-filter">
-                        <option value="Current year">Current year</option>
-                        <option value="Last 3 months">Last 3 months</option>
-                        <option value="Last 6 months">Last 6 months</option>
-                        <option value="January">January</option>
-                        <option value="February">February</option>
-                        <option value="March">March</option>
-                        <option value="April">April</option>
-                        <option value="May">May</option>
-                        <option value="June">June</option>
-                        <option value="July">July</option>
-                        <option value="August">August</option>
-                        <option value="September">September</option>
-                        <option value="October">October</option>
-                        <option value="November">November</option>
-                        <option value="December">December</option>
-                    </select>
-                </div>
-                
-                <button class="btn" onclick="startAnalysis()">Search & Analyze</button>
-                
-                <div class="form-group">
-                    <label>Uploaded Papers</label>
-                    <p id="uploaded-count">No papers uploaded yet</p>
-                    <button class="btn btn-secondary" onclick="uploadPapers()">Upload PDF Files</button>
-                </div>
-                
-                <button class="btn" onclick="generateCustomSummary()">Generate Custom Summary</button>
-                
-                <button class="btn btn-secondary" onclick="logout()">Logout</button>
-            </div>
-            
-            <div class="main-content">
-                <div class="chat-container">
-                    <div class="chat-messages" id="chat-messages">
-        """, unsafe_allow_html=True)
-        
-        # Render active conversation
-        if active_conversation_id and active_conversation_id in conversations:
+        # Show default message if no active conversation
+        if active_conversation_id is None:
+            st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
+        elif active_conversation_id is not None and active_conversation_id in conversations:
             active_conv = conversations[active_conversation_id]
             
-            for message in active_conv.get("messages", []):
-                role = message["role"]
-                content = message["content"]
-                
-                st.markdown(f"""
-                <div class="message {role}">
-                    <div class="message-header">{'You' if role == 'user' else 'Assistant'}</div>
-                    <div class="message-content">{content}</div>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.markdown("""
-            <div class="message assistant">
-                <div class="message-header">Assistant</div>
-                <div class="message-content">
-                    Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown("""
-                    </div>
+            # Display all messages in the conversation
+            for message_index, message in enumerate(active_conv.get("messages", [])):
+                avatar = "🤖" if message["role"] == "assistant" else "👤"
+                with st.chat_message(message["role"], avatar=avatar):
+                    st.markdown(message["content"], unsafe_allow_html=True)
                     
-                    <div class="chat-input-container">
-                        <div class="chat-input">
-                            <input type="text" id="chat-input" placeholder="Ask a follow-up question...">
-                            <button onclick="sendMessage()">Send</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Hidden form for Streamlit communication -->
-        <form id="analysis-form" style="display: none;">
-            <input type="hidden" id="selected-keywords" name="keywords">
-            <input type="hidden" id="search-mode-value" name="search_mode">
-            <input type="hidden" id="time-filter-value" name="time_filter">
-        </form>
-        
-        <form id="chat-form" style="display: none;">
-            <input type="hidden" id="chat-message" name="message">
-        </form>
-        
-        <form id="chat-select-form" style="display: none;">
-            <input type="hidden" id="selected-chat" name="chat_id">
-        </form>
-        """, unsafe_allow_html=True)
+                    # Show papers section only for the first assistant message and regular analyses
+                    if (message["role"] == "assistant" and message_index == 0 and 
+                        "retrieved_papers" in active_conv and active_conv["retrieved_papers"] and 
+                        active_conv.get("search_mode") != "custom"):
+                        with st.expander("View and Download Retrieved Papers for this Analysis"):
+                            for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
+                                meta = paper.get('metadata', {})
+                                title = meta.get('title', 'N/A')
+                                paper_id = paper.get('paper_id')
+                                
+                                col1, col2 = st.columns([4, 1])
+                                with col1:
+                                    st.markdown(f"**{paper_index+1}. {title}**")
+                                with col2:
+                                    if paper_id:
+                                        pdf_bytes = self.api.get_pdf_from_gcs(self.api.config['gcs_bucket_name'], paper_id)
+                                        if pdf_bytes:
+                                            st.download_button(
+                                                label="Download PDF",
+                                                data=pdf_bytes,
+                                                file_name=paper_id,
+                                                mime="application/pdf",
+                                                key=f"download_{active_conversation_id}_{paper_id}"
+                                            )
+            
+            # Handle follow-up responses
+            if active_conversation_id and conversations[active_conversation_id]["messages"][-1]["role"] == "user":
+                active_conv = conversations[active_conversation_id]
+                with st.spinner("Thinking..."):
+                    chat_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in active_conv["messages"]])
+                    full_context = ""
+                    if active_conv.get("retrieved_papers"):
+                        full_context += "Here is the full context of every paper found in the initial analysis:\n\n"
+                        for i, paper in enumerate(active_conv["retrieved_papers"]):
+                            meta = paper.get('metadata', {})
+                            title = meta.get('title', 'N/A')
+                            link = self.api._get_paper_link(meta)
+                            content_preview = (meta.get('abstract') or paper.get('content') or '')[:4000]
+                            full_context += f"SOURCE [{i+1}]:\nTitle: {title}\nLink: {link}\nContent: {content_preview}\n---\n\n"
+                    
+                    full_prompt = f"""Continue our conversation. You are the Polo-GGB Research Assistant.
+Your task is to answer the user's last message based on the chat history and the full context from the paper sources provided below.
+
+**CITATION INSTRUCTIONS:** When referencing sources, use citation markers in square brackets like [1], [2], [3], etc. Separate multiple citations with individual brackets like [2][3][4]. **IMPORTANT:** Limit citations to a maximum of 3 per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
+
+--- CHAT HISTORY ---
+{chat_history}
+--- END CHAT HISTORY ---
+
+--- FULL LITERATURE CONTEXT FOR THIS ANALYSIS ---
+{full_context}
+--- END FULL LITERATURE CONTEXT FOR THIS ANALYSIS ---
+
+Assistant Response:"""
+                    
+                    response_text = self.api.generate_ai_response(full_prompt)
+                    if response_text:
+                        retrieved_papers = active_conv.get("retrieved_papers", [])
+                        search_mode = active_conv.get("search_mode", "all_keywords")
+                        
+                        # For follow-up responses, use all retrieved papers to make citations clickable but don't include references section
+                        response_text = self.api._display_citations_separately(response_text, retrieved_papers, retrieved_papers, search_mode, include_references=False)
+                        active_conv["messages"].append({"role": "assistant", "content": response_text})
+                        active_conv['last_interaction_time'] = time.time()
+                        self.set_user_session('conversations', conversations)
+                        
+                        # Save conversation to backend
+                        username = st.session_state.get('username')
+                        if username:
+                            self.api.save_conversation(username, active_conversation_id, active_conv)
+                        
+                        st.rerun()
     
     def render_sidebar(self):
         """Sidebar is now part of the main HTML interface"""
@@ -854,20 +323,44 @@ class HTMLResearchAssistantUI:
             return False
     
     def handle_form_submissions(self):
-        """Handle form submissions from the HTML interface"""
-        # Handle keyword search form
-        if st.form_submit_button("Search & Analyze", key="html_search_form"):
-            keywords_str = st.session_state.get('html_keywords', '[]')
-            search_mode = st.session_state.get('html_search_mode', 'all_keywords')
-            time_filter = st.session_state.get('html_time_filter', 'Current year')
+        """Handle form submissions using Streamlit components"""
+        # Use regular Streamlit components instead of complex form handling
+        
+        # Create a sidebar for controls
+        with st.sidebar:
+            st.markdown("### Research Assistant Controls")
             
-            try:
-                keywords = json.loads(keywords_str) if keywords_str else []
-                if keywords:
+            # Keyword selection
+            selected_keywords = st.multiselect(
+                "Select Keywords",
+                self.GENETICS_KEYWORDS,
+                default=self.get_user_session('selected_keywords', []),
+                key="html_keywords"
+            )
+            
+            # Search mode
+            search_mode = st.selectbox(
+                "Search Mode",
+                ["all_keywords", "any_keyword"],
+                format_func=lambda x: "Find papers containing ALL keywords" if x == "all_keywords" else "Find papers containing AT LEAST ONE keyword",
+                index=0 if self.get_user_session('search_mode', 'all_keywords') == 'all_keywords' else 1,
+                key="html_search_mode"
+            )
+            
+            # Time filter
+            time_filter = st.selectbox(
+                "Filter by Time Window",
+                ["Current year", "Last 3 months", "Last 6 months", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+                key="html_time_filter"
+            )
+            
+            # Search button
+            if st.button("Search & Analyze", type="primary", use_container_width=True):
+                if selected_keywords:
                     st.session_state.is_loading_analysis = True
                     st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
                     
-                    success = self.process_keyword_search(keywords, time_filter, search_mode)
+                    success = self.process_keyword_search(selected_keywords, time_filter, search_mode)
                     st.session_state.is_loading_analysis = False
                     
                     if success:
@@ -876,35 +369,44 @@ class HTMLResearchAssistantUI:
                         st.error("Analysis failed. Please try again.")
                 else:
                     st.error("Please select at least one keyword.")
-            except Exception as e:
-                st.error(f"Error processing form: {e}")
-        
-        # Handle chat message form
-        if st.form_submit_button("Send Message", key="html_chat_form"):
-            message = st.session_state.get('html_chat_message', '')
-            if message:
-                active_conversation_id = self.get_user_session('active_conversation_id')
-                if active_conversation_id:
-                    conversations = self.get_user_session('conversations', {})
-                    if active_conversation_id in conversations:
-                        active_conv = conversations[active_conversation_id]
-                        active_conv["messages"].append({"role": "user", "content": message})
-                        active_conv['last_interaction_time'] = time.time()
-                        self.set_user_session('conversations', conversations)
-                        
-                        # Save conversation to backend
-                        username = st.session_state.get('username')
-                        if username:
-                            self.api.save_conversation(username, active_conversation_id, active_conv)
-                        
+            
+            # Chat history
+            st.markdown("### Chat History")
+            conversations = self.get_user_session('conversations', {})
+            if conversations:
+                for conv_id, conv_data in conversations.items():
+                    title = conv_data.get("title", "Chat...")
+                    if st.button(title, key=f"chat_{conv_id}", use_container_width=True):
+                        self.set_user_session('active_conversation_id', conv_id)
                         st.rerun()
-        
-        # Handle chat selection form
-        if st.form_submit_button("Select Chat", key="html_chat_select_form"):
-            chat_id = st.session_state.get('html_selected_chat', '')
-            if chat_id:
-                self.set_user_session('active_conversation_id', chat_id)
+            else:
+                st.caption("No past analyses found.")
+            
+            # Logout
+            if st.button("Logout", type="secondary", use_container_width=True):
+                # Clear session state
+                for key in list(st.session_state.keys()):
+                    if not key.startswith('_'):
+                        del st.session_state[key]
                 st.rerun()
+        
+        # Handle chat input
+        active_conversation_id = self.get_user_session('active_conversation_id')
+        if active_conversation_id:
+            if prompt := st.chat_input("Ask a follow-up question..."):
+                conversations = self.get_user_session('conversations', {})
+                if active_conversation_id in conversations:
+                    active_conv = conversations[active_conversation_id]
+                    active_conv["messages"].append({"role": "user", "content": prompt})
+                    active_conv['last_interaction_time'] = time.time()
+                    self.set_user_session('conversations', conversations)
+                    
+                    # Save conversation to backend
+                    username = st.session_state.get('username')
+                    if username:
+                        self.api.save_conversation(username, active_conversation_id, active_conv)
+                    
+                    st.rerun()
     
     def generate_custom_summary(self, uploaded_papers: List[Dict]):
         """Generate custom summary via backend"""

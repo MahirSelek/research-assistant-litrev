@@ -120,10 +120,8 @@ def main():
         st.error(f"Failed to initialize application: {e}")
         return
     
-    # Load CSS
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    style_path = os.path.join(current_dir, "style.css")
-    ui.local_css(style_path)
+    # Inject CSS styling
+    ui.inject_css_and_js()
     
     # Initialize session state
     ui.initialize_session_state()
