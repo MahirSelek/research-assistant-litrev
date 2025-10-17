@@ -153,10 +153,10 @@ class HTMLResearchAssistantUI:
         if st.session_state.get('is_loading_analysis', False):
             loading_message = st.session_state.loading_message
             st.markdown(f"""
-            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; font-size: 18px;">
-                <div style="text-align: center;">
-                    <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite; margin: 0 auto 20px;"></div>
-                    <p>{loading_message}</p>
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; font-size: 18px; backdrop-filter: blur(5px);">
+                <div style="text-align: center; background: rgba(0, 0, 0, 0.8); padding: 40px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);">
+                    <div style="border: 4px solid rgba(255, 255, 255, 0.2); border-top: 4px solid #2E8B57; border-radius: 50%; width: 60px; height: 60px; animation: spin 2s linear infinite; margin: 0 auto 25px;"></div>
+                    <p style="margin: 0; font-weight: 500; color: #f0f0f0;">{loading_message}</p>
                 </div>
             </div>
             <style>
