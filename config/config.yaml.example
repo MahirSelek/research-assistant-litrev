@@ -1,0 +1,6 @@
+api:
+  base_url: "https://your-api-endpoint.execute-api.region.amazonaws.com/api"
+  key: "your-api-key-here"
+
+model:
+  alias: "claude-v4-sonnet" 
