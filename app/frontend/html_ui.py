@@ -281,10 +281,10 @@ Assistant Response:"""
     <div style="color: #f0f0f0; font-size: 16px; margin-bottom: 8px;">
         <strong>Keywords:</strong> {', '.join(selected_keywords) if selected_keywords else 'None selected'}
     </div>
-    <div style="color: #e0e0e0; font-size: 14px; margin-bottom: 8px;">
+    <div style="color: #f0f0f0; font-size: 16px; margin-bottom: 8px;">
         <strong>Search Mode:</strong> {search_mode_text}
     </div>
-    <div style="color: #e0e0e0; font-size: 14px;">
+    <div style="color: #f0f0f0; font-size: 16px;">
         <strong>Time Window:</strong> {time_filter_type}
     </div>
 </div>
