@@ -273,6 +273,7 @@ Assistant Response:"""
                 search_mode_display = search_mode
                 selected_keywords = keywords  # Use the actual keywords passed to the function
                 search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
+                print(f"Creating message with time_filter_type: '{time_filter_type}'")
                 
                 initial_message = {"role": "assistant", "content": f"""
 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
@@ -368,6 +369,7 @@ Assistant Response:"""
             # Search button
             if st.button("Search & Analyze", type="primary", use_container_width=True):
                 if selected_keywords:
+                    print(f"Button clicked with time_filter: '{time_filter}', search_mode: '{search_mode}', keywords: {selected_keywords}")
                     st.session_state.is_loading_analysis = True
                     st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
                     
