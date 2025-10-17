@@ -97,15 +97,8 @@ class GCSUserStorage:
                 return None
             
             content = blob.download_as_string()
-            data = json.loads(content)
-            
-            # Handle both formats: new format (with metadata wrapper) and existing format (direct conversation data)
-            if "conversation" in data:
-                # New format with metadata wrapper
-                return data.get("conversation", {})
-            else:
-                # Existing format - direct conversation data
-                return data
+            data_with_metadata = json.loads(content)
+            return data_with_metadata.get("conversation", {})
         except Exception as e:
             st.error(f"Failed to load conversation from GCS: {e}")
             return None
@@ -114,23 +107,18 @@ class GCSUserStorage:
         """List all conversation IDs for a user"""
         try:
             prefix = f"user-data/users/{username}/conversations/"
-            print(f"DEBUG: Listing conversations with prefix: {prefix}")
             blobs = self.bucket.list_blobs(prefix=prefix)
             
             conversation_ids = []
             for blob in blobs:
-                print(f"DEBUG: Found blob: {blob.name}")
                 # Extract conversation ID from blob name
                 filename = os.path.basename(blob.name)
                 if filename.endswith('.json'):
                     conversation_id = filename[:-5]  # Remove .json extension
                     conversation_ids.append(conversation_id)
-                    print(f"DEBUG: Added conversation ID: {conversation_id}")
             
-            print(f"DEBUG: Total conversation IDs found: {len(conversation_ids)}")
             return conversation_ids
         except Exception as e:
-            print(f"DEBUG: Error in list_user_conversations: {e}")
             st.error(f"Failed to list user conversations: {e}")
             return []
     
@@ -225,27 +213,16 @@ class GCSUserStorage:
     def load_user_data_from_gcs(self, username: str) -> Dict[str, Any]:
         """Load all user data from GCS"""
         try:
-            print(f"DEBUG: Loading user data for {username}")
-            
             # Load user preferences
             user_preferences = self.load_user_data(username, 'user_preferences') or {}
-            print(f"DEBUG: User preferences loaded: {bool(user_preferences)}")
             
             # Load conversations
             conversation_ids = self.list_user_conversations(username)
-            print(f"DEBUG: Found {len(conversation_ids)} conversation IDs: {conversation_ids}")
-            
             conversations = {}
             for conv_id in conversation_ids:
-                print(f"DEBUG: Loading conversation {conv_id}")
                 conv_data = self.load_conversation(username, conv_id)
                 if conv_data:
                     conversations[conv_id] = conv_data
-                    print(f"DEBUG: Successfully loaded conversation {conv_id}")
-                else:
-                    print(f"DEBUG: Failed to load conversation {conv_id}")
-            
-            print(f"DEBUG: Total conversations loaded: {len(conversations)}")
             
             return {
                 'conversations': conversations,
@@ -256,6 +233,5 @@ class GCSUserStorage:
                 'active_conversation_id': user_preferences.get('active_conversation_id')
             }
         except Exception as e:
-            print(f"DEBUG: Error in load_user_data_from_gcs: {e}")
             st.error(f"Failed to load user data from GCS: {e}")
             return {}

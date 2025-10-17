@@ -126,13 +126,6 @@ class AuthenticationManager:
             st.session_state.username = username
             st.session_state.login_time = time.time()
             st.session_state.session_id = secrets.token_hex(16)
-            
-            # Clear any existing user session data to force reload from GCS
-            user_keys_to_clear = ['conversations', 'active_conversation_id', 'selected_keywords', 'search_mode', 'uploaded_papers', 'custom_summary_chat']
-            for key in user_keys_to_clear:
-                user_key = f"{username}_{key}"
-                if user_key in st.session_state:
-                    del st.session_state[user_key]
         
         return success, message
     
@@ -161,12 +154,35 @@ class AuthenticationManager:
 # Initialize authentication manager
 auth_manager = AuthenticationManager()
 
-# No default user creation - users must be manually added to users.json
+# Default users creation (only if no users exist)
+def initialize_default_users():
+    """Create default users if they don't exist"""
+    users = auth_manager.load_users()
+    
+    # Create 4 strong user accounts with secure passwords
+    user_credentials = [
+        ("admin", "PoloGGB2024!Admin"),
+        ("researcher1", "Genomics2024!Res1"),
+        ("researcher2", "Genetics2024!Res2"),
+        ("researcher3", "Biology2024!Res3"),
+        ("researcher4", "Science2024!Res4")
+    ]
+    
+    users_created = []
+    for username, password in user_credentials:
+        if username not in users:
+            auth_manager.create_user(username, password)
+            users_created.append(username)
+    
+    if users_created:
+        print(f"Created new users: {', '.join(users_created)}")
+        print("Users created successfully. Credentials should be shared securely.")
 
 def show_login_page():
     """Display the login page"""
     st.set_page_config(
-        page_title="Research Assistant - Login",
+        page_title="Polo GGB Research Assistant - Login",
+        page_icon="polo-ggb-logo.png",
         layout="centered"
     )
     
@@ -203,9 +219,12 @@ def show_login_page():
     </style>
     """, unsafe_allow_html=True)
     
-    # Login form
+    # Simple header
+    st.markdown("---")
+    
+    # Login form only
     st.markdown("### Research Assistant Login")
-    st.info("Please log in to access the Research Assistant")
+    st.info("Please log in to access the Polo GGB Research Assistant")
     
     with st.form("login_form"):
         username = st.text_input("Username", placeholder="Enter your username", key="login_username")
@@ -224,6 +243,18 @@ def show_login_page():
                 st.markdown(f'<div class="error-message">❌ {message}</div>', unsafe_allow_html=True)
         else:
             st.markdown('<div class="error-message">❌ Please enter both username and password</div>', unsafe_allow_html=True)
+    
+    # Footer
+    st.markdown("---")
+    st.markdown("""
+    <div style="text-align: center; color: #666; font-size: 0.9rem;">
+        <p>© 2024 Polo GGB - Research and Services that create value</p>
+        <p>Genomics, Genetics, Biology</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Initialize default users on first run
+    initialize_default_users()
 
 def show_logout_button():
     """Show logout button in sidebar"""

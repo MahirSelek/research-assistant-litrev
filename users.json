@@ -1,0 +1,42 @@
+{
+  "admin": {
+    "password_hash": "b516eed440b5290ffe32c2c34277ae5c96bb68ea35d40b39eda8688c0af1a529",
+    "salt": "420bebb3fc069ff99c1543170cc859d1",
+    "created_at": 1760647635.7751071,
+    "last_login": null,
+    "login_attempts": 0,
+    "locked_until": null
+  },
+  "researcher1": {
+    "password_hash": "21d3ba07ac725d13b92679c5511c4a4a4d768d46066e60dd5133df1b946da827",
+    "salt": "a72072e381697239a57b0d3fae28d006",
+    "created_at": 1760647635.775323,
+    "last_login": null,
+    "login_attempts": 0,
+    "locked_until": null
+  },
+  "researcher2": {
+    "password_hash": "9927b63c592dc987f757992a2d76d34e83997492f9c5592aebc513a90e305eca",
+    "salt": "b2870da87a01cd6c401d5795bb5912cd",
+    "created_at": 1760647635.7754319,
+    "last_login": null,
+    "login_attempts": 0,
+    "locked_until": null
+  },
+  "researcher3": {
+    "password_hash": "e97d0b20948bfbde0d6b35f2e21e2baf481a31c2ff1ae68e26b34fdd1839321d",
+    "salt": "30e8ccec0c70c33b84af492e00e14f88",
+    "created_at": 1760647635.775525,
+    "last_login": null,
+    "login_attempts": 0,
+    "locked_until": null
+  },
+  "researcher4": {
+    "password_hash": "fdb0549412944b2a0321cc2fc7ac3c36603eaabf38a542685a8421196ad77e47",
+    "salt": "43a546a19d612a890f048bc1aa269420",
+    "created_at": 1760647635.775611,
+    "last_login": null,
+    "login_attempts": 0,
+    "locked_until": null
+  }
+}

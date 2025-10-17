@@ -38,27 +38,10 @@ html, body {
     background-color: #1a1e29 !important;
     border-right: 1px solid #2c313a !important;
     min-height: 100vh;
-    min-width: 350px !important;
-    width: 350px !important;
-    max-width: 500px !important;
 }
 
 [data-testid="stSidebar"] > div {
     background-color: #1a1e29 !important;
-    min-width: 350px !important;
-    width: 350px !important;
-}
-
-/* Make sidebar resizable */
-[data-testid="stSidebar"] {
-    resize: horizontal !important;
-    overflow: auto !important;
-}
-
-/* Sidebar content should wrap properly */
-[data-testid="stSidebar"] .stMarkdown {
-    word-wrap: break-word !important;
-    overflow-wrap: break-word !important;
 }
 
 /* --- Header Styling --- */
