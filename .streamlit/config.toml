@@ -32,3 +32,6 @@ showErrorDetails = false
 [global]
 developmentMode = false
 showWarningOnDirectExecution = false
+
+[layout]
+wideMode = true
