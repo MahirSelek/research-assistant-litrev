@@ -330,6 +330,14 @@ Assistant Response:"""
         with st.sidebar:
             st.markdown("### Research Assistant Controls")
             
+            # New Analysis button
+            if st.button("➕ New Analysis", type="primary", use_container_width=True):
+                self.set_user_session('active_conversation_id', None)
+                self.set_user_session('selected_keywords', [])
+                self.set_user_session('search_mode', "all_keywords")
+                self.set_user_session('custom_summary_chat', [])
+                st.rerun()
+            
             # Keyword selection
             selected_keywords = st.multiselect(
                 "Select Keywords",
