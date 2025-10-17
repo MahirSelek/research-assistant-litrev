@@ -585,20 +585,144 @@ class ResearchAssistantUI:
         
         st.markdown("<h1>🧬 POLO-GGB RESEARCH ASSISTANT</h1>", unsafe_allow_html=True)
         
-        # Show loading overlay if analysis is in progress
+        # Show loading overlay if analysis is in progress (EXACT COPY FROM HARDCODED VERSION)
         if st.session_state.get('is_loading_analysis', False):
             self.show_loading_overlay(st.session_state.loading_message)
             return  # Don't render the rest of the page while loading
         
-        # Handle custom summary generation
+        # Handle custom summary generation (EXACT COPY FROM HARDCODED VERSION)
         if st.session_state.get('generate_custom_summary', False):
-            st.session_state.generate_custom_summary = False
+            st.session_state.generate_custom_summary = False  # Reset the flag
             
+            # Generate the summary immediately
             uploaded_papers = self.get_user_session('uploaded_papers', [])
-            self.generate_custom_summary(uploaded_papers)
+            summary = self.api.generate_custom_summary(uploaded_papers)
             
+            if summary:
+                # Add custom summary to chat history with better title and metadata
+                conv_id = f"custom_summary_{time.time()}"
+                
+                # Generate a brief, descriptive title
+                def generate_custom_summary_title(papers, summary_text):
+                    paper_count = len(papers)
+                    summary_lower = summary_text.lower() if summary_text else ""
+                    topics = []
+                    
+                    # Common research topics
+                    if any(word in summary_lower for word in ['sustainability', 'sustainable', 'environment']):
+                        topics.append('Sustainability')
+                    if any(word in summary_lower for word in ['machine learning', 'ai', 'artificial intelligence', 'ml']):
+                        topics.append('AI/ML')
+                    if any(word in summary_lower for word in ['genetics', 'genetic', 'dna', 'genome']):
+                        topics.append('Genetics')
+                    if any(word in summary_lower for word in ['disease', 'medical', 'health', 'clinical']):
+                        topics.append('Medical')
+                    if any(word in summary_lower for word in ['prediction', 'predictive', 'modeling']):
+                        topics.append('Prediction')
+                    if any(word in summary_lower for word in ['risk', 'risk assessment']):
+                        topics.append('Risk Analysis')
+                    if any(word in summary_lower for word in ['leather', 'industry', 'manufacturing']):
+                        topics.append('Industry')
+                    if any(word in summary_lower for word in ['reporting', 'disclosure', 'transparency']):
+                        topics.append('Reporting')
+                    
+                    # Create title based on topics found
+                    if topics:
+                        topic_str = ', '.join(topics[:2])  # Max 2 topics
+                        return topic_str
+                    else:
+                        # Fallback to first few words of summary
+                        first_words = ' '.join(summary_text.split()[:4])
+                        return f"{first_words}..."
+                
+                title = generate_custom_summary_title(uploaded_papers, summary)
+                
+                initial_message = {
+                    "role": "assistant", 
+                    "content": f"**Custom Summary of {len(uploaded_papers)} Uploaded Papers**\n\n{summary}"
+                }
+                
+                # Get user-specific conversations and add new one
+                conversations = self.get_user_session('conversations', {})
+                conversations[conv_id] = {
+                    "title": title,
+                    "messages": [initial_message],
+                    "keywords": ["Custom Summary"],
+                    "search_mode": "custom",
+                    "retrieved_papers": uploaded_papers,
+                    "total_papers_found": len(uploaded_papers),
+                    "created_at": time.time(),
+                    "last_interaction_time": time.time(),
+                    "paper_count": len(uploaded_papers)
+                }
+                self.set_user_session('conversations', conversations)
+                
+                # Set this as the active conversation so user can immediately interact
+                self.set_user_session('active_conversation_id', conv_id)
+                
+                # Summary is now permanently stored in chat history
+            else:
+                st.error("Failed to generate summary. Please try again.")
+            
+            # Clear loading state and force rerun to show results immediately
             st.session_state.is_loading_analysis = False
             st.rerun()
+        
+        # Handle keyword search analysis (EXACT COPY FROM HARDCODED VERSION)
+        if st.session_state.get('is_loading_analysis', False):
+            # Show loading overlay
+            self.show_loading_overlay(st.session_state.loading_message)
+            
+            # Process the analysis
+            analysis_result, retrieved_papers, total_found = self.process_keyword_search(
+                self.get_user_session('selected_keywords', []), 
+                self.get_user_session('time_filter', 'Current year'), 
+                self.get_user_session('search_mode', 'all_keywords')
+            )
+            
+            # Clear loading state
+            st.session_state.is_loading_analysis = False
+            
+            if analysis_result:
+                conv_id = f"conv_{time.time()}"
+                search_mode_display = self.get_user_session('search_mode', 'all_keywords')
+                selected_keywords = self.get_user_session('selected_keywords', [])
+                search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
+                initial_message = {"role": "assistant", "content": f"""
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+    <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px; font-weight: 600;">Analysis Report</h2>
+    <div style="color: #f0f0f0; font-size: 16px; margin-bottom: 8px;">
+        <strong>Keywords:</strong> {', '.join(selected_keywords)}
+    </div>
+    <div style="color: #e0e0e0; font-size: 14px;">
+        <strong>Search Mode:</strong> {search_mode_text}
+    </div>
+</div>
+
+{analysis_result}
+"""}
+                title = self.api.generate_conversation_title(analysis_result)
+                
+                # Get user-specific conversations and add new one
+                conversations = self.get_user_session('conversations', {})
+                conversations[conv_id] = {
+                    "title": title, 
+                    "messages": [initial_message], 
+                    "keywords": selected_keywords,
+                    "search_mode": search_mode_display,
+                    "retrieved_papers": retrieved_papers,
+                    "total_papers_found": total_found,
+                    "created_at": time.time(),
+                    "last_interaction_time": time.time()
+                }
+                self.set_user_session('conversations', conversations)
+                # Clear any previous analysis and set new one
+                self.set_user_session('active_conversation_id', conv_id)
+                # Custom summaries are now in chat history
+                self.set_user_session('custom_summary_chat', [])  # Clear custom summary chat
+                st.rerun()
+            else:
+                st.error("Failed to generate analysis. Please try again.")
         
         # Show default message only if no active conversation
         active_conversation_id = self.get_user_session('active_conversation_id')
@@ -752,66 +876,13 @@ Assistant Response:"""
                 if st.form_submit_button("Search & Analyze"):
                     self.set_user_session('selected_keywords', selected_keywords)
                     self.set_user_session('search_mode', search_mode_display)
+                    self.set_user_session('time_filter', time_filter_type)  # Store time filter
                     self.set_user_session('custom_summary_chat', [])
                     st.session_state.is_loading_analysis = True
                     st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
                     st.rerun()
             
-            # Handle loading state and process analysis - EXACT COPY FROM HARDCODED VERSION
-            if st.session_state.get('is_loading_analysis', False) and not st.session_state.get('generate_custom_summary', False):
-                # Show loading overlay
-                self.show_loading_overlay(st.session_state.loading_message)
-                
-                # Process the analysis
-                analysis_result, retrieved_papers, total_found = self.process_keyword_search(
-                    self.get_user_session('selected_keywords', []), 
-                    time_filter_type, 
-                    self.get_user_session('search_mode', 'all_keywords')
-                )
-                
-                # Clear loading state
-                st.session_state.is_loading_analysis = False
-                
-                if analysis_result:
-                    conv_id = f"conv_{time.time()}"
-                    search_mode_display = self.get_user_session('search_mode', 'all_keywords')
-                    selected_keywords = self.get_user_session('selected_keywords', [])
-                    search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
-                    initial_message = {"role": "assistant", "content": f"""
-<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-    <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px; font-weight: 600;">Analysis Report</h2>
-    <div style="color: #f0f0f0; font-size: 16px; margin-bottom: 8px;">
-        <strong>Keywords:</strong> {', '.join(selected_keywords)}
-    </div>
-    <div style="color: #e0e0e0; font-size: 14px;">
-        <strong>Search Mode:</strong> {search_mode_text}
-    </div>
-</div>
-
-{analysis_result}
-"""}
-                    title = self.api.generate_conversation_title(analysis_result)
-                    
-                    # Get user-specific conversations and add new one
-                    conversations = self.get_user_session('conversations', {})
-                    conversations[conv_id] = {
-                        "title": title, 
-                        "messages": [initial_message], 
-                        "keywords": selected_keywords,
-                        "search_mode": search_mode_display,
-                        "retrieved_papers": retrieved_papers,
-                        "total_papers_found": total_found,
-                        "created_at": time.time(),
-                        "last_interaction_time": time.time()
-                    }
-                    self.set_user_session('conversations', conversations)
-                    # Clear any previous analysis and set new one
-                    self.set_user_session('active_conversation_id', conv_id)
-                    # Custom summaries are now in chat history
-                    self.set_user_session('custom_summary_chat', [])  # Clear custom summary chat
-                    st.rerun()
-                else:
-                    st.error("Failed to generate analysis. Please try again.")
+            # Analysis processing is now handled in main interface, not sidebar
             
             st.markdown("---")
             
