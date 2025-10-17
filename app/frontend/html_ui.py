@@ -180,7 +180,7 @@ class HTMLResearchAssistantUI:
             
             # Display all messages in the conversation
             for message_index, message in enumerate(active_conv.get("messages", [])):
-                avatar = "🤖" if message["role"] == "assistant" else "👤"
+                avatar = None  # Remove robot icon
                 with st.chat_message(message["role"], avatar=avatar):
                     st.markdown(message["content"], unsafe_allow_html=True)
                     
@@ -270,15 +270,15 @@ Assistant Response:"""
             
             if analysis_result:
                 conv_id = f"conv_{time.time()}"
-                search_mode_display = self.get_user_session('search_mode', 'all_keywords')
-                selected_keywords = self.get_user_session('selected_keywords', [])
+                search_mode_display = search_mode
+                selected_keywords = keywords  # Use the actual keywords passed to the function
                 search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
                 
                 initial_message = {"role": "assistant", "content": f"""
 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
     <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px; font-weight: 600;">Analysis Report</h2>
     <div style="color: #f0f0f0; font-size: 16px; margin-bottom: 8px;">
-        <strong>Keywords:</strong> {', '.join(selected_keywords)}
+        <strong>Keywords:</strong> {', '.join(selected_keywords) if selected_keywords else 'None selected'}
     </div>
     <div style="color: #e0e0e0; font-size: 14px;">
         <strong>Search Mode:</strong> {search_mode_text}
