@@ -133,86 +133,43 @@ class HTMLResearchAssistantUI:
             background: #1e1e1e !important;
         }
         
-        /* ULTRA HIGH SPECIFICITY BUTTON STYLING - OVERRIDE ALL OTHER STYLES */
-        
-        /* New Analysis button - Blue with maximum specificity */
-        .stSidebar div[data-testid="stButton"] button[data-testid="baseButton-new_analysis_btn"],
-        div[data-testid="stButton"] button[data-testid="baseButton-new_analysis_btn"],
+        /* New Analysis button - Blue */
         button[data-testid="baseButton-new_analysis_btn"] {
             background: linear-gradient(90deg, #1e40af, #3b82f6) !important;
             color: white !important;
             border: none !important;
             border-radius: 6px !important;
             font-weight: bold !important;
-            box-shadow: none !important;
-            transform: none !important;
         }
         
-        .stSidebar div[data-testid="stButton"] button[data-testid="baseButton-new_analysis_btn"]:hover,
-        div[data-testid="stButton"] button[data-testid="baseButton-new_analysis_btn"]:hover,
         button[data-testid="baseButton-new_analysis_btn"]:hover {
             background: linear-gradient(90deg, #1d4ed8, #2563eb) !important;
-            transform: none !important;
-            box-shadow: none !important;
         }
         
-        /* Logout button - Red with maximum specificity */
-        .stSidebar div[data-testid="stButton"] button[data-testid="baseButton-logout_btn"],
-        div[data-testid="stButton"] button[data-testid="baseButton-logout_btn"],
+        /* Logout button - Red */
         button[data-testid="baseButton-logout_btn"] {
             background: linear-gradient(90deg, #dc2626, #ef4444) !important;
             color: white !important;
             border: none !important;
             border-radius: 6px !important;
             font-weight: bold !important;
-            box-shadow: none !important;
-            transform: none !important;
         }
         
-        .stSidebar div[data-testid="stButton"] button[data-testid="baseButton-logout_btn"]:hover,
-        div[data-testid="stButton"] button[data-testid="baseButton-logout_btn"]:hover,
         button[data-testid="baseButton-logout_btn"]:hover {
             background: linear-gradient(90deg, #b91c1c, #dc2626) !important;
-            transform: none !important;
-            box-shadow: none !important;
         }
         
-        /* All other buttons - Green (default) with maximum specificity */
-        .stSidebar .stButton > button:not([data-testid="baseButton-new_analysis_btn"]):not([data-testid="baseButton-logout_btn"]),
-        .stSidebar div[data-testid="stButton"] button:not([data-testid="baseButton-new_analysis_btn"]):not([data-testid="baseButton-logout_btn"]),
+        /* All other buttons - Green (default) */
         .stButton > button:not([data-testid="baseButton-new_analysis_btn"]):not([data-testid="baseButton-logout_btn"]) {
             background: linear-gradient(90deg, #2E8B57, #3CB371) !important;
             color: white !important;
             border: none !important;
             border-radius: 6px !important;
             font-weight: bold !important;
-            box-shadow: none !important;
-            transform: none !important;
         }
         
-        .stSidebar .stButton > button:not([data-testid="baseButton-new_analysis_btn"]):not([data-testid="baseButton-logout_btn"]):hover,
-        .stSidebar div[data-testid="stButton"] button:not([data-testid="baseButton-new_analysis_btn"]):not([data-testid="baseButton-logout_btn"]):hover,
         .stButton > button:not([data-testid="baseButton-new_analysis_btn"]):not([data-testid="baseButton-logout_btn"]):hover {
             background: linear-gradient(90deg, #228B22, #32CD32) !important;
-            transform: none !important;
-            box-shadow: none !important;
-        }
-        
-        /* Override any conflicting styles from external CSS */
-        .stButton > button {
-            background: linear-gradient(90deg, #2E8B57, #3CB371) !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 6px !important;
-            font-weight: bold !important;
-            box-shadow: none !important;
-            transform: none !important;
-        }
-        
-        .stButton > button:hover {
-            background: linear-gradient(90deg, #228B22, #32CD32) !important;
-            transform: none !important;
-            box-shadow: none !important;
         }
         </style>
         """, unsafe_allow_html=True)
