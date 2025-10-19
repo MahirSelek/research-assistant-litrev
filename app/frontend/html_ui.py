@@ -133,6 +133,7 @@ class HTMLResearchAssistantUI:
             background: #1e1e1e !important;
         }
         
+        /* Default button styling - Green gradient for chat history */
         .stButton > button {
             background: linear-gradient(90deg, #2E8B57, #3CB371) !important;
             color: white !important;
@@ -145,39 +146,21 @@ class HTMLResearchAssistantUI:
             background: linear-gradient(90deg, #228B22, #32CD32) !important;
         }
         
-        /* New Analysis button styling - Blue gradient */
-        .new-analysis-button {
+        /* New Analysis button styling - Blue gradient with higher specificity */
+        .stButton > button.new-analysis-button {
             background: linear-gradient(90deg, #1e40af, #3b82f6) !important;
         }
         
-        .new-analysis-button:hover {
+        .stButton > button.new-analysis-button:hover {
             background: linear-gradient(90deg, #1d4ed8, #2563eb) !important;
         }
         
-        /* Logout button styling - Red gradient */
-        .logout-button {
+        /* Logout button styling - Red gradient with higher specificity */
+        .stButton > button.logout-button {
             background: linear-gradient(90deg, #dc2626, #ef4444) !important;
         }
         
-        .logout-button:hover {
-            background: linear-gradient(90deg, #b91c1c, #dc2626) !important;
-        }
-        
-        /* Alternative approach using nth-child selectors for sidebar buttons */
-        .stSidebar .stButton:nth-child(2) button {
-            background: linear-gradient(90deg, #1e40af, #3b82f6) !important;
-        }
-        
-        .stSidebar .stButton:nth-child(2) button:hover {
-            background: linear-gradient(90deg, #1d4ed8, #2563eb) !important;
-        }
-        
-        /* Target the last button in sidebar (Logout) */
-        .stSidebar .stButton:last-child button {
-            background: linear-gradient(90deg, #dc2626, #ef4444) !important;
-        }
-        
-        .stSidebar .stButton:last-child button:hover {
+        .stButton > button.logout-button:hover {
             background: linear-gradient(90deg, #b91c1c, #dc2626) !important;
         }
         </style>
@@ -193,14 +176,19 @@ class HTMLResearchAssistantUI:
             
             buttons.forEach((button, index) => {
                 console.log('Button', index, ':', button.textContent);
+                
+                // Remove any existing custom classes first
+                button.classList.remove('new-analysis-button', 'logout-button');
+                
+                // Apply specific classes based on button text
                 if (button.textContent.includes('New Analysis')) {
                     console.log('Adding new-analysis-button class to:', button.textContent);
                     button.classList.add('new-analysis-button');
-                }
-                if (button.textContent.includes('Logout')) {
+                } else if (button.textContent.includes('Logout')) {
                     console.log('Adding logout-button class to:', button.textContent);
                     button.classList.add('logout-button');
                 }
+                // All other buttons (chat history, search, etc.) will use default green styling
             });
         }
         
