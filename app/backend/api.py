@@ -206,11 +206,18 @@ class ResearchAssistantAPI:
     
     def generate_conversation_title(self, conversation_history: str) -> str:
         """Generate conversation title using AI"""
-        prompt = f"Create a concise, 5-word title for this conversation:\n\n---\n{conversation_history}\n---"
+        prompt = f"""Create a unique, descriptive title for this research analysis conversation. 
+Make it specific and distinguishable from other analyses. Include key topics, methods, or diseases mentioned.
+Keep it under 8 words and make it memorable.
+
+Conversation content:
+{conversation_history[:1000]}
+
+Title:"""
         title = self.generate_ai_response(prompt)
         if title:
             return title.strip().replace('"', '')
-        return "New Chat"
+        return "Research Analysis"
     
     def get_pdf_from_gcs(self, bucket_name: str, blob_name: str) -> Optional[bytes]:
         """Get PDF bytes from GCS"""

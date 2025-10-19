@@ -144,6 +144,27 @@ class HTMLResearchAssistantUI:
         .stButton > button:hover {
             background: linear-gradient(90deg, #228B22, #32CD32) !important;
         }
+        
+        /* New Analysis button - Blue gradient */
+        div[data-testid="stButton"]:has(button:contains("New Analysis")) button {
+            background: linear-gradient(90deg, #667eea, #764ba2) !important;
+            color: white !important;
+        }
+        
+        div[data-testid="stButton"]:has(button:contains("New Analysis")) button:hover {
+            background: linear-gradient(90deg, #5a6fd8, #6a4190) !important;
+        }
+        
+        /* Logout button - Red gradient */
+        div[data-testid="stButton"]:has(button:contains("Logout")) button {
+            background: linear-gradient(90deg, #e74c3c, #c0392b) !important;
+            color: white !important;
+        }
+        
+        div[data-testid="stButton"]:has(button:contains("Logout")) button:hover {
+            background: linear-gradient(90deg, #d63031, #a93226) !important;
+        }
+        
         </style>
         """, unsafe_allow_html=True)
     
@@ -346,7 +367,8 @@ Assistant Response:"""
                 "Select Keywords",
                 self.GENETICS_KEYWORDS,
                 default=self.get_user_session('selected_keywords', []),
-                key="html_keywords"
+                key="html_keywords",
+                help="Select keywords for your research analysis"
             )
             
             # Search mode
