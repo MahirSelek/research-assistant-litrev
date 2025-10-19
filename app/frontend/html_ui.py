@@ -145,25 +145,38 @@ class HTMLResearchAssistantUI:
             background: linear-gradient(90deg, #228B22, #32CD32) !important;
         }
         
-        /* New Analysis button - Blue gradient */
-        div[data-testid="stButton"]:has(button:contains("New Analysis")) button {
-            background: linear-gradient(90deg, #667eea, #764ba2) !important;
-            color: white !important;
-        }
-        
-        div[data-testid="stButton"]:has(button:contains("New Analysis")) button:hover {
-            background: linear-gradient(90deg, #5a6fd8, #6a4190) !important;
-        }
-        
-        /* Logout button - Red gradient */
-        div[data-testid="stButton"]:has(button:contains("Logout")) button {
-            background: linear-gradient(90deg, #e74c3c, #c0392b) !important;
-            color: white !important;
-        }
-        
-        div[data-testid="stButton"]:has(button:contains("Logout")) button:hover {
-            background: linear-gradient(90deg, #d63031, #a93226) !important;
-        }
+        </style>
+        <script>
+        // Wait for page to load, then modify button colors
+        setTimeout(function() {
+            // Find New Analysis button and make it blue
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(button => {
+                if (button.textContent.includes('New Analysis')) {
+                    button.style.background = 'linear-gradient(90deg, #667eea, #764ba2)';
+                    button.style.color = 'white';
+                    button.addEventListener('mouseenter', function() {
+                        this.style.background = 'linear-gradient(90deg, #5a6fd8, #6a4190)';
+                    });
+                    button.addEventListener('mouseleave', function() {
+                        this.style.background = 'linear-gradient(90deg, #667eea, #764ba2)';
+                    });
+                }
+                
+                // Find Logout button and make it red
+                if (button.textContent.includes('Logout')) {
+                    button.style.background = 'linear-gradient(90deg, #e74c3c, #c0392b)';
+                    button.style.color = 'white';
+                    button.addEventListener('mouseenter', function() {
+                        this.style.background = 'linear-gradient(90deg, #d63031, #a93226)';
+                    });
+                    button.addEventListener('mouseleave', function() {
+                        this.style.background = 'linear-gradient(90deg, #e74c3c, #c0392b)';
+                    });
+                }
+            });
+        }, 1000);
+        </script>
         
         /* Delete buttons in chat history - small and subtle */
         div[data-testid="stButton"]:has(button:contains("×")) button {
