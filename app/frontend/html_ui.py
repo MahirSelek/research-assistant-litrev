@@ -89,6 +89,8 @@ class HTMLResearchAssistantUI:
             self.set_user_session('uploaded_papers', [])
         if self.get_user_key('custom_summary_chat') not in st.session_state:
             self.set_user_session('custom_summary_chat', [])
+        if self.get_user_key('analysis_locked') not in st.session_state:
+            self.set_user_session('analysis_locked', False)
     
     def get_user_key(self, key):
         """Get user-specific session key"""
@@ -461,7 +463,16 @@ Assistant Response:"""
         
         # Create a sidebar for controls
         with st.sidebar:
-            st.markdown("### Research Assistant Controls")
+            # Get analysis lock status
+            analysis_locked = self.get_user_session('analysis_locked', False)
+            
+            # Show analysis status
+            if analysis_locked:
+                st.info("🔒 Analysis Active - Controls Locked")
+            else:
+                st.success("🔓 Ready for New Analysis")
+            
+            st.markdown("---")
             
             # New Analysis button
             if st.button("➕ New Analysis", type="primary", use_container_width=True):
@@ -469,6 +480,7 @@ Assistant Response:"""
                 self.set_user_session('selected_keywords', [])
                 self.set_user_session('search_mode', "all_keywords")
                 self.set_user_session('custom_summary_chat', [])
+                self.set_user_session('analysis_locked', False)  # Unlock for new analysis
                 st.rerun()
             
             # Keyword selection
@@ -477,7 +489,8 @@ Assistant Response:"""
                 self.GENETICS_KEYWORDS,
                 default=self.get_user_session('selected_keywords', []),
                 key="html_keywords",
-                help="Select keywords for your research analysis"
+                help="Select keywords for your research analysis" if not analysis_locked else "Keywords are locked for current analysis. Click 'New Analysis' to modify.",
+                disabled=analysis_locked
             )
             
             # Search mode
@@ -486,18 +499,20 @@ Assistant Response:"""
                 ["all_keywords", "any_keyword"],
                 format_func=lambda x: "Find papers containing ALL keywords" if x == "all_keywords" else "Find papers containing AT LEAST ONE keyword",
                 index=0 if self.get_user_session('search_mode', 'all_keywords') == 'all_keywords' else 1,
-                key="html_search_mode"
+                key="html_search_mode",
+                disabled=analysis_locked
             )
             
             # Time filter
             time_filter = st.selectbox(
                 "Filter by Time Window",
                 ["Current year", "Last 3 months", "Last 6 months", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
-                key="html_time_filter"
+                key="html_time_filter",
+                disabled=analysis_locked
             )
             
             # Search button
-            if st.button("Search & Analyze", type="primary", use_container_width=True):
+            if st.button("Search & Analyze", type="primary", use_container_width=True, disabled=analysis_locked):
                 if selected_keywords:
                     st.session_state.is_loading_analysis = True
                     st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
@@ -506,6 +521,8 @@ Assistant Response:"""
                     st.session_state.is_loading_analysis = False
                     
                     if success:
+                        # Lock the analysis after successful search
+                        self.set_user_session('analysis_locked', True)
                         st.rerun()
                     else:
                         st.error("Analysis failed. Please try again.")
@@ -547,6 +564,7 @@ Assistant Response:"""
                     with col1:
                         if st.button(title, key=f"chat_{conv_id}", use_container_width=True):
                             self.set_user_session('active_conversation_id', conv_id)
+                            self.set_user_session('analysis_locked', True)  # Lock when viewing past analysis
                             st.rerun()
                     
                     with col2:
