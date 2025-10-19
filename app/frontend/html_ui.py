@@ -146,23 +146,76 @@ class HTMLResearchAssistantUI:
         }
         
         /* New Analysis button styling - Blue gradient */
-        div[data-testid="stButton"] button[kind="primary"][data-testid="baseButton-new_analysis_btn"] {
+        .new-analysis-button {
             background: linear-gradient(90deg, #1e40af, #3b82f6) !important;
         }
         
-        div[data-testid="stButton"] button[kind="primary"][data-testid="baseButton-new_analysis_btn"]:hover {
+        .new-analysis-button:hover {
             background: linear-gradient(90deg, #1d4ed8, #2563eb) !important;
         }
         
         /* Logout button styling - Red gradient */
-        div[data-testid="stButton"] button[kind="secondary"][data-testid="baseButton-logout_btn"] {
+        .logout-button {
             background: linear-gradient(90deg, #dc2626, #ef4444) !important;
         }
         
-        div[data-testid="stButton"] button[kind="secondary"][data-testid="baseButton-logout_btn"]:hover {
+        .logout-button:hover {
+            background: linear-gradient(90deg, #b91c1c, #dc2626) !important;
+        }
+        
+        /* Alternative approach using nth-child selectors for sidebar buttons */
+        .stSidebar .stButton:nth-child(2) button {
+            background: linear-gradient(90deg, #1e40af, #3b82f6) !important;
+        }
+        
+        .stSidebar .stButton:nth-child(2) button:hover {
+            background: linear-gradient(90deg, #1d4ed8, #2563eb) !important;
+        }
+        
+        /* Target the last button in sidebar (Logout) */
+        .stSidebar .stButton:last-child button {
+            background: linear-gradient(90deg, #dc2626, #ef4444) !important;
+        }
+        
+        .stSidebar .stButton:last-child button:hover {
             background: linear-gradient(90deg, #b91c1c, #dc2626) !important;
         }
         </style>
+        """, unsafe_allow_html=True)
+        
+        # Inject JavaScript to dynamically style buttons
+        st.markdown("""
+        <script>
+        function styleButtons() {
+            console.log('Attempting to style buttons...');
+            const buttons = document.querySelectorAll('.stButton button');
+            console.log('Found', buttons.length, 'buttons');
+            
+            buttons.forEach((button, index) => {
+                console.log('Button', index, ':', button.textContent);
+                if (button.textContent.includes('New Analysis')) {
+                    console.log('Adding new-analysis-button class to:', button.textContent);
+                    button.classList.add('new-analysis-button');
+                }
+                if (button.textContent.includes('Logout')) {
+                    console.log('Adding logout-button class to:', button.textContent);
+                    button.classList.add('logout-button');
+                }
+            });
+        }
+        
+        // Run when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', styleButtons);
+        } else {
+            styleButtons();
+        }
+        
+        // Also run after Streamlit reruns
+        setTimeout(styleButtons, 100);
+        setTimeout(styleButtons, 500);
+        setTimeout(styleButtons, 1000);
+        </script>
         """, unsafe_allow_html=True)
     
     def render_main_interface(self):
