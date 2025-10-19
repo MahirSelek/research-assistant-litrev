@@ -42,11 +42,12 @@ class HTMLResearchAssistantUI:
                 user_data = self.api.get_user_data(current_user)
                 if user_data:
                     print(f"Loaded user data: {list(user_data.keys())}")
-                    # Set persistent user data from backend (conversations, active conversation)
+                    # Set persistent user data from backend (conversations only)
                     self.set_user_session('conversations', user_data.get('conversations', {}))
-                    self.set_user_session('active_conversation_id', user_data.get('active_conversation_id'))
                     
                     # Clear session-specific data on each login (like in old implementation)
+                    # This includes clearing active_conversation_id to show new analysis page
+                    self.set_user_session('active_conversation_id', None)
                     self.set_user_session('selected_keywords', [])
                     self.set_user_session('search_mode', 'all_keywords')
                     self.set_user_session('uploaded_papers', [])
@@ -145,6 +146,24 @@ class HTMLResearchAssistantUI:
             background: linear-gradient(90deg, #228B22, #32CD32) !important;
         }
         
+        /* Delete buttons in chat history - small and subtle */
+        div[data-testid="stButton"]:has(button:contains("×")) button {
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: #ff6b6b !important;
+            border: 1px solid rgba(255, 107, 107, 0.3) !important;
+            border-radius: 4px !important;
+            font-size: 14px !important;
+            font-weight: bold !important;
+            min-height: 32px !important;
+            padding: 4px 8px !important;
+        }
+        
+        div[data-testid="stButton"]:has(button:contains("×")) button:hover {
+            background: rgba(255, 107, 107, 0.2) !important;
+            color: #ff5252 !important;
+            border-color: rgba(255, 107, 107, 0.5) !important;
+        }
+        
         </style>
         <script>
         // Wait for page to load, then modify button colors
@@ -176,27 +195,31 @@ class HTMLResearchAssistantUI:
                 }
             });
         }, 1000);
+        
+        // Handle Return key for keyword deletion in multiselect
+        setTimeout(function() {
+            const multiselectInputs = document.querySelectorAll('input[aria-label*="Select Keywords"]');
+            multiselectInputs.forEach(input => {
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === 'Return') {
+                        e.preventDefault();
+                        // Find the closest selected keyword chip and remove it
+                        const container = input.closest('[data-testid="stMultiSelect"]');
+                        if (container) {
+                            const chips = container.querySelectorAll('[data-testid="stMultiSelect"] > div > div > div > div > div');
+                            if (chips.length > 0) {
+                                const lastChip = chips[chips.length - 1];
+                                const removeButton = lastChip.querySelector('button');
+                                if (removeButton) {
+                                    removeButton.click();
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        }, 1500);
         </script>
-        
-        /* Delete buttons in chat history - small and subtle */
-        div[data-testid="stButton"]:has(button:contains("×")) button {
-            background: rgba(255, 255, 255, 0.1) !important;
-            color: #ff6b6b !important;
-            border: 1px solid rgba(255, 107, 107, 0.3) !important;
-            border-radius: 4px !important;
-            font-size: 14px !important;
-            font-weight: bold !important;
-            min-height: 32px !important;
-            padding: 4px 8px !important;
-        }
-        
-        div[data-testid="stButton"]:has(button:contains("×")) button:hover {
-            background: rgba(255, 107, 107, 0.2) !important;
-            color: #ff5252 !important;
-            border-color: rgba(255, 107, 107, 0.5) !important;
-        }
-        
-        </style>
         """, unsafe_allow_html=True)
     
     def render_main_interface(self):
