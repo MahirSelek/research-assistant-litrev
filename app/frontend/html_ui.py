@@ -144,6 +144,24 @@ class HTMLResearchAssistantUI:
         .stButton > button:hover {
             background: linear-gradient(90deg, #228B22, #32CD32) !important;
         }
+        
+        /* New Analysis button styling - Blue gradient */
+        div[data-testid="stButton"] button[kind="primary"][data-testid="baseButton-new_analysis_btn"] {
+            background: linear-gradient(90deg, #1e40af, #3b82f6) !important;
+        }
+        
+        div[data-testid="stButton"] button[kind="primary"][data-testid="baseButton-new_analysis_btn"]:hover {
+            background: linear-gradient(90deg, #1d4ed8, #2563eb) !important;
+        }
+        
+        /* Logout button styling - Red gradient */
+        div[data-testid="stButton"] button[kind="secondary"][data-testid="baseButton-logout_btn"] {
+            background: linear-gradient(90deg, #dc2626, #ef4444) !important;
+        }
+        
+        div[data-testid="stButton"] button[kind="secondary"][data-testid="baseButton-logout_btn"]:hover {
+            background: linear-gradient(90deg, #b91c1c, #dc2626) !important;
+        }
         </style>
         """, unsafe_allow_html=True)
     
@@ -334,7 +352,7 @@ Assistant Response:"""
             st.markdown("### Research Assistant Controls")
             
             # New Analysis button
-            if st.button("➕ New Analysis", type="primary", use_container_width=True):
+            if st.button("➕ New Analysis", type="primary", use_container_width=True, key="new_analysis_btn"):
                 self.set_user_session('active_conversation_id', None)
                 self.set_user_session('selected_keywords', [])
                 self.set_user_session('search_mode', "all_keywords")
@@ -452,7 +470,7 @@ Assistant Response:"""
                         st.rerun()
             
             # Logout
-            if st.button("Logout", type="secondary", use_container_width=True):
+            if st.button("Logout", type="secondary", use_container_width=True, key="logout_btn"):
                 # Clear session state
                 for key in list(st.session_state.keys()):
                     if not key.startswith('_'):
