@@ -153,10 +153,10 @@ class HTMLResearchAssistantUI:
         if st.session_state.get('is_loading_analysis', False):
             loading_message = st.session_state.loading_message
             st.markdown(f"""
-            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; font-size: 18px; backdrop-filter: blur(5px);">
-                <div style="text-align: center; background: rgba(0, 0, 0, 0.8); padding: 40px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);">
-                    <div style="border: 4px solid rgba(255, 255, 255, 0.2); border-top: 4px solid #2E8B57; border-radius: 50%; width: 60px; height: 60px; animation: spin 2s linear infinite; margin: 0 auto 25px;"></div>
-                    <p style="margin: 0; font-weight: 500; color: #f0f0f0;">{loading_message}</p>
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; font-size: 18px;">
+                <div style="text-align: center;">
+                    <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite; margin: 0 auto 20px;"></div>
+                    <p>{loading_message}</p>
                 </div>
             </div>
             <style>
@@ -280,11 +280,8 @@ Assistant Response:"""
     <div style="color: #f0f0f0; font-size: 16px; margin-bottom: 8px;">
         <strong>Keywords:</strong> {', '.join(selected_keywords) if selected_keywords else 'None selected'}
     </div>
-    <div style="color: #f0f0f0; font-size: 16px; margin-bottom: 8px;">
+    <div style="color: #e0e0e0; font-size: 14px;">
         <strong>Search Mode:</strong> {search_mode_text}
-    </div>
-    <div style="color: #f0f0f0; font-size: 16px;">
-        <strong>Time Window:</strong> {time_filter_type}
     </div>
 </div>
 
@@ -332,15 +329,6 @@ Assistant Response:"""
         # Create a sidebar for controls
         with st.sidebar:
             st.markdown("### Research Assistant Controls")
-            st.info("🔄 DEBUG: Latest version deployed!")
-            
-            # New Analysis button
-            if st.button("➕ New Analysis", type="primary", use_container_width=True):
-                self.set_user_session('active_conversation_id', None)
-                self.set_user_session('selected_keywords', [])
-                self.set_user_session('search_mode', "all_keywords")
-                self.set_user_session('custom_summary_chat', [])
-                st.rerun()
             
             # Keyword selection
             selected_keywords = st.multiselect(

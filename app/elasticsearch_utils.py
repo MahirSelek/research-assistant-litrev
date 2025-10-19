@@ -62,33 +62,25 @@ class ElasticsearchManager:
     def search_papers(self, keywords: List[str], time_filter: Dict = None, size: int = 10, operator: str = "AND") -> List[Dict[str, Any]]:
         if not keywords:
             return []
+        bool_operator = "must" if operator.upper() == "AND" else "should"
         
+        # The base query structure
+        query = {
+            "query": {
+                "bool": {
+                    bool_operator: [
+                        # Search across title, abstract, and content for better results.
+                        {"multi_match": {"query": keyword, "fields": ["title", "abstract", "content"]}} for keyword in keywords
+                    ],
+                    "filter": []
+                }
+            },
+            "size": size
+        }
+        
+        # For OR queries, we need to specify minimum_should_match to ensure at least one keyword matches
         if operator.upper() == "OR":
-            # For OR searches, use simple multi_match with OR operator
-            query = {
-                "query": {
-                    "multi_match": {
-                        "query": " ".join(keywords),
-                        "fields": ["title", "abstract", "content"],
-                        "operator": "or",
-                        "type": "best_fields"
-                    }
-                },
-                "size": size
-            }
-        else:
-            # For AND searches, use normal scoring
-            query = {
-                "query": {
-                    "bool": {
-                        "must": [
-                            {"multi_match": {"query": keyword, "fields": ["title", "abstract", "content"]}} for keyword in keywords
-                        ],
-                        "filter": []
-                    }
-                },
-                "size": size
-            }
+            query["query"]["bool"]["minimum_should_match"] = 1
         if time_filter:
             query["query"]["bool"]["filter"].append({
                 "range": {
