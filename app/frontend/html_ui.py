@@ -146,30 +146,51 @@ class HTMLResearchAssistantUI:
             background: linear-gradient(90deg, #228B22, #32CD32) !important;
         }
         
-        /* Secondary buttons styling */
-        .stButton > button[data-testid="baseButton-secondary"] {
-            background: linear-gradient(90deg, #667eea, #764ba2) !important;
+        /* Target ALL buttons and override with specific rules */
+        div[data-testid="stButton"] button {
+            background: linear-gradient(90deg, #2E8B57, #3CB371) !important;
             color: white !important;
             border: none !important;
             border-radius: 6px !important;
             font-weight: bold !important;
         }
         
-        .stButton > button[data-testid="baseButton-secondary"]:hover {
-            background: linear-gradient(90deg, #5a6fd8, #6a4190) !important;
-        }
-        
-        /* Specific styling for logout button */
-        div[data-testid="stButton"]:has(button:contains("Logout")) button {
-            background: linear-gradient(90deg, #e74c3c, #c0392b) !important;
-            color: white !important;
-        }
-        
-        div[data-testid="stButton"]:has(button:contains("Logout")) button:hover {
-            background: linear-gradient(90deg, #d63031, #a93226) !important;
+        div[data-testid="stButton"] button:hover {
+            background: linear-gradient(90deg, #228B22, #32CD32) !important;
         }
         
         </style>
+        <script>
+        // Wait for page to load, then modify button colors
+        setTimeout(function() {
+            // Find New Analysis button and make it blue
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(button => {
+                if (button.textContent.includes('New Analysis')) {
+                    button.style.background = 'linear-gradient(90deg, #667eea, #764ba2)';
+                    button.style.color = 'white';
+                    button.addEventListener('mouseenter', function() {
+                        this.style.background = 'linear-gradient(90deg, #5a6fd8, #6a4190)';
+                    });
+                    button.addEventListener('mouseleave', function() {
+                        this.style.background = 'linear-gradient(90deg, #667eea, #764ba2)';
+                    });
+                }
+                
+                // Find Logout button and make it red
+                if (button.textContent.includes('Logout')) {
+                    button.style.background = 'linear-gradient(90deg, #e74c3c, #c0392b)';
+                    button.style.color = 'white';
+                    button.addEventListener('mouseenter', function() {
+                        this.style.background = 'linear-gradient(90deg, #d63031, #a93226)';
+                    });
+                    button.addEventListener('mouseleave', function() {
+                        this.style.background = 'linear-gradient(90deg, #e74c3c, #c0392b)';
+                    });
+                }
+            });
+        }, 1000);
+        </script>
         """, unsafe_allow_html=True)
     
     def render_main_interface(self):
@@ -361,7 +382,7 @@ Assistant Response:"""
             st.markdown("### Research Assistant Controls")
             
             # New Analysis button - Use secondary type to avoid green
-            if st.button("➕ New Analysis", type="secondary", use_container_width=True):
+            if st.button("➕ New Analysis", type="secondary", use_container_width=True, key="new_analysis_btn"):
                 self.set_user_session('active_conversation_id', None)
                 self.set_user_session('selected_keywords', [])
                 self.set_user_session('search_mode', "all_keywords")
@@ -479,7 +500,7 @@ Assistant Response:"""
                         st.rerun()
             
             # Logout
-            if st.button("Logout", type="secondary", use_container_width=True):
+            if st.button("Logout", type="secondary", use_container_width=True, key="logout_btn"):
                 # Clear session state
                 for key in list(st.session_state.keys()):
                     if not key.startswith('_'):
