@@ -146,6 +146,29 @@ class HTMLResearchAssistantUI:
             background: linear-gradient(90deg, #228B22, #32CD32) !important;
         }
         
+        /* Secondary buttons styling */
+        .stButton > button[data-testid="baseButton-secondary"] {
+            background: linear-gradient(90deg, #667eea, #764ba2) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 6px !important;
+            font-weight: bold !important;
+        }
+        
+        .stButton > button[data-testid="baseButton-secondary"]:hover {
+            background: linear-gradient(90deg, #5a6fd8, #6a4190) !important;
+        }
+        
+        /* Specific styling for logout button */
+        div[data-testid="stButton"]:has(button:contains("Logout")) button {
+            background: linear-gradient(90deg, #e74c3c, #c0392b) !important;
+            color: white !important;
+        }
+        
+        div[data-testid="stButton"]:has(button:contains("Logout")) button:hover {
+            background: linear-gradient(90deg, #d63031, #a93226) !important;
+        }
+        
         </style>
         """, unsafe_allow_html=True)
     
@@ -337,20 +360,8 @@ Assistant Response:"""
         with st.sidebar:
             st.markdown("### Research Assistant Controls")
             
-            # New Analysis button
-            st.markdown("""
-            <style>
-            div[data-testid="stButton"]:has(button:contains("➕ New Analysis")) button {
-                background: linear-gradient(90deg, #667eea, #764ba2) !important;
-                color: white !important;
-            }
-            div[data-testid="stButton"]:has(button:contains("➕ New Analysis")) button:hover {
-                background: linear-gradient(90deg, #5a6fd8, #6a4190) !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-            
-            if st.button("➕ New Analysis", type="primary", use_container_width=True):
+            # New Analysis button - Use secondary type to avoid green
+            if st.button("➕ New Analysis", type="secondary", use_container_width=True):
                 self.set_user_session('active_conversation_id', None)
                 self.set_user_session('selected_keywords', [])
                 self.set_user_session('search_mode', "all_keywords")
@@ -468,18 +479,6 @@ Assistant Response:"""
                         st.rerun()
             
             # Logout
-            st.markdown("""
-            <style>
-            div[data-testid="stButton"]:has(button:contains("Logout")) button {
-                background: linear-gradient(90deg, #e74c3c, #c0392b) !important;
-                color: white !important;
-            }
-            div[data-testid="stButton"]:has(button:contains("Logout")) button:hover {
-                background: linear-gradient(90deg, #d63031, #a93226) !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-            
             if st.button("Logout", type="secondary", use_container_width=True):
                 # Clear session state
                 for key in list(st.session_state.keys()):
