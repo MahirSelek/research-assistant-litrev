@@ -96,7 +96,7 @@ class ResearchAssistantAPI:
         time_filter_dict = self._get_time_filter_dict(time_filter_type)
         
         # Perform search with much higher limit for OR searches to get comprehensive results
-        n_results = 500 if search_mode == "any_keyword" else 100
+        n_results = 200 if search_mode == "any_keyword" else 100
         all_papers, total_found = self._perform_hybrid_search(
             keywords, 
             time_filter_dict=None,  # No ES time filtering

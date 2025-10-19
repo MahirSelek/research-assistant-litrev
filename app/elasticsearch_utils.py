@@ -64,24 +64,14 @@ class ElasticsearchManager:
             return []
         
         if operator.upper() == "OR":
-            # For OR searches, use constant scoring to avoid relevance bias
+            # For OR searches, use simple multi_match with OR operator
             query = {
                 "query": {
-                    "bool": {
-                        "should": [
-                            # Use constant_score to avoid relevance scoring bias
-                            {"constant_score": {
-                                "filter": {
-                                    "multi_match": {
-                                        "query": keyword, 
-                                        "fields": ["title", "abstract", "content"]
-                                    }
-                                },
-                                "boost": 1.0
-                            }} for keyword in keywords
-                        ],
-                        "minimum_should_match": 1,
-                        "filter": []
+                    "multi_match": {
+                        "query": " ".join(keywords),
+                        "fields": ["title", "abstract", "content"],
+                        "operator": "or",
+                        "type": "best_fields"
                     }
                 },
                 "size": size
