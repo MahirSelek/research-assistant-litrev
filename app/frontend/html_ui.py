@@ -332,6 +332,7 @@ Assistant Response:"""
         # Create a sidebar for controls
         with st.sidebar:
             st.markdown("### Research Assistant Controls")
+            st.info("🔄 DEBUG: Latest version deployed!")
             
             # New Analysis button
             if st.button("➕ New Analysis", type="primary", use_container_width=True):
