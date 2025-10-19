@@ -146,65 +146,70 @@ class HTMLResearchAssistantUI:
             background: linear-gradient(90deg, #228B22, #32CD32) !important;
         }
         
-        /* New Analysis button styling - Blue gradient with higher specificity */
-        .stButton > button.new-analysis-button {
+        /* New Analysis button styling - Blue gradient */
+        div[data-testid="stButton"] button[data-testid="baseButton-new_analysis_btn"] {
             background: linear-gradient(90deg, #1e40af, #3b82f6) !important;
         }
         
-        .stButton > button.new-analysis-button:hover {
+        div[data-testid="stButton"] button[data-testid="baseButton-new_analysis_btn"]:hover {
             background: linear-gradient(90deg, #1d4ed8, #2563eb) !important;
         }
         
-        /* Logout button styling - Red gradient with higher specificity */
-        .stButton > button.logout-button {
+        /* Logout button styling - Red gradient */
+        div[data-testid="stButton"] button[data-testid="baseButton-logout_btn"] {
             background: linear-gradient(90deg, #dc2626, #ef4444) !important;
         }
         
-        .stButton > button.logout-button:hover {
+        div[data-testid="stButton"] button[data-testid="baseButton-logout_btn"]:hover {
             background: linear-gradient(90deg, #b91c1c, #dc2626) !important;
+        }
+        
+        /* Alternative approach using button positioning in sidebar */
+        .stSidebar .stButton:first-child button {
+            background: linear-gradient(90deg, #1e40af, #3b82f6) !important;
+        }
+        
+        .stSidebar .stButton:first-child button:hover {
+            background: linear-gradient(90deg, #1d4ed8, #2563eb) !important;
+        }
+        
+        /* Target logout button (last button in sidebar) */
+        .stSidebar .stButton:last-child button {
+            background: linear-gradient(90deg, #dc2626, #ef4444) !important;
+        }
+        
+        .stSidebar .stButton:last-child button:hover {
+            background: linear-gradient(90deg, #b91c1c, #dc2626) !important;
+        }
+        
+        /* Additional approach using CSS that targets buttons by their aria-label or title */
+        button[aria-label*="New Analysis"], button[title*="New Analysis"] {
+            background: linear-gradient(90deg, #1e40af, #3b82f6) !important;
+        }
+        
+        button[aria-label*="New Analysis"]:hover, button[title*="New Analysis"]:hover {
+            background: linear-gradient(90deg, #1d4ed8, #2563eb) !important;
+        }
+        
+        button[aria-label*="Logout"], button[title*="Logout"] {
+            background: linear-gradient(90deg, #dc2626, #ef4444) !important;
+        }
+        
+        button[aria-label*="Logout"]:hover, button[title*="Logout"]:hover {
+            background: linear-gradient(90deg, #b91c1c, #dc2626) !important;
+        }
+        
+        /* Debug: Add border to see which buttons are being targeted */
+        .stSidebar .stButton:first-child button {
+            border: 2px solid #1e40af !important;
+        }
+        
+        .stSidebar .stButton:last-child button {
+            border: 2px solid #dc2626 !important;
         }
         </style>
         """, unsafe_allow_html=True)
         
-        # Inject JavaScript to dynamically style buttons
-        st.markdown("""
-        <script>
-        function styleButtons() {
-            console.log('Attempting to style buttons...');
-            const buttons = document.querySelectorAll('.stButton button');
-            console.log('Found', buttons.length, 'buttons');
-            
-            buttons.forEach((button, index) => {
-                console.log('Button', index, ':', button.textContent);
-                
-                // Remove any existing custom classes first
-                button.classList.remove('new-analysis-button', 'logout-button');
-                
-                // Apply specific classes based on button text
-                if (button.textContent.includes('New Analysis')) {
-                    console.log('Adding new-analysis-button class to:', button.textContent);
-                    button.classList.add('new-analysis-button');
-                } else if (button.textContent.includes('Logout')) {
-                    console.log('Adding logout-button class to:', button.textContent);
-                    button.classList.add('logout-button');
-                }
-                // All other buttons (chat history, search, etc.) will use default green styling
-            });
-        }
-        
-        // Run when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', styleButtons);
-        } else {
-            styleButtons();
-        }
-        
-        // Also run after Streamlit reruns
-        setTimeout(styleButtons, 100);
-        setTimeout(styleButtons, 500);
-        setTimeout(styleButtons, 1000);
-        </script>
-        """, unsafe_allow_html=True)
     
     def render_main_interface(self):
         """Render the main interface using Streamlit components"""
