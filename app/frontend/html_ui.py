@@ -165,6 +165,24 @@ class HTMLResearchAssistantUI:
             background: linear-gradient(90deg, #d63031, #a93226) !important;
         }
         
+        /* Delete buttons in chat history - small and subtle */
+        div[data-testid="stButton"]:has(button:contains("×")) button {
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: #ff6b6b !important;
+            border: 1px solid rgba(255, 107, 107, 0.3) !important;
+            border-radius: 4px !important;
+            font-size: 14px !important;
+            font-weight: bold !important;
+            min-height: 32px !important;
+            padding: 4px 8px !important;
+        }
+        
+        div[data-testid="stButton"]:has(button:contains("×")) button:hover {
+            background: rgba(255, 107, 107, 0.2) !important;
+            color: #ff5252 !important;
+            border-color: rgba(255, 107, 107, 0.5) !important;
+        }
+        
         </style>
         """, unsafe_allow_html=True)
     
@@ -409,9 +427,35 @@ Assistant Response:"""
             if conversations:
                 for conv_id, conv_data in conversations.items():
                     title = conv_data.get("title", "Chat...")
-                    if st.button(title, key=f"chat_{conv_id}", use_container_width=True):
-                        self.set_user_session('active_conversation_id', conv_id)
-                        st.rerun()
+                    
+                    # Create columns for chat title and delete button
+                    col1, col2 = st.columns([4, 1])
+                    
+                    with col1:
+                        if st.button(title, key=f"chat_{conv_id}", use_container_width=True):
+                            self.set_user_session('active_conversation_id', conv_id)
+                            st.rerun()
+                    
+                    with col2:
+                        if st.button("×", key=f"delete_{conv_id}", help="Delete this analysis", type="secondary"):
+                            # Delete conversation from session
+                            del conversations[conv_id]
+                            self.set_user_session('conversations', conversations)
+                            
+                            # Delete from GCS
+                            username = st.session_state.get('username')
+                            if username:
+                                try:
+                                    self.api.delete_conversation(username, conv_id)
+                                    st.success("Analysis deleted!")
+                                except Exception as e:
+                                    st.error(f"Failed to delete from storage: {e}")
+                            
+                            # Clear active conversation if it was deleted
+                            if self.get_user_session('active_conversation_id') == conv_id:
+                                self.set_user_session('active_conversation_id', None)
+                            
+                            st.rerun()
             else:
                 st.caption("No past analyses found.")
             
