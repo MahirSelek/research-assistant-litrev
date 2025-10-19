@@ -133,7 +133,6 @@ class HTMLResearchAssistantUI:
             background: #1e1e1e !important;
         }
         
-        /* Primary buttons (Search & Analyze, Generate Custom Summary) - Keep green */
         .stButton > button {
             background: linear-gradient(90deg, #2E8B57, #3CB371) !important;
             color: white !important;
@@ -145,52 +144,7 @@ class HTMLResearchAssistantUI:
         .stButton > button:hover {
             background: linear-gradient(90deg, #228B22, #32CD32) !important;
         }
-        
-        /* Target ALL buttons and override with specific rules */
-        div[data-testid="stButton"] button {
-            background: linear-gradient(90deg, #2E8B57, #3CB371) !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 6px !important;
-            font-weight: bold !important;
-        }
-        
-        div[data-testid="stButton"] button:hover {
-            background: linear-gradient(90deg, #228B22, #32CD32) !important;
-        }
-        
         </style>
-        <script>
-        // Wait for page to load, then modify button colors
-        setTimeout(function() {
-            // Find New Analysis button and make it blue
-            const buttons = document.querySelectorAll('button');
-            buttons.forEach(button => {
-                if (button.textContent.includes('New Analysis')) {
-                    button.style.background = 'linear-gradient(90deg, #667eea, #764ba2)';
-                    button.style.color = 'white';
-                    button.addEventListener('mouseenter', function() {
-                        this.style.background = 'linear-gradient(90deg, #5a6fd8, #6a4190)';
-                    });
-                    button.addEventListener('mouseleave', function() {
-                        this.style.background = 'linear-gradient(90deg, #667eea, #764ba2)';
-                    });
-                }
-                
-                // Find Logout button and make it red
-                if (button.textContent.includes('Logout')) {
-                    button.style.background = 'linear-gradient(90deg, #e74c3c, #c0392b)';
-                    button.style.color = 'white';
-                    button.addEventListener('mouseenter', function() {
-                        this.style.background = 'linear-gradient(90deg, #d63031, #a93226)';
-                    });
-                    button.addEventListener('mouseleave', function() {
-                        this.style.background = 'linear-gradient(90deg, #e74c3c, #c0392b)';
-                    });
-                }
-            });
-        }, 1000);
-        </script>
         """, unsafe_allow_html=True)
     
     def render_main_interface(self):
@@ -258,21 +212,19 @@ class HTMLResearchAssistantUI:
             # Handle follow-up responses
             if active_conversation_id and conversations[active_conversation_id]["messages"][-1]["role"] == "user":
                 active_conv = conversations[active_conversation_id]
-                # Clear loading state after AI response is generated
-                st.session_state.is_loading_analysis = False
-                
-                chat_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in active_conv["messages"]])
-                full_context = ""
-                if active_conv.get("retrieved_papers"):
-                    full_context += "Here is the full context of every paper found in the initial analysis:\n\n"
-                    for i, paper in enumerate(active_conv["retrieved_papers"]):
-                        meta = paper.get('metadata', {})
-                        title = meta.get('title', 'N/A')
-                        link = self.api._get_paper_link(meta)
-                        content_preview = (meta.get('abstract') or paper.get('content') or '')[:4000]
-                        full_context += f"SOURCE [{i+1}]:\nTitle: {title}\nLink: {link}\nContent: {content_preview}\n---\n\n"
-                
-                full_prompt = f"""Continue our conversation. You are the Polo-GGB Research Assistant.
+                with st.spinner("Thinking..."):
+                    chat_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in active_conv["messages"]])
+                    full_context = ""
+                    if active_conv.get("retrieved_papers"):
+                        full_context += "Here is the full context of every paper found in the initial analysis:\n\n"
+                        for i, paper in enumerate(active_conv["retrieved_papers"]):
+                            meta = paper.get('metadata', {})
+                            title = meta.get('title', 'N/A')
+                            link = self.api._get_paper_link(meta)
+                            content_preview = (meta.get('abstract') or paper.get('content') or '')[:4000]
+                            full_context += f"SOURCE [{i+1}]:\nTitle: {title}\nLink: {link}\nContent: {content_preview}\n---\n\n"
+                    
+                    full_prompt = f"""Continue our conversation. You are the Polo-GGB Research Assistant.
 Your task is to answer the user's last message based on the chat history and the full context from the paper sources provided below.
 
 **CITATION INSTRUCTIONS:** When referencing sources, use citation markers in square brackets like [1], [2], [3], etc. Separate multiple citations with individual brackets like [2][3][4]. **IMPORTANT:** Limit citations to a maximum of 3 per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
@@ -286,24 +238,24 @@ Your task is to answer the user's last message based on the chat history and the
 --- END FULL LITERATURE CONTEXT FOR THIS ANALYSIS ---
 
 Assistant Response:"""
-                
-                response_text = self.api.generate_ai_response(full_prompt)
-                if response_text:
-                    retrieved_papers = active_conv.get("retrieved_papers", [])
-                    search_mode = active_conv.get("search_mode", "all_keywords")
                     
-                    # For follow-up responses, use all retrieved papers to make citations clickable but don't include references section
-                    response_text = self.api._display_citations_separately(response_text, retrieved_papers, retrieved_papers, search_mode, include_references=False)
-                    active_conv["messages"].append({"role": "assistant", "content": response_text})
-                    active_conv['last_interaction_time'] = time.time()
-                    self.set_user_session('conversations', conversations)
-                    
-                    # Save conversation to backend
-                    username = st.session_state.get('username')
-                    if username:
-                        self.api.save_conversation(username, active_conversation_id, active_conv)
-                    
-                    st.rerun()
+                    response_text = self.api.generate_ai_response(full_prompt)
+                    if response_text:
+                        retrieved_papers = active_conv.get("retrieved_papers", [])
+                        search_mode = active_conv.get("search_mode", "all_keywords")
+                        
+                        # For follow-up responses, use all retrieved papers to make citations clickable but don't include references section
+                        response_text = self.api._display_citations_separately(response_text, retrieved_papers, retrieved_papers, search_mode, include_references=False)
+                        active_conv["messages"].append({"role": "assistant", "content": response_text})
+                        active_conv['last_interaction_time'] = time.time()
+                        self.set_user_session('conversations', conversations)
+                        
+                        # Save conversation to backend
+                        username = st.session_state.get('username')
+                        if username:
+                            self.api.save_conversation(username, active_conversation_id, active_conv)
+                        
+                        st.rerun()
     
     def render_sidebar(self):
         """Sidebar is now part of the main HTML interface"""
@@ -381,8 +333,8 @@ Assistant Response:"""
         with st.sidebar:
             st.markdown("### Research Assistant Controls")
             
-            # New Analysis button - Use secondary type to avoid green
-            if st.button("➕ New Analysis", type="secondary", use_container_width=True, key="new_analysis_btn"):
+            # New Analysis button
+            if st.button("➕ New Analysis", type="primary", use_container_width=True):
                 self.set_user_session('active_conversation_id', None)
                 self.set_user_session('selected_keywords', [])
                 self.set_user_session('search_mode', "all_keywords")
@@ -500,7 +452,7 @@ Assistant Response:"""
                         st.rerun()
             
             # Logout
-            if st.button("Logout", type="secondary", use_container_width=True, key="logout_btn"):
+            if st.button("Logout", type="secondary", use_container_width=True):
                 # Clear session state
                 for key in list(st.session_state.keys()):
                     if not key.startswith('_'):
@@ -511,10 +463,6 @@ Assistant Response:"""
         active_conversation_id = self.get_user_session('active_conversation_id')
         if active_conversation_id:
             if prompt := st.chat_input("Ask a follow-up question..."):
-                # Set loading state for follow-up question
-                st.session_state.is_loading_analysis = True
-                st.session_state.loading_message = "Thinking about your question..."
-                
                 conversations = self.get_user_session('conversations', {})
                 if active_conversation_id in conversations:
                     active_conv = conversations[active_conversation_id]
