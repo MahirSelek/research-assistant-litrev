@@ -133,8 +133,36 @@ class HTMLResearchAssistantUI:
             background: #1e1e1e !important;
         }
         
-        /* Default button styling - Green gradient for chat history */
-        .stButton > button {
+        /* Clean, simple button styling - NO BROAD RULES */
+        
+        /* New Analysis button - Blue */
+        button[data-testid="baseButton-new_analysis_btn"] {
+            background: linear-gradient(90deg, #1e40af, #3b82f6) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 6px !important;
+            font-weight: bold !important;
+        }
+        
+        button[data-testid="baseButton-new_analysis_btn"]:hover {
+            background: linear-gradient(90deg, #1d4ed8, #2563eb) !important;
+        }
+        
+        /* Logout button - Red */
+        button[data-testid="baseButton-logout_btn"] {
+            background: linear-gradient(90deg, #dc2626, #ef4444) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 6px !important;
+            font-weight: bold !important;
+        }
+        
+        button[data-testid="baseButton-logout_btn"]:hover {
+            background: linear-gradient(90deg, #b91c1c, #dc2626) !important;
+        }
+        
+        /* All other buttons - Green (default) */
+        .stButton > button:not([data-testid="baseButton-new_analysis_btn"]):not([data-testid="baseButton-logout_btn"]) {
             background: linear-gradient(90deg, #2E8B57, #3CB371) !important;
             color: white !important;
             border: none !important;
@@ -142,70 +170,8 @@ class HTMLResearchAssistantUI:
             font-weight: bold !important;
         }
         
-        .stButton > button:hover {
+        .stButton > button:not([data-testid="baseButton-new_analysis_btn"]):not([data-testid="baseButton-logout_btn"]):hover {
             background: linear-gradient(90deg, #228B22, #32CD32) !important;
-        }
-        
-        /* New Analysis button styling - Blue gradient */
-        div[data-testid="stButton"] button[data-testid="baseButton-new_analysis_btn"] {
-            background: linear-gradient(90deg, #1e40af, #3b82f6) !important;
-        }
-        
-        div[data-testid="stButton"] button[data-testid="baseButton-new_analysis_btn"]:hover {
-            background: linear-gradient(90deg, #1d4ed8, #2563eb) !important;
-        }
-        
-        /* Logout button styling - Red gradient */
-        div[data-testid="stButton"] button[data-testid="baseButton-logout_btn"] {
-            background: linear-gradient(90deg, #dc2626, #ef4444) !important;
-        }
-        
-        div[data-testid="stButton"] button[data-testid="baseButton-logout_btn"]:hover {
-            background: linear-gradient(90deg, #b91c1c, #dc2626) !important;
-        }
-        
-        /* Alternative approach using button positioning in sidebar */
-        .stSidebar .stButton:first-child button {
-            background: linear-gradient(90deg, #1e40af, #3b82f6) !important;
-        }
-        
-        .stSidebar .stButton:first-child button:hover {
-            background: linear-gradient(90deg, #1d4ed8, #2563eb) !important;
-        }
-        
-        /* Target logout button (last button in sidebar) */
-        .stSidebar .stButton:last-child button {
-            background: linear-gradient(90deg, #dc2626, #ef4444) !important;
-        }
-        
-        .stSidebar .stButton:last-child button:hover {
-            background: linear-gradient(90deg, #b91c1c, #dc2626) !important;
-        }
-        
-        /* Additional approach using CSS that targets buttons by their aria-label or title */
-        button[aria-label*="New Analysis"], button[title*="New Analysis"] {
-            background: linear-gradient(90deg, #1e40af, #3b82f6) !important;
-        }
-        
-        button[aria-label*="New Analysis"]:hover, button[title*="New Analysis"]:hover {
-            background: linear-gradient(90deg, #1d4ed8, #2563eb) !important;
-        }
-        
-        button[aria-label*="Logout"], button[title*="Logout"] {
-            background: linear-gradient(90deg, #dc2626, #ef4444) !important;
-        }
-        
-        button[aria-label*="Logout"]:hover, button[title*="Logout"]:hover {
-            background: linear-gradient(90deg, #b91c1c, #dc2626) !important;
-        }
-        
-        /* Debug: Add border to see which buttons are being targeted */
-        .stSidebar .stButton:first-child button {
-            border: 2px solid #1e40af !important;
-        }
-        
-        .stSidebar .stButton:last-child button {
-            border: 2px solid #dc2626 !important;
         }
         </style>
         """, unsafe_allow_html=True)
