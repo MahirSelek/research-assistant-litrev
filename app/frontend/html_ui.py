@@ -425,7 +425,29 @@ Assistant Response:"""
             st.markdown("### Chat History")
             conversations = self.get_user_session('conversations', {})
             if conversations:
-                for conv_id, conv_data in conversations.items():
+                # Sort conversations by creation time (most recent first) - like ChatGPT
+                def get_creation_time(conv_id, conv_data):
+                    # Use last_interaction_time if available, otherwise fall back to creation time
+                    if 'last_interaction_time' in conv_data:
+                        return conv_data['last_interaction_time']
+                    
+                    # Extract timestamp from conversation ID
+                    try:
+                        if conv_id.startswith('custom_summary_'):
+                            timestamp_str = conv_id.split('_', 2)[2]
+                        else:
+                            timestamp_str = conv_id.split('_')[1]
+                        return float(timestamp_str)
+                    except (IndexError, ValueError):
+                        return 0
+                
+                sorted_conversations = sorted(
+                    conversations.items(), 
+                    key=lambda x: get_creation_time(x[0], x[1]), 
+                    reverse=True
+                )
+                
+                for conv_id, conv_data in sorted_conversations:
                     title = conv_data.get("title", "Chat...")
                     
                     # Create columns for chat title and delete button
@@ -553,33 +575,64 @@ Assistant Response:"""
                 conv_id = f"custom_summary_{time.time()}"
                 
                 def generate_custom_summary_title(papers, summary_text):
+                    """Generate descriptive title like ChatGPT - unique and specific"""
                     paper_count = len(papers)
                     summary_lower = summary_text.lower()
-                    topics = []
                     
-                    if any(word in summary_lower for word in ['sustainability', 'sustainable', 'environment']):
-                        topics.append('Sustainability')
+                    # Extract key topics and methodologies
+                    topics = []
+                    methodologies = []
+                    applications = []
+                    
+                    # Topic detection
+                    if any(word in summary_lower for word in ['polygenic risk', 'prs', 'genetic risk']):
+                        topics.append('Polygenic Risk')
+                    if any(word in summary_lower for word in ['gwas', 'genome-wide association']):
+                        topics.append('GWAS')
                     if any(word in summary_lower for word in ['machine learning', 'ai', 'artificial intelligence', 'ml']):
-                        topics.append('AI/ML')
+                        methodologies.append('AI/ML')
                     if any(word in summary_lower for word in ['genetics', 'genetic', 'dna', 'genome']):
                         topics.append('Genetics')
                     if any(word in summary_lower for word in ['disease', 'medical', 'health', 'clinical']):
-                        topics.append('Medical')
+                        applications.append('Medical')
                     if any(word in summary_lower for word in ['prediction', 'predictive', 'modeling']):
-                        topics.append('Prediction')
+                        methodologies.append('Prediction')
                     if any(word in summary_lower for word in ['risk', 'risk assessment']):
-                        topics.append('Risk Analysis')
-                    if any(word in summary_lower for word in ['leather', 'industry', 'manufacturing']):
-                        topics.append('Industry')
-                    if any(word in summary_lower for word in ['reporting', 'disclosure', 'transparency']):
-                        topics.append('Reporting')
+                        applications.append('Risk Analysis')
+                    if any(word in summary_lower for word in ['ancestry', 'population', 'ethnic']):
+                        topics.append('Ancestry')
+                    if any(word in summary_lower for word in ['pharmacogenomics', 'drug', 'therapy']):
+                        applications.append('Pharmacogenomics')
+                    if any(word in summary_lower for word in ['cancer', 'oncology']):
+                        applications.append('Cancer Research')
+                    if any(word in summary_lower for word in ['cardiovascular', 'heart', 'cardiac']):
+                        applications.append('Cardiovascular')
                     
+                    # Create descriptive title
+                    title_parts = []
+                    
+                    # Add main topic
                     if topics:
-                        topic_str = ', '.join(topics[:2])
-                        return topic_str
+                        title_parts.append(topics[0])
+                    
+                    # Add methodology if available
+                    if methodologies:
+                        title_parts.append(f"via {methodologies[0]}")
+                    
+                    # Add application if available
+                    if applications:
+                        title_parts.append(f"for {applications[0]}")
+                    
+                    # Add paper count
+                    title_parts.append(f"({paper_count} papers)")
+                    
+                    if title_parts:
+                        return " ".join(title_parts)
                     else:
-                        first_words = ' '.join(summary_text.split()[:4])
-                        return f"{first_words}..."
+                        # Fallback: use first meaningful words from summary
+                        words = summary_text.split()
+                        meaningful_words = [w for w in words[:6] if len(w) > 3 and w.lower() not in ['the', 'and', 'for', 'with', 'this', 'that']]
+                        return f"{' '.join(meaningful_words[:4])}... ({paper_count} papers)"
                 
                 title = generate_custom_summary_title(uploaded_papers, summary)
                 
