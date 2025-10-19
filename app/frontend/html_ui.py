@@ -134,67 +134,122 @@ class HTMLResearchAssistantUI:
             background: #1e1e1e !important;
         }
         
+        /* Primary buttons - Modern blue gradient with enhanced styling */
         .stButton > button {
-            background: linear-gradient(90deg, #2E8B57, #3CB371) !important;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
             color: white !important;
             border: none !important;
-            border-radius: 6px !important;
-            font-weight: bold !important;
+            border-radius: 10px !important;
+            font-weight: 600 !important;
+            padding: 14px 28px !important;
+            font-size: 15px !important;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            box-shadow: 0 4px 14px rgba(102, 126, 234, 0.25) !important;
+            position: relative !important;
+            overflow: hidden !important;
+        }
+        
+        .stButton > button::before {
+            content: '' !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: -100% !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent) !important;
+            transition: left 0.5s !important;
         }
         
         .stButton > button:hover {
-            background: linear-gradient(90deg, #228B22, #32CD32) !important;
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%) !important;
+            transform: translateY(-3px) !important;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4) !important;
         }
         
-        /* Delete buttons in chat history - small and subtle */
-        div[data-testid="stButton"]:has(button:contains("×")) button {
+        .stButton > button:hover::before {
+            left: 100% !important;
+        }
+        
+        .stButton > button:active {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 14px rgba(102, 126, 234, 0.25) !important;
+        }
+        
+        /* Secondary buttons - Subtle gray */
+        [data-testid="stSecondaryButton"] > button {
             background: rgba(255, 255, 255, 0.1) !important;
-            color: #ff6b6b !important;
-            border: 1px solid rgba(255, 107, 107, 0.3) !important;
-            border-radius: 4px !important;
-            font-size: 14px !important;
-            font-weight: bold !important;
-            min-height: 32px !important;
+            color: #e2e8f0 !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 6px !important;
+            font-size: 13px !important;
+            font-weight: 500 !important;
+            padding: 8px 16px !important;
+            transition: all 0.2s ease !important;
+        }
+        
+        [data-testid="stSecondaryButton"] > button:hover {
+            background: rgba(255, 255, 255, 0.15) !important;
+            color: #f1f5f9 !important;
+            border-color: rgba(255, 255, 255, 0.3) !important;
+            transform: translateY(-1px) !important;
+        }
+        
+        /* Delete buttons in chat history - Red accent */
+        div[data-testid="stButton"]:has(button:contains("×")) button {
+            background: rgba(239, 68, 68, 0.1) !important;
+            color: #f87171 !important;
+            border: 1px solid rgba(239, 68, 68, 0.3) !important;
+            border-radius: 6px !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            min-height: 28px !important;
             padding: 4px 8px !important;
+            transition: all 0.2s ease !important;
         }
         
         div[data-testid="stButton"]:has(button:contains("×")) button:hover {
-            background: rgba(255, 107, 107, 0.2) !important;
-            color: #ff5252 !important;
-            border-color: rgba(255, 107, 107, 0.5) !important;
+            background: rgba(239, 68, 68, 0.2) !important;
+            color: #ef4444 !important;
+            border-color: rgba(239, 68, 68, 0.5) !important;
+            transform: translateY(-1px) !important;
+        }
+        
+        /* Special button types with enhanced styling */
+        button:contains("New Analysis") {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
+        }
+        
+        button:contains("New Analysis"):hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4) !important;
+        }
+        
+        button:contains("Logout") {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3) !important;
+        }
+        
+        button:contains("Logout"):hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4) !important;
+        }
+        
+        /* Search & Analyze button - Special styling */
+        button:contains("Search & Analyze") {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+            box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3) !important;
+        }
+        
+        button:contains("Search & Analyze"):hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
         }
         
         </style>
         <script>
-        // Wait for page to load, then modify button colors
-        setTimeout(function() {
-            // Find New Analysis button and make it blue
-            const buttons = document.querySelectorAll('button');
-            buttons.forEach(button => {
-                if (button.textContent.includes('New Analysis')) {
-                    button.style.background = 'linear-gradient(90deg, #667eea, #764ba2)';
-                    button.style.color = 'white';
-                    button.addEventListener('mouseenter', function() {
-                        this.style.background = 'linear-gradient(90deg, #5a6fd8, #6a4190)';
-                    });
-                    button.addEventListener('mouseleave', function() {
-                        this.style.background = 'linear-gradient(90deg, #667eea, #764ba2)';
-                    });
-                }
-                
-                // Find Logout button and make it red
-                if (button.textContent.includes('Logout')) {
-                    button.style.background = 'linear-gradient(90deg, #e74c3c, #c0392b)';
-                    button.style.color = 'white';
-                    button.addEventListener('mouseenter', function() {
-                        this.style.background = 'linear-gradient(90deg, #d63031, #a93226)';
-                    });
-                    button.addEventListener('mouseleave', function() {
-                        this.style.background = 'linear-gradient(90deg, #e74c3c, #c0392b)';
-                    });
-                }
-            });
-        }, 1000);
+        // Button styling is now handled by CSS above
         
         // Handle Return key for keyword deletion in multiselect
         setTimeout(function() {
