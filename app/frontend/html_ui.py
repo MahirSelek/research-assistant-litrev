@@ -674,10 +674,7 @@ Assistant Response:"""
                     # LOCK IMMEDIATELY when button is clicked
                     self.set_user_session('analysis_locked', True)
                     
-                    # Force rerun to show locked state immediately
-                    st.rerun()
-                    
-                    # Then proceed with analysis
+                    # Proceed with analysis (no premature rerun)
                     st.session_state.is_loading_analysis = True
                     st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
                     
