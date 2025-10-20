@@ -456,7 +456,7 @@ class HTMLResearchAssistantUI:
     def render_main_interface(self):
         """Render the main interface using Streamlit components"""
         
-        # Show full-screen loading overlay if loading
+        # Show full-screen loading overlay if loading (do NOT return; allow processing to continue)
         if st.session_state.get('is_loading', False):
             loading_message = st.session_state.get('loading_message', 'Processing...')
             loading_subtext = st.session_state.get('loading_subtext', 'Please wait while we work on your request')
@@ -472,7 +472,7 @@ class HTMLResearchAssistantUI:
                 </div>
             </div>
             """, unsafe_allow_html=True)
-            return
+            # IMPORTANT: don't return; keep running so background task can execute during this run
         
         # Main content area
         st.markdown("# 🧬 POLO-GGB RESEARCH ASSISTANT")
@@ -480,6 +480,35 @@ class HTMLResearchAssistantUI:
         # Get current state
         active_conversation_id = self.get_user_session('active_conversation_id')
         conversations = self.get_user_session('conversations', {})
+
+        # If a keyword search was scheduled on previous click, run it now while overlay is visible
+        if st.session_state.get('do_keyword_search'):
+            try:
+                pending_keywords = st.session_state.get('pending_keywords', [])
+                pending_time = st.session_state.get('pending_time_filter', 'Current year')
+                pending_mode = st.session_state.get('pending_search_mode', 'all_keywords')
+
+                success = self.process_keyword_search(pending_keywords, pending_time, pending_mode)
+
+                # Clear loading and flags
+                st.session_state['is_loading'] = False
+                st.session_state['do_keyword_search'] = False
+                st.session_state.pop('pending_keywords', None)
+                st.session_state.pop('pending_time_filter', None)
+                st.session_state.pop('pending_search_mode', None)
+
+                if success:
+                    st.rerun()
+                else:
+                    self.set_user_session('analysis_locked', False)
+                    st.error("Analysis failed. Please try again.")
+                    st.rerun()
+            except Exception as e:
+                st.session_state['is_loading'] = False
+                st.session_state['do_keyword_search'] = False
+                self.set_user_session('analysis_locked', False)
+                st.error(f"An error occurred: {e}")
+                st.rerun()
         
         # Show default message if no active conversation
         if active_conversation_id is None:
@@ -842,26 +871,20 @@ Assistant Response:"""
             # Search button
             if st.button("Search & Analyze", type="primary", use_container_width=True, disabled=analysis_locked):
                 if selected_keywords:
-                    # Set loading state and lock immediately
+                    # Set loading state and lock immediately, then schedule analysis and rerun
                     st.session_state['is_loading'] = True
                     st.session_state['loading_message'] = "🔍 Analyzing Research Papers"
                     st.session_state['loading_subtext'] = "Searching for highly relevant papers and generating comprehensive report..."
                     st.session_state['loading_progress'] = "This may take a few moments..."
                     self.set_user_session('analysis_locked', True)
-                    
-                    # Proceed with analysis (don't rerun yet; run analysis first)
-                    success = self.process_keyword_search(selected_keywords, time_filter, search_mode)
-                    
-                    # Clear loading state
-                    st.session_state['is_loading'] = False
-                    
-                    if success:
-                        st.rerun()
-                    else:
-                        # Unlock if analysis failed
-                        self.set_user_session('analysis_locked', False)
-                        st.error("Analysis failed. Please try again.")
-                        st.rerun()
+
+                    # Stash pending action parameters to run on next script run
+                    st.session_state['do_keyword_search'] = True
+                    st.session_state['pending_keywords'] = list(selected_keywords)
+                    st.session_state['pending_time_filter'] = time_filter
+                    st.session_state['pending_search_mode'] = search_mode
+
+                    st.rerun()
                 else:
                     st.error("Please select at least one keyword.")
             
