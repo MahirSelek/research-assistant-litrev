@@ -256,70 +256,74 @@ class HTMLResearchAssistantUI:
             box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
         }
         
-        /* Full-Screen Dark Loading Overlay - Blocks All Interaction */
+        /* Full-Screen Dark Loading Overlay - Covers Entire Page */
         .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(10px);
-            z-index: 99999;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            pointer-events: all;
-            cursor: not-allowed;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(0, 0, 0, 0.95) !important;
+            backdrop-filter: blur(10px) !important;
+            z-index: 999999 !important;
+            display: none !important;
+            justify-content: center !important;
+            align-items: center !important;
+            flex-direction: column !important;
+            pointer-events: all !important;
+            cursor: not-allowed !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
         
         .loading-overlay.show {
-            display: flex;
+            display: flex !important;
         }
         
         .loading-content {
-            background: rgba(20, 20, 20, 0.9);
-            border-radius: 20px;
-            padding: 40px 50px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(102, 126, 234, 0.3);
-            max-width: 500px;
-            width: 90%;
+            background: rgba(20, 20, 20, 0.95) !important;
+            border-radius: 20px !important;
+            padding: 50px 60px !important;
+            text-align: center !important;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.7) !important;
+            border: 2px solid rgba(102, 126, 234, 0.4) !important;
+            max-width: 600px !important;
+            width: 90% !important;
+            position: relative !important;
+            z-index: 1000000 !important;
         }
         
         .loading-spinner {
-            width: 80px;
-            height: 80px;
-            border: 6px solid rgba(102, 126, 234, 0.2);
-            border-top: 6px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1.2s linear infinite;
-            margin: 0 auto 30px;
+            width: 100px !important;
+            height: 100px !important;
+            border: 8px solid rgba(102, 126, 234, 0.2) !important;
+            border-top: 8px solid #667eea !important;
+            border-radius: 50% !important;
+            animation: spin 1s linear infinite !important;
+            margin: 0 auto 40px !important;
         }
         
         .loading-text {
-            color: white;
-            font-size: 24px;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 15px;
-            animation: pulse 2s ease-in-out infinite;
+            color: white !important;
+            font-size: 28px !important;
+            font-weight: 700 !important;
+            text-align: center !important;
+            margin-bottom: 20px !important;
+            animation: pulse 2s ease-in-out infinite !important;
         }
         
         .loading-subtext {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 16px;
-            text-align: center;
-            line-height: 1.5;
-            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-size: 18px !important;
+            text-align: center !important;
+            line-height: 1.6 !important;
+            margin-bottom: 25px !important;
         }
         
         .loading-progress {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 14px;
-            font-style: italic;
+            color: rgba(255, 255, 255, 0.7) !important;
+            font-size: 16px !important;
+            font-style: italic !important;
         }
         
         @keyframes spin {
@@ -329,34 +333,41 @@ class HTMLResearchAssistantUI:
         
         @keyframes pulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+            50% { opacity: 0.8; }
         }
         
-        /* Prevent any interaction with underlying content */
+        /* Ensure overlay covers everything */
+        body.loading-active {
+            overflow: hidden !important;
+        }
+        
+        /* Block all interactions */
         .loading-overlay * {
-            pointer-events: none;
+            pointer-events: none !important;
         }
         
         .loading-overlay .loading-content {
-            pointer-events: auto;
+            pointer-events: auto !important;
         }
         
         </style>
         <script>
         // Button styling is now handled by CSS above
         
-        // Full-Screen Loading Overlay Functions
+        // Full-Screen Loading Overlay Functions - Enhanced
         function showLoadingOverlay(message = "Processing...", subtext = "Please wait while we work on your request", progress = "") {
-            // Create overlay if it doesn't exist
-            let overlay = document.getElementById('loading-overlay');
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.id = 'loading-overlay';
-                overlay.className = 'loading-overlay';
-                document.body.appendChild(overlay);
+            // Remove any existing overlay first
+            let existingOverlay = document.getElementById('loading-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
             }
             
-            // Update overlay content
+            // Create new overlay
+            let overlay = document.createElement('div');
+            overlay.id = 'loading-overlay';
+            overlay.className = 'loading-overlay';
+            
+            // Set overlay content
             overlay.innerHTML = `
                 <div class="loading-content">
                     <div class="loading-spinner"></div>
@@ -366,35 +377,55 @@ class HTMLResearchAssistantUI:
                 </div>
             `;
             
-            // Show overlay and block all interactions
-            overlay.classList.add('show');
+            // Add to body
+            document.body.appendChild(overlay);
             
-            // Prevent scrolling
-            document.body.style.overflow = 'hidden';
+            // Force show overlay immediately
+            setTimeout(() => {
+                overlay.classList.add('show');
+                document.body.classList.add('loading-active');
+            }, 10);
             
-            // Block all clicks and interactions
+            // Block all interactions
             overlay.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+                e.stopImmediatePropagation();
                 return false;
             });
             
-            // Block keyboard interactions
             overlay.addEventListener('keydown', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+                e.stopImmediatePropagation();
                 return false;
             });
+            
+            // Block scrolling
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
         }
         
         function hideLoadingOverlay() {
             const overlay = document.getElementById('loading-overlay');
             if (overlay) {
                 overlay.classList.remove('show');
+                setTimeout(() => {
+                    if (overlay.parentNode) {
+                        overlay.parentNode.removeChild(overlay);
+                    }
+                }, 300);
+                
                 // Restore scrolling
+                document.body.classList.remove('loading-active');
                 document.body.style.overflow = '';
+                document.documentElement.style.overflow = '';
             }
         }
+        
+        // Force overlay to show immediately when called
+        window.showLoadingOverlay = showLoadingOverlay;
+        window.hideLoadingOverlay = hideLoadingOverlay;
         
         // Handle Return key for keyword deletion in multiselect
         setTimeout(function() {
@@ -424,6 +455,24 @@ class HTMLResearchAssistantUI:
     
     def render_main_interface(self):
         """Render the main interface using Streamlit components"""
+        
+        # Show full-screen loading overlay if loading
+        if st.session_state.get('is_loading', False):
+            loading_message = st.session_state.get('loading_message', 'Processing...')
+            loading_subtext = st.session_state.get('loading_subtext', 'Please wait while we work on your request')
+            loading_progress = st.session_state.get('loading_progress', '')
+            
+            st.markdown(f"""
+            <div class="loading-overlay show">
+                <div class="loading-content">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">{loading_message}</div>
+                    <div class="loading-subtext">{loading_subtext}</div>
+                    {f'<div class="loading-progress">{loading_progress}</div>' if loading_progress else ''}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            return
         
         # Main content area
         st.markdown("# 🧬 POLO-GGB RESEARCH ASSISTANT")
@@ -792,25 +841,21 @@ Assistant Response:"""
             # Search button
             if st.button("Search & Analyze", type="primary", use_container_width=True, disabled=analysis_locked):
                 if selected_keywords:
-                    # Show full-screen loading overlay immediately
-                    st.markdown("""
-                    <script>
-                    showLoadingOverlay("🔍 Analyzing Research Papers", "Searching for highly relevant papers and generating comprehensive report...", "This may take a few moments...");
-                    </script>
-                    """, unsafe_allow_html=True)
-                    
-                    # LOCK IMMEDIATELY when button is clicked
+                    # Set loading state and lock immediately
+                    st.session_state['is_loading'] = True
+                    st.session_state['loading_message'] = "🔍 Analyzing Research Papers"
+                    st.session_state['loading_subtext'] = "Searching for highly relevant papers and generating comprehensive report..."
+                    st.session_state['loading_progress'] = "This may take a few moments..."
                     self.set_user_session('analysis_locked', True)
+                    
+                    # Force rerun to show loading overlay
+                    st.rerun()
                     
                     # Proceed with analysis
                     success = self.process_keyword_search(selected_keywords, time_filter, search_mode)
                     
-                    # Hide loading overlay
-                    st.markdown("""
-                    <script>
-                    hideLoadingOverlay();
-                    </script>
-                    """, unsafe_allow_html=True)
+                    # Clear loading state
+                    st.session_state['is_loading'] = False
                     
                     if success:
                         st.rerun()
@@ -919,21 +964,19 @@ Assistant Response:"""
                 
                 # Custom summary button
                 if st.button("Generate Custom Summary", type="primary", use_container_width=True):
-                    # Show full-screen loading overlay for custom summary
-                    st.markdown("""
-                    <script>
-                    showLoadingOverlay("📄 Generating Custom Summary", "Analyzing your uploaded papers and creating comprehensive summary...", "Processing PDF content and generating AI summary...");
-                    </script>
-                    """, unsafe_allow_html=True)
+                    # Set loading state
+                    st.session_state['is_loading'] = True
+                    st.session_state['loading_message'] = "📄 Generating Custom Summary"
+                    st.session_state['loading_subtext'] = "Analyzing your uploaded papers and creating comprehensive summary..."
+                    st.session_state['loading_progress'] = "Processing PDF content and generating AI summary..."
+                    
+                    # Force rerun to show loading overlay
+                    st.rerun()
                     
                     success = self.generate_custom_summary(uploaded_papers)
                     
-                    # Hide loading overlay
-                    st.markdown("""
-                    <script>
-                    hideLoadingOverlay();
-                    </script>
-                    """, unsafe_allow_html=True)
+                    # Clear loading state
+                    st.session_state['is_loading'] = False
                     
                     if success:
                         st.rerun()
@@ -1000,12 +1043,14 @@ Assistant Response:"""
         active_conversation_id = self.get_user_session('active_conversation_id')
         if active_conversation_id:
             if prompt := st.chat_input("Ask a follow-up question..."):
-                # Show full-screen loading overlay for chat response
-                st.markdown("""
-                <script>
-                showLoadingOverlay("💬 Generating Response", "Processing your question and generating AI response...", "Analyzing conversation context...");
-                </script>
-                """, unsafe_allow_html=True)
+                # Set loading state for chat response
+                st.session_state['is_loading'] = True
+                st.session_state['loading_message'] = "💬 Generating Response"
+                st.session_state['loading_subtext'] = "Processing your question and generating AI response..."
+                st.session_state['loading_progress'] = "Analyzing conversation context..."
+                
+                # Force rerun to show loading overlay
+                st.rerun()
                 
                 conversations = self.get_user_session('conversations', {})
                 if active_conversation_id in conversations:
@@ -1034,12 +1079,8 @@ Assistant Response:"""
                         print(f"Error generating AI response: {e}")
                         active_conv["messages"].append({"role": "assistant", "content": "I apologize, but I encountered an error while processing your question. Please try again."})
                     
-                    # Hide loading overlay
-                    st.markdown("""
-                    <script>
-                    hideLoadingOverlay();
-                    </script>
-                    """, unsafe_allow_html=True)
+                    # Clear loading state
+                    st.session_state['is_loading'] = False
                     
                     st.rerun()
     
