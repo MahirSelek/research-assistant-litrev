@@ -604,40 +604,69 @@ Assistant Response:"""
             
             # New Analysis button
             if st.button("➕ New Analysis", type="primary", use_container_width=True):
+                # Clear ALL session state for fresh start
                 self.set_user_session('active_conversation_id', None)
                 self.set_user_session('selected_keywords', [])
                 self.set_user_session('search_mode', "all_keywords")
+                self.set_user_session('time_filter', "Current year")
                 self.set_user_session('custom_summary_chat', [])
                 self.set_user_session('analysis_locked', False)  # Unlock for new analysis
+                
+                # Force clear the multiselect by updating session state
+                if 'html_keywords' in st.session_state:
+                    st.session_state['html_keywords'] = []
+                if 'html_search_mode' in st.session_state:
+                    st.session_state['html_search_mode'] = "all_keywords"
+                if 'html_time_filter' in st.session_state:
+                    st.session_state['html_time_filter'] = "Current year"
+                
                 st.rerun()
             
             # Keyword selection
+            # Get current keywords from session state
+            current_keywords = self.get_user_session('selected_keywords', [])
+            
             selected_keywords = st.multiselect(
                 "Select Keywords",
                 self.GENETICS_KEYWORDS,
-                default=self.get_user_session('selected_keywords', []),
+                default=current_keywords,
                 key="html_keywords",
                 help="Select keywords for your research analysis" if not analysis_locked else "Keywords are locked for current analysis. Click 'New Analysis' to modify.",
                 disabled=analysis_locked
             )
             
+            # Update session state with selected keywords
+            if selected_keywords != current_keywords:
+                self.set_user_session('selected_keywords', selected_keywords)
+            
             # Search mode
+            current_search_mode = self.get_user_session('search_mode', 'all_keywords')
             search_mode = st.selectbox(
                 "Search Mode",
                 ["all_keywords", "any_keyword"],
                 format_func=lambda x: "Find papers containing ALL keywords" if x == "all_keywords" else "Find papers containing AT LEAST ONE keyword",
-                index=0 if self.get_user_session('search_mode', 'all_keywords') == 'all_keywords' else 1,
+                index=0 if current_search_mode == 'all_keywords' else 1,
                 key="html_search_mode",
                 disabled=analysis_locked
             )
             
+            # Update session state with search mode
+            if search_mode != current_search_mode:
+                self.set_user_session('search_mode', search_mode)
+            
             # Time filter
+            current_time_filter = self.get_user_session('time_filter', 'Current year')
             time_filter = st.selectbox(
                 "Filter by Time Window",
                 ["Current year", "Last 3 months", "Last 6 months", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+                index=["Current year", "Last 3 months", "Last 6 months", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].index(current_time_filter) if current_time_filter in ["Current year", "Last 3 months", "Last 6 months", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] else 0,
                 key="html_time_filter",
                 disabled=analysis_locked
             )
+            
+            # Update session state with time filter
+            if time_filter != current_time_filter:
+                self.set_user_session('time_filter', time_filter)
             
             # Search button
             if st.button("Search & Analyze", type="primary", use_container_width=True, disabled=analysis_locked):
@@ -645,6 +674,10 @@ Assistant Response:"""
                     # LOCK IMMEDIATELY when button is clicked
                     self.set_user_session('analysis_locked', True)
                     
+                    # Force rerun to show locked state immediately
+                    st.rerun()
+                    
+                    # Then proceed with analysis
                     st.session_state.is_loading_analysis = True
                     st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
                     
@@ -657,6 +690,7 @@ Assistant Response:"""
                         # Unlock if analysis failed
                         self.set_user_session('analysis_locked', False)
                         st.error("Analysis failed. Please try again.")
+                        st.rerun()
                 else:
                     st.error("Please select at least one keyword.")
             
