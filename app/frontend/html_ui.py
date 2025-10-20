@@ -475,18 +475,47 @@ class HTMLResearchAssistantUI:
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
         
-        // Handle Return key for keyword deletion in multiselect
+        // Handle Return/Backspace key for keyword deletion in multiselect
         setTimeout(function() {
             const multiselectInputs = document.querySelectorAll('input[aria-label*="Select Keywords"]');
             multiselectInputs.forEach(input => {
                 input.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' || e.key === 'Return') {
+                    if (e.key === 'Enter' || e.key === 'Return' || e.key === 'Backspace') {
                         e.preventDefault();
                         // Find the closest selected keyword chip and remove it
                         const container = input.closest('[data-testid="stMultiSelect"]');
                         if (container) {
                             const chips = container.querySelectorAll('[data-testid="stMultiSelect"] > div > div > div > div > div');
                             if (chips.length > 0) {
+                                const lastChip = chips[chips.length - 1];
+                                const removeButton = lastChip.querySelector('button');
+                                if (removeButton) {
+                                    removeButton.click();
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+            
+            // Also handle deletion when keyword chips are focused/selected
+            const multiselectContainers = document.querySelectorAll('[data-testid="stMultiSelect"]');
+            multiselectContainers.forEach(container => {
+                container.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === 'Return' || e.key === 'Backspace' || e.key === 'Delete') {
+                        // Check if a keyword chip is focused
+                        const focusedChip = container.querySelector('[data-testid="stMultiSelect"] > div > div > div > div > div:focus');
+                        if (focusedChip) {
+                            e.preventDefault();
+                            const removeButton = focusedChip.querySelector('button');
+                            if (removeButton) {
+                                removeButton.click();
+                            }
+                        } else {
+                            // If no chip focused, remove the last chip
+                            const chips = container.querySelectorAll('[data-testid="stMultiSelect"] > div > div > div > div > div');
+                            if (chips.length > 0) {
+                                e.preventDefault();
                                 const lastChip = chips[chips.length - 1];
                                 const removeButton = lastChip.querySelector('button');
                                 if (removeButton) {
