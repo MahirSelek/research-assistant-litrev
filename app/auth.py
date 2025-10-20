@@ -342,12 +342,48 @@ def show_login_page():
               } catch (e) {}
             });
           }
+
+          function sweepCorner() {
+            // Aggressively hide anything clickable/visible in the bottom-right quadrant
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            for (let dx = 0; dx < 240; dx += 20) {
+              for (let dy = 0; dy < 240; dy += 20) {
+                const x = width - 5 - dx;
+                const y = height - 5 - dy;
+                const el = document.elementFromPoint(x, y);
+                if (!el) continue;
+                try {
+                  // Skip our app root content area
+                  if (el.closest('#root') || el.closest('.stApp')) continue;
+                  const tag = el.tagName.toLowerCase();
+                  const aria = (el.getAttribute('aria-label') || '').toLowerCase();
+                  const title = (el.getAttribute('title') || '').toLowerCase();
+                  const href = (el.getAttribute('href') || '').toLowerCase();
+                  if (['a','img','button','iframe','div','span'].includes(tag)) {
+                    if (href.includes('streamlit') || aria.includes('streamlit') || title.includes('streamlit') || aria.includes('profile')) {
+                      el.style.display = 'none';
+                      el.style.visibility = 'hidden';
+                    } else {
+                      // If it is small and floating in the corner, hide anyway
+                      const r = el.getBoundingClientRect();
+                      if (r.width <= 160 && r.height <= 160) {
+                        el.style.display = 'none';
+                        el.style.visibility = 'hidden';
+                      }
+                    }
+                  }
+                } catch (e) {}
+              }
+            }
+          }
           // Run immediately and on DOM mutations
-          const observer = new MutationObserver(() => { hideNow(); removeBottomBadges(); });
+          const observer = new MutationObserver(() => { hideNow(); removeBottomBadges(); sweepCorner(); });
           observer.observe(document.documentElement, { childList: true, subtree: true });
-          window.addEventListener('load', () => { hideNow(); removeBottomBadges(); });
+          window.addEventListener('load', () => { hideNow(); removeBottomBadges(); sweepCorner(); });
           hideNow();
           removeBottomBadges();
+          sweepCorner();
         })();
         </script>
         """,
