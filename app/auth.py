@@ -217,55 +217,27 @@ def show_login_page():
         color: #28a745;
     }
 
-    /* Hide Streamlit top-right toolbar and bottom-right badges on login page */
+    /* Hide Streamlit top-right toolbar/menu on login page */
     [data-testid="stToolbar"],
     [data-testid="stMainMenu"],
-    [data-testid="stStatusWidget"],
     header [data-testid^="baseButton"],
-    .stDeployButton,
-    .viewerBadge_link,
-    .viewerBadge_container__,
-    footer,
     #MainMenu {
         display: none !important;
         visibility: hidden !important;
     }
-    /* Fallback selectors */
+    /* Fallback header button selectors */
     button[title="View source on GitHub"],
     button[title="Share"],
     button[title="Settings"],
     button[aria-label="Settings"],
     button[aria-label="Share"],
-    button[aria-label="View source on GitHub"],
-    a[class*="viewerBadge"],
-    div[class*="viewerBadge"] {
+    button[aria-label="View source on GitHub"] {
         display: none !important;
-    }
-
-    /* Aggressive fallback: hide any fixed elements near bottom-right (badges/avatars) */
-    a[style*="position: fixed"][style*="bottom"],
-    div[style*="position: fixed"][style*="bottom"],
-    button[style*="position: fixed"][style*="bottom"],
-    img[style*="position: fixed"][style*="bottom"],
-    iframe[style*="position: fixed"][style*="bottom"] {
-        display: none !important;
-        visibility: hidden !important;
-    }
-    [aria-label*="Streamlit"],
-    [aria-label*="profile" i],
-    [data-testid="stFloatingActionButton"],
-    .stFloatingActionButton,
-    .stStatusWidget,
-    .stProfileDialog,
-    .stAvatar,
-    img[alt*="Streamlit" i] {
-        display: none !important;
-        visibility: hidden !important;
     }
     </style>
     """, unsafe_allow_html=True)
     
-    # Defensive JS: hide Streamlit chrome on login using MutationObserver
+    # Defensive JS: hide only the Streamlit top-right chrome on login
     st.markdown(
         """
         <script>
@@ -274,21 +246,14 @@ def show_login_page():
             const selectors = [
               '[data-testid="stToolbar"]',
               '[data-testid="stMainMenu"]',
-              '[data-testid="stStatusWidget"]',
               'header [data-testid^="baseButton"]',
-              '.stDeployButton',
-              '.viewerBadge_link',
-              '.viewerBadge_container__',
-              'footer',
               '#MainMenu',
               'button[title="View source on GitHub"]',
               'button[title="Share"]',
               'button[title="Settings"]',
               'button[aria-label="Settings"]',
               'button[aria-label="Share"]',
-              'button[aria-label="View source on GitHub"]',
-              'a[class*="viewerBadge"]',
-              'div[class*="viewerBadge"]'
+              'button[aria-label="View source on GitHub"]'
             ];
             selectors.forEach(sel => {
               document.querySelectorAll(sel).forEach(el => {
@@ -305,85 +270,11 @@ def show_login_page():
               }
             });
           }
-          function removeBottomBadges() {
-            const nodes = Array.from(document.querySelectorAll('a,div,button,iframe,img,span'));
-            nodes.forEach(el => {
-              try {
-                const cs = window.getComputedStyle(el);
-                const r = el.getBoundingClientRect();
-                const nearRight = (window.innerWidth - r.right) < 400;
-                const nearBottom = (window.innerHeight - r.bottom) < 400;
-                const smallish = r.width <= 160 && r.height <= 160;
-                const positioned = (cs.position === 'fixed' || cs.position === 'sticky' || cs.position === 'absolute');
-                if (positioned && nearRight && nearBottom && smallish) {
-                  el.style.display = 'none';
-                  el.style.visibility = 'hidden';
-                }
-                // Links to streamlit cloud
-                if (el.tagName === 'A' && el.href && el.href.includes('streamlit')) {
-                  el.style.display = 'none';
-                  el.style.visibility = 'hidden';
-                }
-                // Images/badges with Streamlit branding
-                if (el.tagName === 'IMG') {
-                  const alt = (el.getAttribute('alt') || '').toLowerCase();
-                  if (alt.includes('streamlit')) {
-                    el.style.display = 'none';
-                    el.style.visibility = 'hidden';
-                  }
-                }
-                // Elements with tooltip/label
-                const title = (el.getAttribute('title') || '').toLowerCase();
-                const aria = (el.getAttribute('aria-label') || '').toLowerCase();
-                if (title.includes('streamlit') || aria.includes('streamlit') || aria.includes('profile')) {
-                  el.style.display = 'none';
-                  el.style.visibility = 'hidden';
-                }
-              } catch (e) {}
-            });
-          }
-
-          function sweepCorner() {
-            // Aggressively hide anything clickable/visible in the bottom-right quadrant
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-            for (let dx = 0; dx < 240; dx += 20) {
-              for (let dy = 0; dy < 240; dy += 20) {
-                const x = width - 5 - dx;
-                const y = height - 5 - dy;
-                const el = document.elementFromPoint(x, y);
-                if (!el) continue;
-                try {
-                  // Skip our app root content area
-                  if (el.closest('#root') || el.closest('.stApp')) continue;
-                  const tag = el.tagName.toLowerCase();
-                  const aria = (el.getAttribute('aria-label') || '').toLowerCase();
-                  const title = (el.getAttribute('title') || '').toLowerCase();
-                  const href = (el.getAttribute('href') || '').toLowerCase();
-                  if (['a','img','button','iframe','div','span'].includes(tag)) {
-                    if (href.includes('streamlit') || aria.includes('streamlit') || title.includes('streamlit') || aria.includes('profile')) {
-                      el.style.display = 'none';
-                      el.style.visibility = 'hidden';
-                    } else {
-                      // If it is small and floating in the corner, hide anyway
-                      const r = el.getBoundingClientRect();
-                      if (r.width <= 160 && r.height <= 160) {
-                        el.style.display = 'none';
-                        el.style.visibility = 'hidden';
-                      }
-                    }
-                  }
-                } catch (e) {}
-              }
-            }
-          }
           // Run immediately and on DOM mutations
-          const observer = new MutationObserver(() => { hideNow(); removeBottomBadges(); sweepCorner(); });
+          const observer = new MutationObserver(() => { hideNow(); });
           observer.observe(document.documentElement, { childList: true, subtree: true });
-          window.addEventListener('load', () => { hideNow(); removeBottomBadges(); sweepCorner(); });
+          window.addEventListener('load', hideNow);
           hideNow();
-          removeBottomBadges();
-          sweepCorner();
         })();
         </script>
         """,
