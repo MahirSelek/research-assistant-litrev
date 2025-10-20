@@ -849,10 +849,7 @@ Assistant Response:"""
                     st.session_state['loading_progress'] = "This may take a few moments..."
                     self.set_user_session('analysis_locked', True)
                     
-                    # Force rerun to show loading overlay
-                    st.rerun()
-                    
-                    # Proceed with analysis
+                    # Proceed with analysis (don't rerun yet; run analysis first)
                     success = self.process_keyword_search(selected_keywords, time_filter, search_mode)
                     
                     # Clear loading state
