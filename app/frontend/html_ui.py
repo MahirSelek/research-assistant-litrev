@@ -23,12 +23,12 @@ class HTMLResearchAssistantUI:
         """Initialize HTML-based UI with backend API"""
         self.api = api
         
-        # Clean user and assistant avatars (no circles)
-        # User avatar: Simple person icon
-        self.USER_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIiBmaWxsPSJub25lIj48cGF0aCBkPSJNMTYgMTZjLTQuNCAwLTggMy42LTggOHY0aDE2di00YzAtNC40LTMuNi04LTgtOHoiIGZpbGw9IiM2NjdlZWEiLz48Y2lyY2xlIGN4PSIxNiIgY3k9IjEwIiByPSI2IiBmaWxsPSIjNjY3ZWVhIi8+PC9zdmc+"
+        # Clean user and assistant avatars (bigger sizes)
+        # User avatar: Simple person icon (bigger)
+        self.USER_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIiBmaWxsPSJub25lIj48cGF0aCBkPSJNMjAgMjBjLTUuNSAwLTEwIDQuNS0xMCAxMHY1aDIwdi01YzAtNS41LTQuNS0xMC0xMC0xMHoiIGZpbGw9IiM2NjdlZWEiLz48Y2lyY2xlIGN4PSIyMCIgY3k9IjEyIiByPSI3IiBmaWxsPSIjNjY3ZWVhIi8+PC9zdmc+"
         
-        # Assistant avatar: Simple robot icon
-        self.ASSISTANT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIiBmaWxsPSJub25lIj48cmVjdCB4PSI2IiB5PSI4IiB3aWR0aD0iMjAiIGhlaWdodD0iMTYiIGZpbGw9IiMxMGI5ODEiIHJ4PSIyIi8+PHJlY3QgeD0iMTIiIHk9IjEyIiB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSJ3aGl0ZSIgcng9IjEiLz48Y2lyY2xlIGN4PSIxNCIgY3k9IjE0IiByPSIxLjUiIGZpbGw9IiMxMGI5ODEiLz48Y2lyY2xlIGN4PSIxOCIgY3k9IjE0IiByPSIxLjUiIGZpbGw9IiMxMGI5ODEiLz48cmVjdCB4PSIxNCIgeT0iMTgiIHdpZHRoPSI0IiBoZWlnaHQ9IjIiIGZpbGw9IiMxMGI5ODEiIHJ4PSIxIi8+PC9zdmc+"
+        # Assistant avatar: Clean AI/brain icon (much better!)
+        self.ASSISTANT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIiBmaWxsPSJub25lIj48cGF0aCBkPSJNMjAgOGMtNi42IDAtMTIgNS40LTEyIDEyIDAgMi4yLjYgNC4zIDEuNiA2LjFsLTEuNiAxLjZjLS44IDEuNi0uOCAzLjQgMCA1bDEuNiAxLjZjMS4yIDIuNCAzLjQgNC4yIDYuMiA0LjggMS42LjMgMy4yLjMgNC44IDBsMS42LTEuNmMxLjYtLjggMy40LS44IDUgMGwxLjYgMS42YzIuNC0xLjIgNC4yLTMuNCA0LjgtNi4yLjMtMS42LjMtMy4yIDAtNC44bC0xLjYtMS42Yy0uOC0xLjYtLjgtMy40IDAtNWwxLjYtMS42Yy0xLjItMi40LTMuNC00LjItNi4yLTQuOC0xLjYtLjMtMy4yLS4zLTQuOCAwbC0xLjYgMS42Yy0xLjYuOC0zLjQuOC01IDBsLTEuNi0xLjZjLTEuMiAyLjQtMy40IDQuMi02LjIgNC44eiIgZmlsbD0iIzEwYjk4MSIvPjxjaXJjbGUgY3g9IjIwIiBjeT0iMjAiIHI9IjMiIGZpbGw9IndoaXRlIi8+PC9zdmc+"
         
         # UI Constants
         self.GENETICS_KEYWORDS = [
