@@ -793,50 +793,51 @@ Assistant Response:"""
                 st.rerun()
             
             # Keyword selection
-            # Get current keywords from session state
-            current_keywords = self.get_user_session('selected_keywords', [])
+            # Initialize keywords in session state if not exists
+            if 'html_keywords' not in st.session_state:
+                st.session_state['html_keywords'] = self.get_user_session('selected_keywords', [])
             
             selected_keywords = st.multiselect(
                 "Select Keywords",
                 self.GENETICS_KEYWORDS,
-                default=current_keywords,
                 key="html_keywords",
                 help="Select keywords for your research analysis" if not analysis_locked else "Keywords are locked for current analysis. Click 'New Analysis' to modify.",
                 disabled=analysis_locked
             )
             
             # Update session state with selected keywords
-            if selected_keywords != current_keywords:
-                self.set_user_session('selected_keywords', selected_keywords)
+            self.set_user_session('selected_keywords', selected_keywords)
             
             # Search mode
-            current_search_mode = self.get_user_session('search_mode', 'all_keywords')
+            # Initialize search mode in session state if not exists
+            if 'html_search_mode' not in st.session_state:
+                st.session_state['html_search_mode'] = self.get_user_session('search_mode', 'all_keywords')
+            
             search_mode = st.selectbox(
                 "Search Mode",
                 ["all_keywords", "any_keyword"],
                 format_func=lambda x: "Find papers containing ALL keywords" if x == "all_keywords" else "Find papers containing AT LEAST ONE keyword",
-                index=0 if current_search_mode == 'all_keywords' else 1,
                 key="html_search_mode",
                 disabled=analysis_locked
             )
             
             # Update session state with search mode
-            if search_mode != current_search_mode:
-                self.set_user_session('search_mode', search_mode)
+            self.set_user_session('search_mode', search_mode)
             
             # Time filter
-            current_time_filter = self.get_user_session('time_filter', 'Current year')
+            # Initialize time filter in session state if not exists
+            if 'html_time_filter' not in st.session_state:
+                st.session_state['html_time_filter'] = self.get_user_session('time_filter', 'Current year')
+            
             time_filter = st.selectbox(
                 "Filter by Time Window",
                 ["Current year", "Last 3 months", "Last 6 months", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
-                index=["Current year", "Last 3 months", "Last 6 months", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].index(current_time_filter) if current_time_filter in ["Current year", "Last 3 months", "Last 6 months", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] else 0,
                 key="html_time_filter",
                 disabled=analysis_locked
             )
             
             # Update session state with time filter
-            if time_filter != current_time_filter:
-                self.set_user_session('time_filter', time_filter)
+            self.set_user_session('time_filter', time_filter)
             
             # Search button
             if st.button("Search & Analyze", type="primary", use_container_width=True, disabled=analysis_locked):
