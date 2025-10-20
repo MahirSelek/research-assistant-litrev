@@ -115,18 +115,26 @@ class HTMLResearchAssistantUI:
         st.session_state[user_key] = value
         
         # Auto-sync to backend for important data
-        if key in ['conversations', 'selected_keywords', 'search_mode', 'uploaded_papers', 'custom_summary_chat', 'active_conversation_id']:
+        if key in ['conversations', 'selected_keywords', 'search_mode', 'uploaded_papers', 'custom_summary_chat', 'active_conversation_id', 'time_filter']:
             username = st.session_state.get('username')
             if username and username != 'default':
                 try:
-                    user_data = {
-                        'selected_keywords': self.get_user_session('selected_keywords', []),
-                        'search_mode': self.get_user_session('search_mode', 'all_keywords'),
-                        'uploaded_papers': self.get_user_session('uploaded_papers', []),
-                        'custom_summary_chat': self.get_user_session('custom_summary_chat', []),
-                        'active_conversation_id': self.get_user_session('active_conversation_id')
-                    }
-                    self.api.save_user_data(username, user_data)
+                    # Simple rate limiting to avoid GCS 429 errors
+                    rate_key = f"last_backend_sync_{username}"
+                    now_ts = time.time()
+                    last_sync = st.session_state.get(rate_key, 0)
+                    # Always allow immediate syncs for conversations; throttle others to once per 5s
+                    must_sync = key == 'conversations' or (now_ts - last_sync) >= 5.0
+                    if must_sync:
+                        user_data = {
+                            'selected_keywords': self.get_user_session('selected_keywords', []),
+                            'search_mode': self.get_user_session('search_mode', 'all_keywords'),
+                            'uploaded_papers': self.get_user_session('uploaded_papers', []),
+                            'custom_summary_chat': self.get_user_session('custom_summary_chat', []),
+                            'active_conversation_id': self.get_user_session('active_conversation_id')
+                        }
+                        self.api.save_user_data(username, user_data)
+                        st.session_state[rate_key] = now_ts
                 except Exception as e:
                     print(f"Failed to sync to backend: {e}")
     
