@@ -306,18 +306,18 @@ def show_login_page():
             });
           }
           function removeBottomBadges() {
-            const nodes = Array.from(document.querySelectorAll('a,div,button'));
+            const nodes = Array.from(document.querySelectorAll('a,div,button,iframe,img,span'));
             nodes.forEach(el => {
               try {
                 const cs = window.getComputedStyle(el);
-                if (cs.position === 'fixed') {
-                  const r = el.getBoundingClientRect();
-                  const nearRight = (window.innerWidth - r.right) < 220;
-                  const nearBottom = (window.innerHeight - r.bottom) < 220;
-                  if (nearRight && nearBottom) {
-                    el.style.display = 'none';
-                    el.style.visibility = 'hidden';
-                  }
+                const r = el.getBoundingClientRect();
+                const nearRight = (window.innerWidth - r.right) < 400;
+                const nearBottom = (window.innerHeight - r.bottom) < 400;
+                const smallish = r.width <= 160 && r.height <= 160;
+                const positioned = (cs.position === 'fixed' || cs.position === 'sticky' || cs.position === 'absolute');
+                if (positioned && nearRight && nearBottom && smallish) {
+                  el.style.display = 'none';
+                  el.style.visibility = 'hidden';
                 }
                 // Links to streamlit cloud
                 if (el.tagName === 'A' && el.href && el.href.includes('streamlit')) {
@@ -331,6 +331,13 @@ def show_login_page():
                     el.style.display = 'none';
                     el.style.visibility = 'hidden';
                   }
+                }
+                // Elements with tooltip/label
+                const title = (el.getAttribute('title') || '').toLowerCase();
+                const aria = (el.getAttribute('aria-label') || '').toLowerCase();
+                if (title.includes('streamlit') || aria.includes('streamlit') || aria.includes('profile')) {
+                  el.style.display = 'none';
+                  el.style.visibility = 'hidden';
                 }
               } catch (e) {}
             });
