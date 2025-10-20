@@ -993,20 +993,28 @@ Assistant Response:"""
                 
                 # Custom summary button
                 if st.button("Generate Custom Summary", type="primary", use_container_width=True):
-                    # Set loading state
-                    st.session_state['is_loading'] = True
-                    st.session_state['loading_message'] = "📄 Generating Custom Summary"
-                    st.session_state['loading_subtext'] = "Analyzing your uploaded papers and creating comprehensive summary..."
-                    st.session_state['loading_progress'] = "Processing PDF content and generating AI summary..."
-                    
-                    # Force rerun to show loading overlay
-                    st.rerun()
-                    
+                    # Show full-screen overlay immediately via JS (no pre-rerun)
+                    st.markdown(
+                        """
+                        <script>
+                        showLoadingOverlay("📄 Generating Custom Summary", "Analyzing your uploaded papers and creating comprehensive summary...", "Processing PDF content and generating AI summary...");
+                        </script>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
                     success = self.generate_custom_summary(uploaded_papers)
-                    
-                    # Clear loading state
-                    st.session_state['is_loading'] = False
-                    
+
+                    # Hide overlay and refresh UI
+                    st.markdown(
+                        """
+                        <script>
+                        hideLoadingOverlay();
+                        </script>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
                     if success:
                         st.rerun()
                     else:
