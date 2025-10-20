@@ -10,6 +10,7 @@ import os
 from typing import Dict, List, Any, Optional
 import datetime
 import json
+import base64
 
 import sys
 import os
@@ -27,8 +28,19 @@ class HTMLResearchAssistantUI:
         # User avatar: Simple person icon (bigger)
         self.USER_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIiBmaWxsPSJub25lIj48cGF0aCBkPSJNMjAgMjBjLTUuNSAwLTEwIDQuNS0xMCAxMHY1aDIwdi01YzAtNS41LTQuNS0xMC0xMC0xMHoiIGZpbGw9IiM2NjdlZWEiLz48Y2lyY2xlIGN4PSIyMCIgY3k9IjEyIiByPSI3IiBmaWxsPSIjNjY3ZWVhIi8+PC9zdmc+"
         
-        # Assistant avatar: Very basic robot/assistant icon
-        self.ASSISTANT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIiBmaWxsPSJub25lIj48cmVjdCB4PSI4IiB5PSIxMCIgd2lkdGg9IjI0IiBoZWlnaHQ9IjIwIiBmaWxsPSIjMTA5OTgxIiByeD0iNCIvPjxjaXJjbGUgY3g9IjE2IiBjeT0iMTgiIHI9IjIiIGZpbGw9IndoaXRlIi8+PGNpcmNsZSBjeD0iMjQiIGN5PSIxOCIgcj0iMiIgZmlsbD0id2hpdGUiLz48cmVjdCB4PSIxNiIgeT0iMjQiIHdpZHRoPSI4IiBoZWlnaHQ9IjMiIGZpbGw9IndoaXRlIiByeD0iMSIvPjwvc3ZnPg=="
+        # Assistant avatar: Simple DNA double-helix in Polo-GGB color (no circle)
+        assistant_svg = (
+            '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none">'
+            '<g stroke="#667eea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+            '<path d="M12 8c8 0 8 24 16 24"/>'
+            '<path d="M28 8c-8 0-8 24-16 24"/>'
+            '<line x1="14" y1="13" x2="26" y2="13"/>'
+            '<line x1="14" y1="20" x2="26" y2="20"/>'
+            '<line x1="14" y1="27" x2="26" y2="27"/>'
+            '</g>'
+            '</svg>'
+        )
+        self.ASSISTANT_AVATAR = "data:image/svg+xml;base64," + base64.b64encode(assistant_svg.encode("utf-8")).decode("utf-8")
         
         # UI Constants
         self.GENETICS_KEYWORDS = [
