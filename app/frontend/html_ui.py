@@ -446,6 +446,38 @@ Assistant Response:"""
             # Fallback: use conversation ID timestamp for uniqueness
             try:
                 if conv_id.startswith('custom_summary_'):
+                    # Try to extract more info from custom summary
+                    retrieved_papers = conv_data.get("retrieved_papers", [])
+                    if retrieved_papers:
+                        # Use the enhanced title generation for custom summaries
+                        summary_text = ""
+                        for msg in messages:
+                            if msg.get("role") == "assistant":
+                                summary_text = msg.get("content", "")
+                                break
+                        
+                        if summary_text:
+                            # Use the same logic as generate_custom_summary_title
+                            summary_lower = summary_text.lower()
+                            
+                            # Quick disease detection
+                            if 'lung cancer' in summary_lower or 'nsclc' in summary_lower:
+                                return f"Custom Summary: Lung Cancer Analysis"
+                            elif 'breast cancer' in summary_lower:
+                                return f"Custom Summary: Breast Cancer Analysis"
+                            elif 'coronary' in summary_lower or 'cad' in summary_lower:
+                                return f"Custom Summary: CAD Analysis"
+                            elif 'diabetes' in summary_lower:
+                                return f"Custom Summary: Diabetes Analysis"
+                            elif 'alzheimer' in summary_lower:
+                                return f"Custom Summary: Alzheimer's Analysis"
+                            elif 'kras' in summary_lower:
+                                return f"Custom Summary: KRAS Analysis"
+                            elif 'prs' in summary_lower or 'polygenic' in summary_lower:
+                                return f"Custom Summary: PRS Analysis"
+                            elif 'biomarker' in summary_lower:
+                                return f"Custom Summary: Biomarker Analysis"
+                    
                     return f"Custom Summary Analysis"
                 elif conv_id.startswith('conv_'):
                     return f"Research Analysis"
@@ -610,6 +642,9 @@ Assistant Response:"""
             # Search button
             if st.button("Search & Analyze", type="primary", use_container_width=True, disabled=analysis_locked):
                 if selected_keywords:
+                    # LOCK IMMEDIATELY when button is clicked
+                    self.set_user_session('analysis_locked', True)
+                    
                     st.session_state.is_loading_analysis = True
                     st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
                     
@@ -617,10 +652,10 @@ Assistant Response:"""
                     st.session_state.is_loading_analysis = False
                     
                     if success:
-                        # Lock the analysis after successful search
-                        self.set_user_session('analysis_locked', True)
                         st.rerun()
                     else:
+                        # Unlock if analysis failed
+                        self.set_user_session('analysis_locked', False)
                         st.error("Analysis failed. Please try again.")
                 else:
                     st.error("Please select at least one keyword.")
@@ -803,75 +838,103 @@ Assistant Response:"""
                 conv_id = f"custom_summary_{time.time()}"
                 
                 def generate_custom_summary_title(papers, summary_text):
-                    """Generate ChatGPT-level descriptive title - unique and specific"""
+                    """Generate detailed custom summary title with specific information"""
                     paper_count = len(papers)
                     summary_lower = summary_text.lower()
                     
-                    # Extract specific diseases, conditions, and methodologies
+                    # Extract detailed information from papers and summary
                     diseases = []
                     methodologies = []
                     specific_topics = []
+                    drug_names = []
+                    gene_names = []
                     
-                    # Disease/Condition detection (more specific)
-                    if any(word in summary_lower for word in ['lung cancer', 'nsclc', 'non-small cell']):
+                    # Enhanced disease detection
+                    if any(word in summary_lower for word in ['lung cancer', 'nsclc', 'non-small cell lung cancer']):
                         diseases.append('Lung Cancer')
-                    elif any(word in summary_lower for word in ['breast cancer', 'mammary']):
+                    elif any(word in summary_lower for word in ['breast cancer', 'mammary carcinoma']):
                         diseases.append('Breast Cancer')
-                    elif any(word in summary_lower for word in ['prostate cancer']):
+                    elif any(word in summary_lower for word in ['prostate cancer', 'prostate carcinoma']):
                         diseases.append('Prostate Cancer')
-                    elif any(word in summary_lower for word in ['colorectal cancer', 'colon cancer']):
+                    elif any(word in summary_lower for word in ['colorectal cancer', 'colon cancer', 'rectal cancer']):
                         diseases.append('Colorectal Cancer')
-                    elif any(word in summary_lower for word in ['coronary artery disease', 'cad', 'heart disease']):
+                    elif any(word in summary_lower for word in ['coronary artery disease', 'cad', 'heart disease', 'myocardial infarction']):
                         diseases.append('Coronary Artery Disease')
-                    elif any(word in summary_lower for word in ['diabetes', 'diabetic']):
+                    elif any(word in summary_lower for word in ['diabetes', 'diabetic', 'type 2 diabetes', 't2d']):
                         diseases.append('Diabetes')
-                    elif any(word in summary_lower for word in ['alzheimer', 'dementia']):
+                    elif any(word in summary_lower for word in ['alzheimer', 'dementia', 'alzheimer\'s disease']):
                         diseases.append('Alzheimer\'s Disease')
-                    elif any(word in summary_lower for word in ['cancer', 'oncology', 'tumor']):
+                    elif any(word in summary_lower for word in ['cancer', 'oncology', 'tumor', 'carcinoma']):
                         diseases.append('Cancer')
-                    elif any(word in summary_lower for word in ['cardiovascular', 'heart', 'cardiac']):
+                    elif any(word in summary_lower for word in ['cardiovascular', 'heart', 'cardiac', 'cvd']):
                         diseases.append('Cardiovascular Disease')
+                    elif any(word in summary_lower for word in ['obesity', 'obese']):
+                        diseases.append('Obesity')
                     
-                    # Specific methodology detection
+                    # Enhanced methodology and topic detection
                     if any(word in summary_lower for word in ['kras', 'krasg12c', 'sotorasib']):
                         specific_topics.append('KRAS Inhibition')
-                    elif any(word in summary_lower for word in ['polygenic risk score', 'prs']):
+                        drug_names.append('Sotorasib')
+                    elif any(word in summary_lower for word in ['polygenic risk score', 'prs', 'polygenic score']):
                         specific_topics.append('Polygenic Risk Scoring')
-                    elif any(word in summary_lower for word in ['gwas', 'genome-wide association']):
+                    elif any(word in summary_lower for word in ['gwas', 'genome-wide association study']):
                         specific_topics.append('GWAS Analysis')
-                    elif any(word in summary_lower for word in ['machine learning', 'ai', 'artificial intelligence', 'ml']):
+                    elif any(word in summary_lower for word in ['machine learning', 'ai', 'artificial intelligence', 'ml', 'deep learning']):
                         methodologies.append('AI/ML')
-                    elif any(word in summary_lower for word in ['ctdna', 'circulating tumor dna']):
+                    elif any(word in summary_lower for word in ['ctdna', 'circulating tumor dna', 'liquid biopsy']):
                         specific_topics.append('ctDNA Analysis')
-                    elif any(word in summary_lower for word in ['biomarker', 'biomarkers']):
+                    elif any(word in summary_lower for word in ['biomarker', 'biomarkers', 'biomarker discovery']):
                         specific_topics.append('Biomarker Discovery')
-                    elif any(word in summary_lower for word in ['transcriptomic', 'transcriptome']):
+                    elif any(word in summary_lower for word in ['transcriptomic', 'transcriptome', 'rna-seq']):
                         specific_topics.append('Transcriptomics')
-                    elif any(word in summary_lower for word in ['genomic', 'genome']):
+                    elif any(word in summary_lower for word in ['genomic', 'genome', 'genomics']):
                         specific_topics.append('Genomics')
-                    elif any(word in summary_lower for word in ['pharmacogenomics', 'drug response']):
+                    elif any(word in summary_lower for word in ['pharmacogenomics', 'drug response', 'pharmacogenetics']):
                         specific_topics.append('Pharmacogenomics')
+                    elif any(word in summary_lower for word in ['clinical trial', 'clinical study']):
+                        methodologies.append('Clinical Trial')
+                    elif any(word in summary_lower for word in ['therapeutic', 'therapy', 'treatment']):
+                        methodologies.append('Therapeutic')
                     
-                    # Create ChatGPT-style descriptive title
+                    # Extract gene names
+                    import re
+                    gene_patterns = [r'\b[A-Z]{2,}\d*\b', r'\b[A-Z]{1,2}[a-z]+\d*\b']
+                    for pattern in gene_patterns:
+                        genes = re.findall(pattern, summary_text)
+                        gene_names.extend([g for g in genes if len(g) > 2 and g not in ['DNA', 'RNA', 'PCR', 'GWAS', 'PRS']])
+                    
+                    # Create detailed title
                     title_parts = []
                     
-                    # Priority: Specific topic + Disease
+                    # Priority 1: Specific topic + Disease + Drug/Gene
                     if specific_topics and diseases:
-                        title = f"{specific_topics[0]}: {diseases[0]}"
+                        base_title = f"{specific_topics[0]}: {diseases[0]}"
+                        if drug_names:
+                            base_title += f" ({drug_names[0]})"
+                        elif gene_names[:2]:  # Take first 2 genes
+                            base_title += f" ({', '.join(gene_names[:2])})"
+                        title = base_title
+                    # Priority 2: Disease + Methodology
+                    elif diseases and methodologies:
+                        title = f"{diseases[0]}: {methodologies[0]} Analysis"
+                    # Priority 3: Specific topic only
                     elif specific_topics:
                         title = specific_topics[0]
+                    # Priority 4: Disease only
                     elif diseases:
                         title = diseases[0]
+                    # Priority 5: Methodology only
                     elif methodologies:
-                        title = f"AI/ML Analysis"
+                        title = f"{methodologies[0]} Analysis"
+                    # Fallback: Extract from paper titles
                     else:
-                        # Extract meaningful words from paper titles
                         paper_titles = [paper.get('metadata', {}).get('title', '') for paper in papers]
                         if paper_titles and paper_titles[0]:
-                            # Use first few meaningful words from the first paper title
+                            # Extract meaningful words from paper title
                             words = paper_titles[0].split()
-                            meaningful_words = [w for w in words[:4] if len(w) > 3 and w.lower() not in ['the', 'and', 'for', 'with', 'this', 'that', 'analysis', 'study']]
-                            title = ' '.join(meaningful_words[:3]) if meaningful_words else "Research Analysis"
+                            meaningful_words = [w for w in words[:5] if len(w) > 3 and w.lower() not in 
+                                             ['the', 'and', 'for', 'with', 'this', 'that', 'analysis', 'study', 'research', 'investigation']]
+                            title = ' '.join(meaningful_words[:4]) if meaningful_words else "Research Analysis"
                         else:
                             title = "Research Analysis"
                     
