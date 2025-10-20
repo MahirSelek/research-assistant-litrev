@@ -256,97 +256,9 @@ class HTMLResearchAssistantUI:
             box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
         }
         
-        /* Enhanced Loading Overlay Styles */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(8px);
-            z-index: 9999;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-        
-        .loading-overlay.show {
-            display: flex;
-        }
-        
-        .loading-spinner {
-            width: 70px;
-            height: 70px;
-            border: 5px solid rgba(102, 126, 234, 0.3);
-            border-top: 5px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 25px;
-        }
-        
-        .loading-text {
-            color: white;
-            font-size: 20px;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 15px;
-            animation: pulse 2s ease-in-out infinite;
-        }
-        
-        .loading-subtext {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 16px;
-            text-align: center;
-            max-width: 400px;
-            line-height: 1.4;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        
         </style>
         <script>
         // Button styling is now handled by CSS above
-        
-        // Loading overlay functions
-        function showLoadingOverlay(message = "Processing...", subtext = "Please wait while we work on your request") {
-            // Create overlay if it doesn't exist
-            let overlay = document.getElementById('loading-overlay');
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.id = 'loading-overlay';
-                overlay.className = 'loading-overlay';
-                overlay.innerHTML = `
-                    <div class="loading-spinner"></div>
-                    <div class="loading-text">${message}</div>
-                    <div class="loading-subtext">${subtext}</div>
-                `;
-                document.body.appendChild(overlay);
-            } else {
-                // Update existing overlay content
-                overlay.querySelector('.loading-text').textContent = message;
-                overlay.querySelector('.loading-subtext').textContent = subtext;
-            }
-            
-            // Show overlay
-            overlay.classList.add('show');
-        }
-        
-        function hideLoadingOverlay() {
-            const overlay = document.getElementById('loading-overlay');
-            if (overlay) {
-                overlay.classList.remove('show');
-            }
-        }
         
         // Handle Return key for keyword deletion in multiselect
         setTimeout(function() {
@@ -376,6 +288,21 @@ class HTMLResearchAssistantUI:
     
     def render_main_interface(self):
         """Render the main interface using Streamlit components"""
+        # Show loading overlay if analysis is in progress
+        if st.session_state.get('is_loading_analysis', False):
+            loading_message = st.session_state.loading_message
+            st.markdown(f"""
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; font-size: 18px;">
+                <div style="text-align: center;">
+                    <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite; margin: 0 auto 20px;"></div>
+                    <p>{loading_message}</p>
+                </div>
+            </div>
+            <style>
+            @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
+            </style>
+            """, unsafe_allow_html=True)
+            return
         
         # Main content area
         st.markdown("# 🧬 POLO-GGB RESEARCH ASSISTANT")
@@ -595,21 +522,11 @@ Assistant Response:"""
             # Search button
             if st.button("Search & Analyze", type="primary", use_container_width=True, disabled=analysis_locked):
                 if selected_keywords:
-                    # Show loading overlay with JavaScript
-                    st.markdown("""
-                    <script>
-                    showLoadingOverlay("🔍 Analyzing Research Papers", "Searching for highly relevant papers and generating comprehensive report...");
-                    </script>
-                    """, unsafe_allow_html=True)
+                    st.session_state.is_loading_analysis = True
+                    st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
                     
                     success = self.process_keyword_search(selected_keywords, time_filter, search_mode)
-                    
-                    # Hide loading overlay
-                    st.markdown("""
-                    <script>
-                    hideLoadingOverlay();
-                    </script>
-                    """, unsafe_allow_html=True)
+                    st.session_state.is_loading_analysis = False
                     
                     if success:
                         # Lock the analysis after successful search
@@ -694,21 +611,11 @@ Assistant Response:"""
                 
                 # Custom summary button
                 if st.button("Generate Custom Summary", type="primary", use_container_width=True):
-                    # Show loading overlay for custom summary
-                    st.markdown("""
-                    <script>
-                    showLoadingOverlay("📄 Generating Custom Summary", "Analyzing your uploaded papers and creating comprehensive summary...");
-                    </script>
-                    """, unsafe_allow_html=True)
+                    st.session_state.is_loading_analysis = True
+                    st.session_state.loading_message = "Generating summary of your uploaded papers..."
                     
                     success = self.generate_custom_summary(uploaded_papers)
-                    
-                    # Hide loading overlay
-                    st.markdown("""
-                    <script>
-                    hideLoadingOverlay();
-                    </script>
-                    """, unsafe_allow_html=True)
+                    st.session_state.is_loading_analysis = False
                     
                     if success:
                         st.rerun()
@@ -734,69 +641,33 @@ Assistant Response:"""
                 )
                 
                 if uploaded_pdfs and st.button("Add PDFs", type="primary"):
-                    # Show loading overlay for PDF processing
-                    st.markdown("""
-                    <script>
-                    showLoadingOverlay("📄 Processing PDF Files", "Extracting text and metadata from uploaded papers...");
-                    </script>
-                    """, unsafe_allow_html=True)
-                    
-                    for uploaded_file in uploaded_pdfs:
-                        # Process PDF using backend API
-                        paper_data = self.api.process_uploaded_pdf(uploaded_file, uploaded_file.name)
-                        
-                        if paper_data:
-                            # Store in user-specific session state
-                            uploaded_papers = self.get_user_session('uploaded_papers', [])
-                            uploaded_papers.append(paper_data)
-                            self.set_user_session('uploaded_papers', uploaded_papers)
-                            st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_data['content'])} chars)")
-                        else:
-                            st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
-                    
-                    # Hide loading overlay
-                    st.markdown("""
-                    <script>
-                    hideLoadingOverlay();
-                    </script>
-                    """, unsafe_allow_html=True)
-                    
-                    st.rerun()
+                    with st.spinner("Processing PDF files..."):
+                        for uploaded_file in uploaded_pdfs:
+                            # Process PDF using backend API
+                            paper_data = self.api.process_uploaded_pdf(uploaded_file, uploaded_file.name)
+                            
+                            if paper_data:
+                                # Store in user-specific session state
+                                uploaded_papers = self.get_user_session('uploaded_papers', [])
+                                uploaded_papers.append(paper_data)
+                                self.set_user_session('uploaded_papers', uploaded_papers)
+                                st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_data['content'])} chars)")
+                            else:
+                                st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
+                        st.rerun()
             
             # Logout
             if st.button("Logout", type="secondary", use_container_width=True):
-                # Show loading overlay for logout
-                st.markdown("""
-                <script>
-                showLoadingOverlay("🚪 Logging Out", "Clearing session and logging out...");
-                </script>
-                """, unsafe_allow_html=True)
-                
                 # Clear session state
                 for key in list(st.session_state.keys()):
                     if not key.startswith('_'):
                         del st.session_state[key]
-                
-                # Hide loading overlay
-                st.markdown("""
-                <script>
-                hideLoadingOverlay();
-                </script>
-                """, unsafe_allow_html=True)
-                
                 st.rerun()
         
         # Handle chat input
         active_conversation_id = self.get_user_session('active_conversation_id')
         if active_conversation_id:
             if prompt := st.chat_input("Ask a follow-up question..."):
-                # Show loading overlay for chat response
-                st.markdown("""
-                <script>
-                showLoadingOverlay("💬 Generating Response", "Processing your question and generating AI response...");
-                </script>
-                """, unsafe_allow_html=True)
-                
                 conversations = self.get_user_session('conversations', {})
                 if active_conversation_id in conversations:
                     active_conv = conversations[active_conversation_id]
@@ -808,28 +679,6 @@ Assistant Response:"""
                     username = st.session_state.get('username')
                     if username:
                         self.api.save_conversation(username, active_conversation_id, active_conv)
-                    
-                    # Generate AI response
-                    try:
-                        ai_response = self.api.generate_ai_response(prompt, active_conv)
-                        if ai_response:
-                            active_conv["messages"].append({"role": "assistant", "content": ai_response})
-                            active_conv['last_interaction_time'] = time.time()
-                            self.set_user_session('conversations', conversations)
-                            
-                            # Save updated conversation
-                            if username:
-                                self.api.save_conversation(username, active_conversation_id, active_conv)
-                    except Exception as e:
-                        print(f"Error generating AI response: {e}")
-                        active_conv["messages"].append({"role": "assistant", "content": "I apologize, but I encountered an error while processing your question. Please try again."})
-                    
-                    # Hide loading overlay
-                    st.markdown("""
-                    <script>
-                    hideLoadingOverlay();
-                    </script>
-                    """, unsafe_allow_html=True)
                     
                     st.rerun()
     
