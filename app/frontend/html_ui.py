@@ -256,9 +256,145 @@ class HTMLResearchAssistantUI:
             box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
         }
         
+        /* Full-Screen Dark Loading Overlay - Blocks All Interaction */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 99999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            pointer-events: all;
+            cursor: not-allowed;
+        }
+        
+        .loading-overlay.show {
+            display: flex;
+        }
+        
+        .loading-content {
+            background: rgba(20, 20, 20, 0.9);
+            border-radius: 20px;
+            padding: 40px 50px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .loading-spinner {
+            width: 80px;
+            height: 80px;
+            border: 6px solid rgba(102, 126, 234, 0.2);
+            border-top: 6px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1.2s linear infinite;
+            margin: 0 auto 30px;
+        }
+        
+        .loading-text {
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 15px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .loading-subtext {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 16px;
+            text-align: center;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        
+        .loading-progress {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            font-style: italic;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        /* Prevent any interaction with underlying content */
+        .loading-overlay * {
+            pointer-events: none;
+        }
+        
+        .loading-overlay .loading-content {
+            pointer-events: auto;
+        }
+        
         </style>
         <script>
         // Button styling is now handled by CSS above
+        
+        // Full-Screen Loading Overlay Functions
+        function showLoadingOverlay(message = "Processing...", subtext = "Please wait while we work on your request", progress = "") {
+            // Create overlay if it doesn't exist
+            let overlay = document.getElementById('loading-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'loading-overlay';
+                overlay.className = 'loading-overlay';
+                document.body.appendChild(overlay);
+            }
+            
+            // Update overlay content
+            overlay.innerHTML = `
+                <div class="loading-content">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">${message}</div>
+                    <div class="loading-subtext">${subtext}</div>
+                    ${progress ? `<div class="loading-progress">${progress}</div>` : ''}
+                </div>
+            `;
+            
+            // Show overlay and block all interactions
+            overlay.classList.add('show');
+            
+            // Prevent scrolling
+            document.body.style.overflow = 'hidden';
+            
+            // Block all clicks and interactions
+            overlay.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            });
+            
+            // Block keyboard interactions
+            overlay.addEventListener('keydown', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            });
+        }
+        
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.classList.remove('show');
+                // Restore scrolling
+                document.body.style.overflow = '';
+            }
+        }
         
         // Handle Return key for keyword deletion in multiselect
         setTimeout(function() {
@@ -288,21 +424,6 @@ class HTMLResearchAssistantUI:
     
     def render_main_interface(self):
         """Render the main interface using Streamlit components"""
-        # Show loading overlay if analysis is in progress
-        if st.session_state.get('is_loading_analysis', False):
-            loading_message = st.session_state.loading_message
-            st.markdown(f"""
-            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; font-size: 18px;">
-                <div style="text-align: center;">
-                    <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite; margin: 0 auto 20px;"></div>
-                    <p>{loading_message}</p>
-                </div>
-            </div>
-            <style>
-            @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
-            </style>
-            """, unsafe_allow_html=True)
-            return
         
         # Main content area
         st.markdown("# 🧬 POLO-GGB RESEARCH ASSISTANT")
@@ -671,15 +792,25 @@ Assistant Response:"""
             # Search button
             if st.button("Search & Analyze", type="primary", use_container_width=True, disabled=analysis_locked):
                 if selected_keywords:
+                    # Show full-screen loading overlay immediately
+                    st.markdown("""
+                    <script>
+                    showLoadingOverlay("🔍 Analyzing Research Papers", "Searching for highly relevant papers and generating comprehensive report...", "This may take a few moments...");
+                    </script>
+                    """, unsafe_allow_html=True)
+                    
                     # LOCK IMMEDIATELY when button is clicked
                     self.set_user_session('analysis_locked', True)
                     
-                    # Proceed with analysis (no premature rerun)
-                    st.session_state.is_loading_analysis = True
-                    st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
-                    
+                    # Proceed with analysis
                     success = self.process_keyword_search(selected_keywords, time_filter, search_mode)
-                    st.session_state.is_loading_analysis = False
+                    
+                    # Hide loading overlay
+                    st.markdown("""
+                    <script>
+                    hideLoadingOverlay();
+                    </script>
+                    """, unsafe_allow_html=True)
                     
                     if success:
                         st.rerun()
@@ -788,11 +919,21 @@ Assistant Response:"""
                 
                 # Custom summary button
                 if st.button("Generate Custom Summary", type="primary", use_container_width=True):
-                    st.session_state.is_loading_analysis = True
-                    st.session_state.loading_message = "Generating summary of your uploaded papers..."
+                    # Show full-screen loading overlay for custom summary
+                    st.markdown("""
+                    <script>
+                    showLoadingOverlay("📄 Generating Custom Summary", "Analyzing your uploaded papers and creating comprehensive summary...", "Processing PDF content and generating AI summary...");
+                    </script>
+                    """, unsafe_allow_html=True)
                     
                     success = self.generate_custom_summary(uploaded_papers)
-                    st.session_state.is_loading_analysis = False
+                    
+                    # Hide loading overlay
+                    st.markdown("""
+                    <script>
+                    hideLoadingOverlay();
+                    </script>
+                    """, unsafe_allow_html=True)
                     
                     if success:
                         st.rerun()
@@ -818,20 +959,34 @@ Assistant Response:"""
                 )
                 
                 if uploaded_pdfs and st.button("Add PDFs", type="primary"):
-                    with st.spinner("Processing PDF files..."):
-                        for uploaded_file in uploaded_pdfs:
-                            # Process PDF using backend API
-                            paper_data = self.api.process_uploaded_pdf(uploaded_file, uploaded_file.name)
-                            
-                            if paper_data:
-                                # Store in user-specific session state
-                                uploaded_papers = self.get_user_session('uploaded_papers', [])
-                                uploaded_papers.append(paper_data)
-                                self.set_user_session('uploaded_papers', uploaded_papers)
-                                st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_data['content'])} chars)")
-                            else:
-                                st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
-                        st.rerun()
+                    # Show full-screen loading overlay for PDF processing
+                    st.markdown("""
+                    <script>
+                    showLoadingOverlay("📄 Processing PDF Files", "Extracting text and metadata from uploaded papers...", "Reading PDF content and generating summaries...");
+                    </script>
+                    """, unsafe_allow_html=True)
+                    
+                    for uploaded_file in uploaded_pdfs:
+                        # Process PDF using backend API
+                        paper_data = self.api.process_uploaded_pdf(uploaded_file, uploaded_file.name)
+                        
+                        if paper_data:
+                            # Store in user-specific session state
+                            uploaded_papers = self.get_user_session('uploaded_papers', [])
+                            uploaded_papers.append(paper_data)
+                            self.set_user_session('uploaded_papers', uploaded_papers)
+                            st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_data['content'])} chars)")
+                        else:
+                            st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
+                    
+                    # Hide loading overlay
+                    st.markdown("""
+                    <script>
+                    hideLoadingOverlay();
+                    </script>
+                    """, unsafe_allow_html=True)
+                    
+                    st.rerun()
             
             # Logout
             if st.button("Logout", type="secondary", use_container_width=True):
@@ -845,6 +1000,13 @@ Assistant Response:"""
         active_conversation_id = self.get_user_session('active_conversation_id')
         if active_conversation_id:
             if prompt := st.chat_input("Ask a follow-up question..."):
+                # Show full-screen loading overlay for chat response
+                st.markdown("""
+                <script>
+                showLoadingOverlay("💬 Generating Response", "Processing your question and generating AI response...", "Analyzing conversation context...");
+                </script>
+                """, unsafe_allow_html=True)
+                
                 conversations = self.get_user_session('conversations', {})
                 if active_conversation_id in conversations:
                     active_conv = conversations[active_conversation_id]
@@ -856,6 +1018,28 @@ Assistant Response:"""
                     username = st.session_state.get('username')
                     if username:
                         self.api.save_conversation(username, active_conversation_id, active_conv)
+                    
+                    # Generate AI response
+                    try:
+                        ai_response = self.api.generate_ai_response(prompt, active_conv)
+                        if ai_response:
+                            active_conv["messages"].append({"role": "assistant", "content": ai_response})
+                            active_conv['last_interaction_time'] = time.time()
+                            self.set_user_session('conversations', conversations)
+                            
+                            # Save updated conversation
+                            if username:
+                                self.api.save_conversation(username, active_conversation_id, active_conv)
+                    except Exception as e:
+                        print(f"Error generating AI response: {e}")
+                        active_conv["messages"].append({"role": "assistant", "content": "I apologize, but I encountered an error while processing your question. Please try again."})
+                    
+                    # Hide loading overlay
+                    st.markdown("""
+                    <script>
+                    hideLoadingOverlay();
+                    </script>
+                    """, unsafe_allow_html=True)
                     
                     st.rerun()
     
