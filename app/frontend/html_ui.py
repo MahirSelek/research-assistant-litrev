@@ -27,8 +27,8 @@ class HTMLResearchAssistantUI:
         # User avatar: Simple person icon (bigger)
         self.USER_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIiBmaWxsPSJub25lIj48cGF0aCBkPSJNMjAgMjBjLTUuNSAwLTEwIDQuNS0xMCAxMHY1aDIwdi01YzAtNS41LTQuNS0xMC0xMC0xMHoiIGZpbGw9IiM2NjdlZWEiLz48Y2lyY2xlIGN4PSIyMCIgY3k9IjEyIiByPSI3IiBmaWxsPSIjNjY3ZWVhIi8+PC9zdmc+"
         
-        # Assistant avatar: Clean AI/brain icon (much better!)
-        self.ASSISTANT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIiBmaWxsPSJub25lIj48cGF0aCBkPSJNMjAgOGMtNi42IDAtMTIgNS40LTEyIDEyIDAgMi4yLjYgNC4zIDEuNiA2LjFsLTEuNiAxLjZjLS44IDEuNi0uOCAzLjQgMCA1bDEuNiAxLjZjMS4yIDIuNCAzLjQgNC4yIDYuMiA0LjggMS42LjMgMy4yLjMgNC44IDBsMS42LTEuNmMxLjYtLjggMy40LS44IDUgMGwxLjYgMS42YzIuNC0xLjIgNC4yLTMuNCA0LjgtNi4yLjMtMS42LjMtMy4yIDAtNC44bC0xLjYtMS42Yy0uOC0xLjYtLjgtMy40IDAtNWwxLjYtMS42Yy0xLjItMi40LTMuNC00LjItNi4yLTQuOC0xLjYtLjMtMy4yLS4zLTQuOCAwbC0xLjYgMS42Yy0xLjYuOC0zLjQuOC01IDBsLTEuNi0xLjZjLTEuMiAyLjQtMy40IDQuMi02LjIgNC44eiIgZmlsbD0iIzEwYjk4MSIvPjxjaXJjbGUgY3g9IjIwIiBjeT0iMjAiIHI9IjMiIGZpbGw9IndoaXRlIi8+PC9zdmc+"
+        # Assistant avatar: Very basic robot/assistant icon
+        self.ASSISTANT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIiBmaWxsPSJub25lIj48cmVjdCB4PSI4IiB5PSIxMCIgd2lkdGg9IjI0IiBoZWlnaHQ9IjIwIiBmaWxsPSIjMTA5OTgxIiByeD0iNCIvPjxjaXJjbGUgY3g9IjE2IiBjeT0iMTgiIHI9IjIiIGZpbGw9IndoaXRlIi8+PGNpcmNsZSBjeD0iMjQiIGN5PSIxOCIgcj0iMiIgZmlsbD0id2hpdGUiLz48cmVjdCB4PSIxNiIgeT0iMjQiIHdpZHRoPSI4IiBoZWlnaHQ9IjMiIGZpbGw9IndoaXRlIiByeD0iMSIvPjwvc3ZnPg=="
         
         # UI Constants
         self.GENETICS_KEYWORDS = [
