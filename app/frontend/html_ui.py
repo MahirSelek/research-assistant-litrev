@@ -1080,45 +1080,20 @@ Assistant Response:"""
         active_conversation_id = self.get_user_session('active_conversation_id')
         if active_conversation_id:
             if prompt := st.chat_input("Ask a follow-up question..."):
-                # Set loading state for chat response
-                st.session_state['is_loading'] = True
-                st.session_state['loading_message'] = "💬 Generating Response"
-                st.session_state['loading_subtext'] = "Processing your question and generating AI response..."
-                st.session_state['loading_progress'] = "Analyzing conversation context..."
-                
-                # Force rerun to show loading overlay
-                st.rerun()
-                
+                # Fast path: just append user message and rerun; the "Handle follow-up responses"
+                # section above will generate the assistant reply with a lightweight spinner.
                 conversations = self.get_user_session('conversations', {})
                 if active_conversation_id in conversations:
                     active_conv = conversations[active_conversation_id]
                     active_conv["messages"].append({"role": "user", "content": prompt})
                     active_conv['last_interaction_time'] = time.time()
                     self.set_user_session('conversations', conversations)
-                    
-                    # Save conversation to backend
+
+                    # Save conversation to backend (no overlay)
                     username = st.session_state.get('username')
                     if username:
                         self.api.save_conversation(username, active_conversation_id, active_conv)
-                    
-                    # Generate AI response
-                    try:
-                        ai_response = self.api.generate_ai_response(prompt, active_conv)
-                        if ai_response:
-                            active_conv["messages"].append({"role": "assistant", "content": ai_response})
-                            active_conv['last_interaction_time'] = time.time()
-                            self.set_user_session('conversations', conversations)
-                            
-                            # Save updated conversation
-                            if username:
-                                self.api.save_conversation(username, active_conversation_id, active_conv)
-                    except Exception as e:
-                        print(f"Error generating AI response: {e}")
-                        active_conv["messages"].append({"role": "assistant", "content": "I apologize, but I encountered an error while processing your question. Please try again."})
-                    
-                    # Clear loading state
-                    st.session_state['is_loading'] = False
-                    
+
                     st.rerun()
     
     def generate_custom_summary(self, uploaded_papers: List[Dict]):
