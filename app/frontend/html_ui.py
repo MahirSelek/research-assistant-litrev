@@ -23,6 +23,11 @@ class HTMLResearchAssistantUI:
         """Initialize HTML-based UI with backend API"""
         self.api = api
         
+        # Custom avatars for chat messages - DNA/research themed
+        self.USER_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgZmlsbD0iIzY2N2VlYSIgc3Ryb2tlPSIjNWE2ZmQ4IiBzdHJva2Utd2lkdGg9IjIiLz48cGF0aCBkPSJNOCAxMmMwLTIuMjEgMS43OS00IDQtNHM0IDEuNzkgNCA0IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0xMiA4YzIuMjEgMCA0IDEuNzkgNCA0IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgZmlsbD0ibm9uZSIvPjwvc3ZnPg=="
+        
+        self.ASSISTANT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIj48cGF0aCBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnptMCAxOGMtNC40MSAwLTgtMy41OS04LTggMC00LjQxIDMuNTktOCA4LTggNC40MSAwIDggMy41OSA4IDggMCA0LjQxLTMuNTkgOC04IDh6IiBmaWxsPSIjMTBiOTgxIi8+PHBhdGggZD0iTTEyIDZjLTMuMzEgMC02IDIuNjktNiA2czIuNjkgNiA2IDYgNi0yLjY5IDYtNi0yLjY5LTYtNi02em0wIDEwYy0yLjIxIDAtNC0xLjc5LTQtNHMxLjc5LTQgNC00IDQgMS43OSA0IDQtMS43OSA0LTQgNHoiIGZpbGw9IndoaXRlIi8+PHBhdGggZD0iTTEwIDEyYzAtMS4xLjktMiAyLTJoNGMxLjEgMCAyIC45IDIgMnMtLjkgMi0yIDJoLTJjLTEuMSAwLTItLjktMi0yeiIgZmlsbD0iIzA1OTY2OSIvPjwvc3ZnPg=="
+        
         # UI Constants
         self.GENETICS_KEYWORDS = [
             "Polygenic risk score", "Complex disease", "Multifactorial disease", "PRS", "Risk", "Risk prediction", "Genetic risk prediction", "GWAS", "Genome-wide association study", "GWAS summary statistics", "Relative risk", "Absolute risk", "clinical polygenic risk score", "disease prevention", "disease management", "personalized medicine", "precision medicine", "UK biobank", "biobank", "All of US biobank", "PRS pipeline", "PRS workflow", "PRS tool", "PRS conversion", "Binary trait", "Continuous trait", "Meta-analysis", "Genome-wide association", "Genetic susceptibility", "PRSs Clinical utility", "Genomic risk prediction", "clinical implementation", "PGS", "SNP hereditability", "Risk estimation", "Machine learning in genetic prediction", "PRSs clinical application", "Risk stratification", "Multiancestry PRS", "Integrative PRS model", "Longitudinal PRS analysis", "Genetic screening", "Ethical implication of PRS", "human genetics", "human genome variation", "genetics of common multifactorial diseases", "genetics of common traits", "pharmacogenetics", "pharmacogenomics"
@@ -312,7 +317,8 @@ class HTMLResearchAssistantUI:
             
             # Display all messages in the conversation
             for message_index, message in enumerate(active_conv.get("messages", [])):
-                avatar = None  # Remove robot icon
+                # Use custom avatars based on message role
+                avatar = self.ASSISTANT_AVATAR if message["role"] == "assistant" else self.USER_AVATAR
                 with st.chat_message(message["role"], avatar=avatar):
                     st.markdown(message["content"], unsafe_allow_html=True)
                     
