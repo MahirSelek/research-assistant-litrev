@@ -241,6 +241,27 @@ def show_login_page():
     div[class*="viewerBadge"] {
         display: none !important;
     }
+
+    /* Aggressive fallback: hide any fixed elements near bottom-right (badges/avatars) */
+    a[style*="position: fixed"][style*="bottom"],
+    div[style*="position: fixed"][style*="bottom"],
+    button[style*="position: fixed"][style*="bottom"],
+    img[style*="position: fixed"][style*="bottom"],
+    iframe[style*="position: fixed"][style*="bottom"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    [aria-label*="Streamlit"],
+    [aria-label*="profile" i],
+    [data-testid="stFloatingActionButton"],
+    .stFloatingActionButton,
+    .stStatusWidget,
+    .stProfileDialog,
+    .stAvatar,
+    img[alt*="Streamlit" i] {
+        display: none !important;
+        visibility: hidden !important;
+    }
     </style>
     """, unsafe_allow_html=True)
     
@@ -291,8 +312,8 @@ def show_login_page():
                 const cs = window.getComputedStyle(el);
                 if (cs.position === 'fixed') {
                   const r = el.getBoundingClientRect();
-                  const nearRight = (window.innerWidth - r.right) < 120;
-                  const nearBottom = (window.innerHeight - r.bottom) < 120;
+                  const nearRight = (window.innerWidth - r.right) < 220;
+                  const nearBottom = (window.innerHeight - r.bottom) < 220;
                   if (nearRight && nearBottom) {
                     el.style.display = 'none';
                     el.style.visibility = 'hidden';
@@ -302,6 +323,14 @@ def show_login_page():
                 if (el.tagName === 'A' && el.href && el.href.includes('streamlit')) {
                   el.style.display = 'none';
                   el.style.visibility = 'hidden';
+                }
+                // Images/badges with Streamlit branding
+                if (el.tagName === 'IMG') {
+                  const alt = (el.getAttribute('alt') || '').toLowerCase();
+                  if (alt.includes('streamlit')) {
+                    el.style.display = 'none';
+                    el.style.visibility = 'hidden';
+                  }
                 }
               } catch (e) {}
             });
