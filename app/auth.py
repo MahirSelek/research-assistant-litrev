@@ -284,11 +284,34 @@ def show_login_page():
               }
             });
           }
+          function removeBottomBadges() {
+            const nodes = Array.from(document.querySelectorAll('a,div,button'));
+            nodes.forEach(el => {
+              try {
+                const cs = window.getComputedStyle(el);
+                if (cs.position === 'fixed') {
+                  const r = el.getBoundingClientRect();
+                  const nearRight = (window.innerWidth - r.right) < 120;
+                  const nearBottom = (window.innerHeight - r.bottom) < 120;
+                  if (nearRight && nearBottom) {
+                    el.style.display = 'none';
+                    el.style.visibility = 'hidden';
+                  }
+                }
+                // Links to streamlit cloud
+                if (el.tagName === 'A' && el.href && el.href.includes('streamlit')) {
+                  el.style.display = 'none';
+                  el.style.visibility = 'hidden';
+                }
+              } catch (e) {}
+            });
+          }
           // Run immediately and on DOM mutations
-          const observer = new MutationObserver(hideNow);
+          const observer = new MutationObserver(() => { hideNow(); removeBottomBadges(); });
           observer.observe(document.documentElement, { childList: true, subtree: true });
-          window.addEventListener('load', hideNow);
+          window.addEventListener('load', () => { hideNow(); removeBottomBadges(); });
           hideNow();
+          removeBottomBadges();
         })();
         </script>
         """,
