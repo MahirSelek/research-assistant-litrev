@@ -244,6 +244,57 @@ def show_login_page():
     </style>
     """, unsafe_allow_html=True)
     
+    # Defensive JS: hide Streamlit chrome on login using MutationObserver
+    st.markdown(
+        """
+        <script>
+        (function hideStreamlitChrome() {
+          function hideNow() {
+            const selectors = [
+              '[data-testid="stToolbar"]',
+              '[data-testid="stMainMenu"]',
+              '[data-testid="stStatusWidget"]',
+              'header [data-testid^="baseButton"]',
+              '.stDeployButton',
+              '.viewerBadge_link',
+              '.viewerBadge_container__',
+              'footer',
+              '#MainMenu',
+              'button[title="View source on GitHub"]',
+              'button[title="Share"]',
+              'button[title="Settings"]',
+              'button[aria-label="Settings"]',
+              'button[aria-label="Share"]',
+              'button[aria-label="View source on GitHub"]',
+              'a[class*="viewerBadge"]',
+              'div[class*="viewerBadge"]'
+            ];
+            selectors.forEach(sel => {
+              document.querySelectorAll(sel).forEach(el => {
+                el.style.display = 'none';
+                el.style.visibility = 'hidden';
+              });
+            });
+            // Also hide any header buttons with text like "Fork"
+            document.querySelectorAll('header button, header a').forEach(el => {
+              const t = (el.innerText || '').trim().toLowerCase();
+              if (t === 'fork' || t === 'share') {
+                el.style.display = 'none';
+                el.style.visibility = 'hidden';
+              }
+            });
+          }
+          // Run immediately and on DOM mutations
+          const observer = new MutationObserver(hideNow);
+          observer.observe(document.documentElement, { childList: true, subtree: true });
+          window.addEventListener('load', hideNow);
+          hideNow();
+        })();
+        </script>
+        """,
+        unsafe_allow_html=True,
+    )
+    
     # Simple header
     st.markdown("---")
     
