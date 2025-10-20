@@ -477,56 +477,81 @@ class HTMLResearchAssistantUI:
         
         // Handle Return/Backspace key for keyword deletion in multiselect
         setTimeout(function() {
-            const multiselectInputs = document.querySelectorAll('input[aria-label*="Select Keywords"]');
-            multiselectInputs.forEach(input => {
-                input.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' || e.key === 'Return' || e.key === 'Backspace') {
-                        e.preventDefault();
-                        // Find the closest selected keyword chip and remove it
-                        const container = input.closest('[data-testid="stMultiSelect"]');
-                        if (container) {
-                            const chips = container.querySelectorAll('[data-testid="stMultiSelect"] > div > div > div > div > div');
+            // Prevent dropdown auto-opening
+            const multiselectContainers = document.querySelectorAll('[data-testid="stMultiSelect"]');
+            multiselectContainers.forEach(container => {
+                // Remove auto-focus behavior
+                const input = container.querySelector('input');
+                if (input) {
+                    input.addEventListener('focus', function(e) {
+                        // Don't auto-open dropdown on focus
+                        e.stopPropagation();
+                    });
+                    
+                    // Handle key deletion properly
+                    input.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter' || e.key === 'Return' || e.key === 'Backspace') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            // Find and remove the last selected keyword chip
+                            const chips = container.querySelectorAll('[role="button"]');
                             if (chips.length > 0) {
                                 const lastChip = chips[chips.length - 1];
-                                const removeButton = lastChip.querySelector('button');
+                                const removeButton = lastChip.querySelector('button[aria-label*="Remove"]') || 
+                                                   lastChip.querySelector('button[title*="Remove"]') ||
+                                                   lastChip.querySelector('button');
                                 if (removeButton) {
                                     removeButton.click();
                                 }
+                            }
+                        }
+                    });
+                }
+                
+                // Handle deletion when chips are focused
+                container.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === 'Return' || e.key === 'Backspace' || e.key === 'Delete') {
+                        const activeElement = document.activeElement;
+                        
+                        // If a chip is focused, remove it
+                        if (activeElement && activeElement.closest('[role="button"]')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const removeButton = activeElement.querySelector('button[aria-label*="Remove"]') || 
+                                               activeElement.querySelector('button[title*="Remove"]') ||
+                                               activeElement.querySelector('button');
+                            if (removeButton) {
+                                removeButton.click();
                             }
                         }
                     }
                 });
             });
             
-            // Also handle deletion when keyword chips are focused/selected
-            const multiselectContainers = document.querySelectorAll('[data-testid="stMultiSelect"]');
-            multiselectContainers.forEach(container => {
-                container.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' || e.key === 'Return' || e.key === 'Backspace' || e.key === 'Delete') {
-                        // Check if a keyword chip is focused
-                        const focusedChip = container.querySelector('[data-testid="stMultiSelect"] > div > div > div > div > div:focus');
-                        if (focusedChip) {
-                            e.preventDefault();
-                            const removeButton = focusedChip.querySelector('button');
-                            if (removeButton) {
-                                removeButton.click();
+            // Prevent dropdown from auto-opening on page load/interaction
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList') {
+                        mutation.addedNodes.forEach(function(node) {
+                            if (node.nodeType === 1) { // Element node
+                                const dropdowns = node.querySelectorAll ? node.querySelectorAll('[role="listbox"], [data-baseweb="select"]') : [];
+                                dropdowns.forEach(function(dropdown) {
+                                    if (dropdown.style.display !== 'none') {
+                                        dropdown.style.display = 'none';
+                                    }
+                                });
                             }
-                        } else {
-                            // If no chip focused, remove the last chip
-                            const chips = container.querySelectorAll('[data-testid="stMultiSelect"] > div > div > div > div > div');
-                            if (chips.length > 0) {
-                                e.preventDefault();
-                                const lastChip = chips[chips.length - 1];
-                                const removeButton = lastChip.querySelector('button');
-                                if (removeButton) {
-                                    removeButton.click();
-                                }
-                            }
-                        }
+                        });
                     }
                 });
             });
-        }, 1500);
+            
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        }, 2000);
         </script>
         """, unsafe_allow_html=True)
     
