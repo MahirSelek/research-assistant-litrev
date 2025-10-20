@@ -881,7 +881,7 @@ Assistant Response:"""
                 if selected_keywords:
                     # Set loading state and lock immediately, then schedule analysis and rerun
                     st.session_state['is_loading'] = True
-                    st.session_state['loading_message'] = "🔍 Analyzing Research Papers"
+                    st.session_state['loading_message'] = "Analyzing Research Papers"
                     st.session_state['loading_subtext'] = "Searching for highly relevant papers and generating comprehensive report..."
                     st.session_state['loading_progress'] = "This may take a few moments..."
                     self.set_user_session('analysis_locked', True)
