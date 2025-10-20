@@ -216,6 +216,31 @@ def show_login_page():
         margin: 1rem 0;
         color: #28a745;
     }
+
+    /* Hide Streamlit top-right toolbar and bottom-right badges on login page */
+    [data-testid="stToolbar"],
+    [data-testid="stMainMenu"],
+    [data-testid="stStatusWidget"],
+    header [data-testid^="baseButton"],
+    .stDeployButton,
+    .viewerBadge_link,
+    .viewerBadge_container__,
+    footer,
+    #MainMenu {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    /* Fallback selectors */
+    button[title="View source on GitHub"],
+    button[title="Share"],
+    button[title="Settings"],
+    button[aria-label="Settings"],
+    button[aria-label="Share"],
+    button[aria-label="View source on GitHub"],
+    a[class*="viewerBadge"],
+    div[class*="viewerBadge"] {
+        display: none !important;
+    }
     </style>
     """, unsafe_allow_html=True)
     
