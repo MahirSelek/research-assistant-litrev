@@ -358,6 +358,34 @@ class HTMLResearchAssistantUI:
             pointer-events: auto !important;
         }
         
+        /* Hide Streamlit toolbar/menu/icons (top-right) and footer badges */
+        [data-testid="stToolbar"],
+        [data-testid="stMainMenu"],
+        [data-testid="stStatusWidget"],
+        [data-testid="stActionButton"],
+        header [data-testid^="baseButton"],
+        .stDeployButton,
+        .viewerBadge_link,
+        .viewerBadge_container__,
+        footer,
+        #MainMenu {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        /* Fallback selectors for older/newer Streamlit/classnames */
+        header .stActionButton,
+        a[class*="viewerBadge"],
+        div[class*="viewerBadge"],
+        button[title="View source on GitHub"],
+        button[title="Share"],
+        button[title="Settings"],
+        button[aria-label="Settings"],
+        button[aria-label="Share"],
+        button[aria-label="View source on GitHub"] {
+            display: none !important;
+        }
+
         </style>
         <script>
         // Button styling is now handled by CSS above
