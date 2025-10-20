@@ -205,10 +205,17 @@ class ResearchAssistantAPI:
             return None
     
     def generate_conversation_title(self, conversation_history: str) -> str:
-        """Generate conversation title using AI"""
+        """Generate ChatGPT-level conversation title using AI"""
         prompt = f"""Create a unique, descriptive title for this research analysis conversation. 
 Make it specific and distinguishable from other analyses. Include key topics, methods, or diseases mentioned.
 Keep it under 8 words and make it memorable.
+
+Examples of good titles:
+- "KRAS Inhibition: Lung Cancer Biomarkers"
+- "PRS Impact: Cardiovascular Disease Risk"
+- "GWAS Analysis: Diabetes Genetic Variants"
+- "ctDNA Dynamics: Cancer Treatment Response"
+- "Pharmacogenomics: Drug Response Prediction"
 
 Conversation content:
 {conversation_history[:1000]}

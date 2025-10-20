@@ -401,6 +401,59 @@ Assistant Response:"""
         """Sidebar is now part of the main HTML interface"""
         pass
     
+    def improve_conversation_title(self, conv_data: Dict, conv_id: str) -> str:
+        """Improve existing conversation titles that are too generic"""
+        current_title = conv_data.get("title", "Untitled")
+        
+        # Check if title needs improvement
+        if (current_title in ["Research Analysis", "Analysis", "Research", "Chat..."] or 
+            len(current_title.split()) < 3 or 
+            "Genetics via" in current_title or 
+            ("Medical" in current_title and len(current_title.split()) < 4)):
+            
+            # Try to extract better title from conversation content
+            messages = conv_data.get("messages", [])
+            if messages:
+                # Get the first assistant message (analysis content)
+                for msg in messages:
+                    if msg.get("role") == "assistant":
+                        content = msg.get("content", "")
+                        
+                        # Extract keywords from conversation
+                        keywords = conv_data.get("keywords", [])
+                        if keywords:
+                            keyword_str = ", ".join(keywords[:3])
+                            
+                            # Look for disease mentions in content
+                            content_lower = content.lower()
+                            diseases = []
+                            if 'lung cancer' in content_lower or 'nsclc' in content_lower:
+                                diseases.append('Lung Cancer')
+                            elif 'breast cancer' in content_lower:
+                                diseases.append('Breast Cancer')
+                            elif 'coronary' in content_lower or 'cad' in content_lower:
+                                diseases.append('CAD')
+                            elif 'diabetes' in content_lower:
+                                diseases.append('Diabetes')
+                            elif 'alzheimer' in content_lower:
+                                diseases.append('Alzheimer\'s')
+                            
+                            if diseases:
+                                return f"{keyword_str}: {diseases[0]} Analysis"
+                            else:
+                                return f"{keyword_str} Analysis"
+            
+            # Fallback: use conversation ID timestamp for uniqueness
+            try:
+                if conv_id.startswith('custom_summary_'):
+                    return f"Custom Summary Analysis"
+                elif conv_id.startswith('conv_'):
+                    return f"Research Analysis"
+            except:
+                pass
+        
+        return current_title  # Return original if no improvement needed
+
     def process_keyword_search(self, keywords: List[str], time_filter_type: str, search_mode: str = "all_keywords"):
         """Process keyword search via backend"""
         try:
@@ -431,7 +484,42 @@ Assistant Response:"""
 {analysis_result}
 """}
                 
+                # Generate better title using keywords and analysis content
                 title = self.api.generate_conversation_title(analysis_result)
+                
+                # If AI title is too generic, create a better one from keywords
+                if title in ["Research Analysis", "Analysis", "Research"] or len(title.split()) < 3:
+                    # Create title from keywords and paper topics
+                    keyword_str = ", ".join(selected_keywords[:3])  # First 3 keywords
+                    
+                    # Extract disease/topic from retrieved papers
+                    if retrieved_papers:
+                        paper_titles = [paper.get('metadata', {}).get('title', '') for paper in retrieved_papers[:3]]
+                        # Look for common disease terms
+                        diseases = []
+                        for title_text in paper_titles:
+                            title_lower = title_text.lower()
+                            if 'lung cancer' in title_lower or 'nsclc' in title_lower:
+                                diseases.append('Lung Cancer')
+                            elif 'breast cancer' in title_lower:
+                                diseases.append('Breast Cancer')
+                            elif 'coronary' in title_lower or 'cad' in title_lower:
+                                diseases.append('CAD')
+                            elif 'diabetes' in title_lower:
+                                diseases.append('Diabetes')
+                            elif 'alzheimer' in title_lower:
+                                diseases.append('Alzheimer\'s')
+                        
+                        if diseases:
+                            # Use most common disease
+                            from collections import Counter
+                            disease_counts = Counter(diseases)
+                            main_disease = disease_counts.most_common(1)[0][0]
+                            title = f"{keyword_str}: {main_disease} Analysis"
+                        else:
+                            title = f"{keyword_str} Analysis"
+                    else:
+                        title = f"{keyword_str} Analysis"
                 
                 conversations = self.get_user_session('conversations', {})
                 conversations[conv_id] = {
@@ -564,7 +652,30 @@ Assistant Response:"""
                 )
                 
                 for conv_id, conv_data in sorted_conversations:
+                    # Get and potentially improve the title
                     title = conv_data.get("title", "Chat...")
+                    
+                    # Check if title needs improvement (too generic)
+                    if (title in ["Research Analysis", "Analysis", "Research", "Chat..."] or 
+                        len(title.split()) < 3 or 
+                        "Genetics via" in title or 
+                        ("Medical" in title and len(title.split()) < 4)):
+                        
+                        # Try to improve the title
+                        improved_title = self.improve_conversation_title(conv_data, conv_id)
+                        if improved_title != title:
+                            # Update the conversation with improved title
+                            conversations = self.get_user_session('conversations', {})
+                            if conv_id in conversations:
+                                conversations[conv_id]['title'] = improved_title
+                                self.set_user_session('conversations', conversations)
+                                
+                                # Save to backend
+                                username = st.session_state.get('username')
+                                if username:
+                                    self.api.save_conversation(username, conv_id, conversations[conv_id])
+                                
+                                title = improved_title
                     
                     # Create columns for chat title and delete button
                     col1, col2 = st.columns([4, 1])
@@ -692,64 +803,80 @@ Assistant Response:"""
                 conv_id = f"custom_summary_{time.time()}"
                 
                 def generate_custom_summary_title(papers, summary_text):
-                    """Generate descriptive title like ChatGPT - unique and specific"""
+                    """Generate ChatGPT-level descriptive title - unique and specific"""
                     paper_count = len(papers)
                     summary_lower = summary_text.lower()
                     
-                    # Extract key topics and methodologies
-                    topics = []
+                    # Extract specific diseases, conditions, and methodologies
+                    diseases = []
                     methodologies = []
-                    applications = []
+                    specific_topics = []
                     
-                    # Topic detection
-                    if any(word in summary_lower for word in ['polygenic risk', 'prs', 'genetic risk']):
-                        topics.append('Polygenic Risk')
-                    if any(word in summary_lower for word in ['gwas', 'genome-wide association']):
-                        topics.append('GWAS')
-                    if any(word in summary_lower for word in ['machine learning', 'ai', 'artificial intelligence', 'ml']):
+                    # Disease/Condition detection (more specific)
+                    if any(word in summary_lower for word in ['lung cancer', 'nsclc', 'non-small cell']):
+                        diseases.append('Lung Cancer')
+                    elif any(word in summary_lower for word in ['breast cancer', 'mammary']):
+                        diseases.append('Breast Cancer')
+                    elif any(word in summary_lower for word in ['prostate cancer']):
+                        diseases.append('Prostate Cancer')
+                    elif any(word in summary_lower for word in ['colorectal cancer', 'colon cancer']):
+                        diseases.append('Colorectal Cancer')
+                    elif any(word in summary_lower for word in ['coronary artery disease', 'cad', 'heart disease']):
+                        diseases.append('Coronary Artery Disease')
+                    elif any(word in summary_lower for word in ['diabetes', 'diabetic']):
+                        diseases.append('Diabetes')
+                    elif any(word in summary_lower for word in ['alzheimer', 'dementia']):
+                        diseases.append('Alzheimer\'s Disease')
+                    elif any(word in summary_lower for word in ['cancer', 'oncology', 'tumor']):
+                        diseases.append('Cancer')
+                    elif any(word in summary_lower for word in ['cardiovascular', 'heart', 'cardiac']):
+                        diseases.append('Cardiovascular Disease')
+                    
+                    # Specific methodology detection
+                    if any(word in summary_lower for word in ['kras', 'krasg12c', 'sotorasib']):
+                        specific_topics.append('KRAS Inhibition')
+                    elif any(word in summary_lower for word in ['polygenic risk score', 'prs']):
+                        specific_topics.append('Polygenic Risk Scoring')
+                    elif any(word in summary_lower for word in ['gwas', 'genome-wide association']):
+                        specific_topics.append('GWAS Analysis')
+                    elif any(word in summary_lower for word in ['machine learning', 'ai', 'artificial intelligence', 'ml']):
                         methodologies.append('AI/ML')
-                    if any(word in summary_lower for word in ['genetics', 'genetic', 'dna', 'genome']):
-                        topics.append('Genetics')
-                    if any(word in summary_lower for word in ['disease', 'medical', 'health', 'clinical']):
-                        applications.append('Medical')
-                    if any(word in summary_lower for word in ['prediction', 'predictive', 'modeling']):
-                        methodologies.append('Prediction')
-                    if any(word in summary_lower for word in ['risk', 'risk assessment']):
-                        applications.append('Risk Analysis')
-                    if any(word in summary_lower for word in ['ancestry', 'population', 'ethnic']):
-                        topics.append('Ancestry')
-                    if any(word in summary_lower for word in ['pharmacogenomics', 'drug', 'therapy']):
-                        applications.append('Pharmacogenomics')
-                    if any(word in summary_lower for word in ['cancer', 'oncology']):
-                        applications.append('Cancer Research')
-                    if any(word in summary_lower for word in ['cardiovascular', 'heart', 'cardiac']):
-                        applications.append('Cardiovascular')
+                    elif any(word in summary_lower for word in ['ctdna', 'circulating tumor dna']):
+                        specific_topics.append('ctDNA Analysis')
+                    elif any(word in summary_lower for word in ['biomarker', 'biomarkers']):
+                        specific_topics.append('Biomarker Discovery')
+                    elif any(word in summary_lower for word in ['transcriptomic', 'transcriptome']):
+                        specific_topics.append('Transcriptomics')
+                    elif any(word in summary_lower for word in ['genomic', 'genome']):
+                        specific_topics.append('Genomics')
+                    elif any(word in summary_lower for word in ['pharmacogenomics', 'drug response']):
+                        specific_topics.append('Pharmacogenomics')
                     
-                    # Create descriptive title
+                    # Create ChatGPT-style descriptive title
                     title_parts = []
                     
-                    # Add main topic
-                    if topics:
-                        title_parts.append(topics[0])
-                    
-                    # Add methodology if available
-                    if methodologies:
-                        title_parts.append(f"via {methodologies[0]}")
-                    
-                    # Add application if available
-                    if applications:
-                        title_parts.append(f"for {applications[0]}")
+                    # Priority: Specific topic + Disease
+                    if specific_topics and diseases:
+                        title = f"{specific_topics[0]}: {diseases[0]}"
+                    elif specific_topics:
+                        title = specific_topics[0]
+                    elif diseases:
+                        title = diseases[0]
+                    elif methodologies:
+                        title = f"AI/ML Analysis"
+                    else:
+                        # Extract meaningful words from paper titles
+                        paper_titles = [paper.get('metadata', {}).get('title', '') for paper in papers]
+                        if paper_titles and paper_titles[0]:
+                            # Use first few meaningful words from the first paper title
+                            words = paper_titles[0].split()
+                            meaningful_words = [w for w in words[:4] if len(w) > 3 and w.lower() not in ['the', 'and', 'for', 'with', 'this', 'that', 'analysis', 'study']]
+                            title = ' '.join(meaningful_words[:3]) if meaningful_words else "Research Analysis"
+                        else:
+                            title = "Research Analysis"
                     
                     # Add paper count
-                    title_parts.append(f"({paper_count} papers)")
-                    
-                    if title_parts:
-                        return " ".join(title_parts)
-                    else:
-                        # Fallback: use first meaningful words from summary
-                        words = summary_text.split()
-                        meaningful_words = [w for w in words[:6] if len(w) > 3 and w.lower() not in ['the', 'and', 'for', 'with', 'this', 'that']]
-                        return f"{' '.join(meaningful_words[:4])}... ({paper_count} papers)"
+                    return f"{title} ({paper_count} papers)"
                 
                 title = generate_custom_summary_title(uploaded_papers, summary)
                 
