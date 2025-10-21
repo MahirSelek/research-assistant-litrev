@@ -384,6 +384,35 @@ class HTMLResearchAssistantUI:
             display: none !important;
             visibility: hidden !important;
         }
+        
+        /* Sidebar toggle button styling */
+        button[data-testid="baseButton-secondary"][key="sidebar_toggle"] {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            padding: 10px 20px !important;
+            font-size: 14px !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
+        }
+        
+        button[data-testid="baseButton-secondary"][key="sidebar_toggle"]:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%) !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
+        }
+        
+        /* Ensure sidebar can be forced visible */
+        [data-testid="stSidebar"].force-visible {
+            display: block !important;
+            visibility: visible !important;
+            transform: translateX(0) !important;
+            width: 21rem !important;
+            min-width: 21rem !important;
+            max-width: 21rem !important;
+        }
 
         /* Fallback selectors for older/newer Streamlit/classnames */
         header .stActionButton,
@@ -502,6 +531,44 @@ class HTMLResearchAssistantUI:
         # Main content area
         st.markdown("# 🧬 POLO-GGB RESEARCH ASSISTANT")
         
+        # Add sidebar toggle button - always visible in main content
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col1:
+            if st.button("☰ Open Sidebar", key="sidebar_toggle", help="Click to open the sidebar with controls"):
+                # Force sidebar to be visible using CSS class and JavaScript
+                st.markdown("""
+                <script>
+                // Force sidebar visibility using multiple methods
+                setTimeout(() => {
+                    const sidebar = document.querySelector('[data-testid="stSidebar"]');
+                    if (sidebar) {
+                        // Add CSS class for forced visibility
+                        sidebar.classList.add('force-visible');
+                        
+                        // Direct style manipulation as backup
+                        sidebar.style.display = 'block';
+                        sidebar.style.visibility = 'visible';
+                        sidebar.style.transform = 'translateX(0)';
+                        sidebar.style.width = '21rem';
+                        sidebar.style.minWidth = '21rem';
+                        sidebar.style.maxWidth = '21rem';
+                        sidebar.style.position = 'fixed';
+                        sidebar.style.left = '0';
+                        sidebar.style.top = '0';
+                        sidebar.style.height = '100vh';
+                        sidebar.style.zIndex = '999';
+                    }
+                    
+                    // Also try to trigger Streamlit's internal sidebar toggle
+                    const toggleButton = document.querySelector('[data-testid="stSidebar"] button[aria-label*="Close"], [data-testid="stSidebar"] button[aria-label*="Open"]');
+                    if (toggleButton) {
+                        toggleButton.click();
+                    }
+                }, 100);
+                </script>
+                """, unsafe_allow_html=True)
+                st.rerun()
+        
         # Get current state
         active_conversation_id = self.get_user_session('active_conversation_id')
         conversations = self.get_user_session('conversations', {})
@@ -537,7 +604,7 @@ class HTMLResearchAssistantUI:
         
         # Show default message if no active conversation
         if active_conversation_id is None:
-            st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
+            st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar. Use the 'Open Sidebar' button above if the sidebar is not visible.")
         elif active_conversation_id is not None and active_conversation_id in conversations:
             active_conv = conversations[active_conversation_id]
             
