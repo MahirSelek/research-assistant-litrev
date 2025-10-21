@@ -72,13 +72,19 @@ html, body {
 
 /* --- Sidebar Styling --- */
 [data-testid="stSidebar"] {
-    background-color: var(--bg-secondary) !important;
-    border-right: 1px solid var(--border-primary) !important;
+    background-color: var(--bg-secondary, #f9fafb) !important;
+    border-right: 1px solid var(--border-primary, #e5e7eb) !important;
     min-height: 100vh;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 21rem !important;
+    min-width: 21rem !important;
+    max-width: 21rem !important;
 }
 
 [data-testid="stSidebar"] > div {
-    background-color: var(--bg-secondary) !important;
+    background-color: var(--bg-secondary, #f9fafb) !important;
 }
 
 /* --- Header Styling --- */
@@ -204,13 +210,6 @@ h1, h2, h3, h4, h5, h6 {
     padding-right: 1rem !important;
 }
 
-/* Fix sidebar width issues */
-[data-testid="stSidebar"] {
-    width: 21rem !important;
-    min-width: 21rem !important;
-    max-width: 21rem !important;
-}
-
 /* --- Cross-browser compatibility --- */
 .stApp {
     -webkit-font-smoothing: antialiased;
@@ -278,11 +277,14 @@ h1, h2, h3, h4, h5, h6 {
     padding-right: 1rem !important;
 }
 
-/* Fix sidebar width issues */
+/* Fix sidebar width and visibility issues */
 [data-testid="stSidebar"] {
     width: 21rem !important;
     min-width: 21rem !important;
     max-width: 21rem !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 /* === FINAL OVERRIDES: Theme-aware styling === */
@@ -310,8 +312,38 @@ header[data-testid="stHeader"] {
 }
 
 /* Make sure core surfaces stay theme-aware */
-.stApp,
-[data-testid="stSidebar"],
+.stApp {
+    background-color: var(--bg-primary) !important;
+}
+
+[data-testid="stSidebar"] {
+    background-color: var(--bg-secondary) !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+
 [data-testid="stChatInput"] {
     background-color: var(--bg-primary) !important;
+}
+
+/* Force sidebar visibility in all themes */
+@media (prefers-color-scheme: light) {
+    [data-testid="stSidebar"] {
+        background-color: var(--bg-secondary) !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    [data-testid="stSidebar"] {
+        background-color: var(--bg-secondary) !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
 }

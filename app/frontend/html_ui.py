@@ -196,6 +196,60 @@ class HTMLResearchAssistantUI:
         
         .stSidebar {
             background: var(--bg-secondary) !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        /* Force sidebar visibility in all themes */
+        @media (prefers-color-scheme: light) {
+            .stSidebar {
+                background: var(--bg-secondary) !important;
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+            }
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            .stSidebar {
+                background: var(--bg-secondary) !important;
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+            }
+        }
+        
+        /* Ensure sidebar content is visible */
+        .stSidebar * {
+            color: var(--text-primary) !important;
+        }
+        
+        .stSidebar .stMarkdown {
+            color: var(--text-secondary) !important;
+        }
+        
+        .stSidebar .stSelectbox,
+        .stSidebar .stMultiselect {
+            color: var(--text-secondary) !important;
+        }
+        
+        /* Force sidebar visibility with higher specificity */
+        div[data-testid="stSidebar"] {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            background-color: var(--bg-secondary) !important;
+            width: 21rem !important;
+            min-width: 21rem !important;
+            max-width: 21rem !important;
+        }
+        
+        /* Override any hiding rules */
+        div[data-testid="stSidebar"].css-1d391kg {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
         
         /* Primary buttons - Theme-aware gradient with enhanced styling */
