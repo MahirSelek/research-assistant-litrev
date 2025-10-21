@@ -505,6 +505,41 @@ class HTMLResearchAssistantUI:
             pointer-events: auto !important;
         }
         
+        /* Force dark theme on Streamlit header and toolbar */
+        header[data-testid="stHeader"],
+        header[data-testid="stHeader"] *,
+        [data-testid="stToolbar"],
+        [data-testid="stToolbar"] *,
+        [data-testid="stToolbarActions"],
+        [data-testid="stToolbarActions"] *,
+        [data-testid="stToolbarActionButton"],
+        [data-testid="stToolbarActionButton"] *,
+        [data-testid="stMainMenu"],
+        [data-testid="stMainMenu"] * {
+            background-color: #1a1e29 !important;
+            color: #D1D5DB !important;
+            border-color: #2c313a !important;
+        }
+        
+        /* Force dark theme on chat input */
+        [data-testid="stChatInput"],
+        [data-testid="stChatInput"] *,
+        [data-testid="stChatInputTextArea"],
+        [data-testid="stChatInputTextArea"] *,
+        [data-testid="stChatInputSubmitButton"],
+        [data-testid="stChatInputSubmitButton"] * {
+            background-color: #1a1e29 !important;
+            color: #D1D5DB !important;
+            border-color: #2c313a !important;
+        }
+        
+        /* Force dark theme on textarea specifically */
+        textarea[data-testid="stChatInputTextArea"] {
+            background-color: #262730 !important;
+            color: #D1D5DB !important;
+            border-color: #2c313a !important;
+        }
+        
         /* Hide Streamlit toolbar/menu/icons (top-right) and footer badges */
         [data-testid="stToolbar"],
         [data-testid="stMainMenu"],
@@ -619,6 +654,33 @@ class HTMLResearchAssistantUI:
             // Only override form elements, preserve button gradients and custom styling
             const style = document.createElement('style');
             style.textContent = `
+                /* Force dark theme on Streamlit header and toolbar */
+                header[data-testid="stHeader"], header[data-testid="stHeader"] *,
+                [data-testid="stToolbar"], [data-testid="stToolbar"] *,
+                [data-testid="stToolbarActions"], [data-testid="stToolbarActions"] *,
+                [data-testid="stToolbarActionButton"], [data-testid="stToolbarActionButton"] *,
+                [data-testid="stMainMenu"], [data-testid="stMainMenu"] * {
+                    background-color: #1a1e29 !important;
+                    color: #D1D5DB !important;
+                    border-color: #2c313a !important;
+                }
+                
+                /* Force dark theme on chat input */
+                [data-testid="stChatInput"], [data-testid="stChatInput"] *,
+                [data-testid="stChatInputTextArea"], [data-testid="stChatInputTextArea"] *,
+                [data-testid="stChatInputSubmitButton"], [data-testid="stChatInputSubmitButton"] * {
+                    background-color: #1a1e29 !important;
+                    color: #D1D5DB !important;
+                    border-color: #2c313a !important;
+                }
+                
+                /* Force dark theme on textarea specifically */
+                textarea[data-testid="stChatInputTextArea"] {
+                    background-color: #262730 !important;
+                    color: #D1D5DB !important;
+                    border-color: #2c313a !important;
+                }
+                
                 /* Only force dark theme on form elements */
                 .stSelectbox, .stSelectbox * {
                     background-color: #262730 !important;
