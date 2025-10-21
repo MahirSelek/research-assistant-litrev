@@ -298,6 +298,18 @@ h1, h2, h3, h4, h5, h6,
     color-scheme: dark !important;
 }
 
+/* ABSOLUTE FORCE DARK THEME - Override everything */
+html, body, .stApp, .stApp * {
+    color-scheme: dark !important;
+    background-color: #0E1117 !important;
+    color: #D1D5DB !important;
+}
+
+/* Force dark theme on ALL possible elements */
+div, span, p, h1, h2, h3, h4, h5, h6, a, button, input, select, textarea, option {
+    color-scheme: dark !important;
+}
+
 /* --- Fix for white bars and layout issues --- */
 .stApp > div {
     width: 100% !important;

@@ -168,6 +168,18 @@ class HTMLResearchAssistantUI:
             color-scheme: dark !important;
         }
         
+        /* ABSOLUTE FORCE DARK THEME - Override everything */
+        html, body, .stApp, .stApp * {
+            color-scheme: dark !important;
+            background-color: #0E1117 !important;
+            color: #D1D5DB !important;
+        }
+        
+        /* Force dark theme on ALL possible elements */
+        div, span, p, h1, h2, h3, h4, h5, h6, a, button, input, select, textarea, option {
+            color-scheme: dark !important;
+        }
+        
         /* AGGRESSIVE FORCE DARK THEME - Override all Streamlit components */
         .stSelectbox,
         .stSelectbox *,
@@ -599,6 +611,61 @@ class HTMLResearchAssistantUI:
         // Force overlay to show immediately when called
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
+        
+        // FORCE DARK THEME - Override browser preferences
+        function forceDarkTheme() {
+            // Force dark color scheme on all elements
+            document.documentElement.style.colorScheme = 'dark';
+            document.body.style.colorScheme = 'dark';
+            
+            // Override any light theme styles
+            const style = document.createElement('style');
+            style.textContent = `
+                * {
+                    color-scheme: dark !important;
+                    background-color: #0E1117 !important;
+                    color: #D1D5DB !important;
+                }
+                html, body {
+                    background-color: #0E1117 !important;
+                    color: #D1D5DB !important;
+                }
+                .stApp {
+                    background-color: #0E1117 !important;
+                    color: #D1D5DB !important;
+                }
+                .stSelectbox, .stSelectbox * {
+                    background-color: #262730 !important;
+                    color: #D1D5DB !important;
+                    border-color: #2c313a !important;
+                }
+                [data-baseweb="select"], [data-baseweb="select"] * {
+                    background-color: #262730 !important;
+                    color: #D1D5DB !important;
+                    border-color: #2c313a !important;
+                }
+                [role="listbox"], [role="option"] {
+                    background-color: #262730 !important;
+                    color: #D1D5DB !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Run immediately and on DOM changes
+        forceDarkTheme();
+        document.addEventListener('DOMContentLoaded', forceDarkTheme);
+        document.addEventListener('load', forceDarkTheme);
+        
+        // Override any new elements that get added
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList') {
+                    forceDarkTheme();
+                }
+            });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
         
         </script>
         """, unsafe_allow_html=True)
