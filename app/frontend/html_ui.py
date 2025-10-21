@@ -168,6 +168,51 @@ class HTMLResearchAssistantUI:
             color-scheme: dark !important;
         }
         
+        /* AGGRESSIVE FORCE DARK THEME - Override all Streamlit components */
+        .stSelectbox,
+        .stSelectbox *,
+        .stSelectbox > div,
+        .stSelectbox > div > div,
+        .stSelectbox > div > div > div,
+        .stSelectbox > div > div > div > div,
+        .stSelectbox > div > div > div > div > div,
+        .stMultiselect,
+        .stMultiselect *,
+        .stTextInput,
+        .stTextInput *,
+        .stNumberInput,
+        .stNumberInput *,
+        .stDateInput,
+        .stDateInput *,
+        .stTimeInput,
+        .stTimeInput *,
+        .stTextArea,
+        .stTextArea *,
+        .stFileUploader,
+        .stFileUploader * {
+            background-color: #262730 !important;
+            color: #D1D5DB !important;
+            border-color: #2c313a !important;
+            color-scheme: dark !important;
+        }
+        
+        /* Force dropdown options to dark theme */
+        .stSelectbox [role="listbox"],
+        .stSelectbox [role="option"],
+        .stSelectbox .stSelectbox-option,
+        .stSelectbox .stSelectbox-option * {
+            background-color: #262730 !important;
+            color: #D1D5DB !important;
+        }
+        
+        /* Override any browser default styling */
+        select,
+        input,
+        textarea,
+        button {
+            color-scheme: dark !important;
+        }
+        
         /* Primary buttons - Modern blue gradient with enhanced styling */
         .stButton > button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
