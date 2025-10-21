@@ -851,42 +851,16 @@ Assistant Response:"""
             if 'html_keywords' not in st.session_state:
                 st.session_state['html_keywords'] = self.get_user_session('selected_keywords', [])
             
-            # Custom keyword selection that closes dropdown after each selection
-            current_selected = self.get_user_session('selected_keywords', [])
-            
-            # Use selectbox for individual keyword selection (closes after each selection)
-            if not analysis_locked:
-                # Filter out already selected keywords
-                available_keywords = [kw for kw in self.GENETICS_KEYWORDS if kw not in current_selected]
-                
-                if available_keywords:
-                    new_keyword = st.selectbox(
-                        "Select Keywords",
-                        [""] + available_keywords,  # Empty string as default
-                        key="html_keyword_selector",
-                        help="Select keywords for your research analysis. Choose one at a time - dropdown will close after selection.",
-                        disabled=analysis_locked
-                    )
-                    
-                    # Add keyword if one is selected
-                    if new_keyword and new_keyword != "":
-                        updated_keywords = current_selected + [new_keyword]
-                        self.set_user_session('selected_keywords', updated_keywords)
-                        st.session_state['html_keywords'] = updated_keywords
-                        st.rerun()
-            
-            # Display current selection using multiselect for visual consistency (read-only)
             selected_keywords = st.multiselect(
-                "Selected Keywords",
+                "Select Keywords",
                 self.GENETICS_KEYWORDS,
-                default=current_selected,
-                key="html_keywords_display",
-                help="Currently selected keywords" if not analysis_locked else "Keywords are locked for current analysis. Click 'New Analysis' to modify.",
-                disabled=True  # Always disabled - just for display
+                key="html_keywords",
+                help="Select keywords for your research analysis" if not analysis_locked else "Keywords are locked for current analysis. Click 'New Analysis' to modify.",
+                disabled=analysis_locked
             )
             
             # Update session state with selected keywords
-            self.set_user_session('selected_keywords', current_selected)
+            self.set_user_session('selected_keywords', selected_keywords)
             
             # Search mode
             # Initialize search mode in session state if not exists
