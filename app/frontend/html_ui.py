@@ -347,12 +347,12 @@ class HTMLResearchAssistantUI:
             pointer-events: all !important;
         }
         
-        /* Sidebar toggle button - appears when sidebar is closed */
+        /* Sidebar toggle button - always visible for easy access */
         .sidebar-toggle-btn {
             position: fixed !important;
             top: 20px !important;
             left: 20px !important;
-            z-index: 1000 !important;
+            z-index: 10000 !important;
             background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
             color: white !important;
             border: none !important;
@@ -363,19 +363,22 @@ class HTMLResearchAssistantUI:
             cursor: pointer !important;
             box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3) !important;
             transition: all 0.3s ease !important;
-            display: none !important;
+            display: block !important;
+            opacity: 0.9 !important;
         }
         
         .sidebar-toggle-btn:hover {
             background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
             box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
             transform: translateY(-2px) !important;
+            opacity: 1 !important;
         }
         
-        /* Show toggle button when sidebar is collapsed */
-        .main .block-container[data-testid="stAppViewContainer"]:not(:has([data-testid="stSidebar"])) ~ .sidebar-toggle-btn,
-        .main:not(:has([data-testid="stSidebar"])) .sidebar-toggle-btn {
-            display: block !important;
+        /* Hide toggle button when sidebar is visible and wide */
+        @media (min-width: 768px) {
+            [data-testid="stSidebar"]:not([aria-hidden="true"]) ~ .sidebar-toggle-btn {
+                display: none !important;
+            }
         }
         
         .loading-content {
@@ -559,19 +562,33 @@ class HTMLResearchAssistantUI:
         
         // Sidebar toggle functionality
         function toggleSidebar() {
-            // Try to find and click Streamlit's sidebar toggle button
-            const sidebarToggle = document.querySelector('[data-testid="stSidebar"] button[aria-label*="Close"], [data-testid="stSidebar"] button[aria-label*="Open"], [data-testid="stSidebar"] button[aria-label*="Toggle"]');
+            // Method 1: Try to find Streamlit's sidebar toggle button
+            const sidebarToggle = document.querySelector('button[aria-label*="Close"], button[aria-label*="Open"], button[aria-label*="Toggle"], button[aria-label*="sidebar"]');
             if (sidebarToggle) {
                 sidebarToggle.click();
-            } else {
-                // Fallback: try to find any button in the sidebar header
-                const sidebarHeader = document.querySelector('[data-testid="stSidebar"] > div:first-child');
-                if (sidebarHeader) {
-                    const toggleBtn = sidebarHeader.querySelector('button');
-                    if (toggleBtn) {
-                        toggleBtn.click();
-                    }
-                }
+                return;
+            }
+            
+            // Method 2: Try to find any button in the sidebar area
+            const sidebarButtons = document.querySelectorAll('[data-testid="stSidebar"] button, .stSidebar button, [data-testid="stSidebar"] [role="button"]');
+            if (sidebarButtons.length > 0) {
+                sidebarButtons[0].click();
+                return;
+            }
+            
+            // Method 3: Try to trigger sidebar via keyboard shortcut (Ctrl+Shift+S)
+            const event = new KeyboardEvent('keydown', {
+                key: 's',
+                ctrlKey: true,
+                shiftKey: true,
+                bubbles: true
+            });
+            document.dispatchEvent(event);
+            
+            // Method 4: Try to find and click the hamburger menu
+            const hamburgerMenu = document.querySelector('[data-testid="stSidebar"] > div:first-child button, .stSidebar > div:first-child button');
+            if (hamburgerMenu) {
+                hamburgerMenu.click();
             }
         }
         
@@ -645,6 +662,46 @@ class HTMLResearchAssistantUI:
         
         # Main content area
         st.markdown("# 🧬 POLO-GGB RESEARCH ASSISTANT")
+        
+        # Sidebar toggle button for easy access
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            if st.button("☰ Show Sidebar", help="Click to show/hide the sidebar"):
+                st.markdown("""
+                <script>
+                // Try multiple methods to toggle sidebar
+                function toggleSidebarMultiple() {
+                    // Method 1: Look for any toggle button
+                    const toggleButtons = document.querySelectorAll('button[aria-label*="Close"], button[aria-label*="Open"], button[aria-label*="Toggle"]');
+                    for (let btn of toggleButtons) {
+                        if (btn.offsetParent !== null) { // Check if visible
+                            btn.click();
+                            return;
+                        }
+                    }
+                    
+                    // Method 2: Look in sidebar header
+                    const sidebarHeader = document.querySelector('[data-testid="stSidebar"] > div:first-child');
+                    if (sidebarHeader) {
+                        const btn = sidebarHeader.querySelector('button');
+                        if (btn) {
+                            btn.click();
+                            return;
+                        }
+                    }
+                    
+                    // Method 3: Try keyboard shortcut
+                    const event = new KeyboardEvent('keydown', {
+                        key: 's',
+                        ctrlKey: true,
+                        shiftKey: true,
+                        bubbles: true
+                    });
+                    document.dispatchEvent(event);
+                }
+                toggleSidebarMultiple();
+                </script>
+                """, unsafe_allow_html=True)
         
         # Get current state
         active_conversation_id = self.get_user_session('active_conversation_id')
