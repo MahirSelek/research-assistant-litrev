@@ -614,6 +614,27 @@ class HTMLResearchAssistantUI:
         # Main content area
         st.markdown("# 🧬 POLO-GGB RESEARCH ASSISTANT")
         
+        # Add immediate sidebar reopen button (always visible for now)
+        if st.button("☰ Reopen Sidebar", key="immediate_sidebar_reopen", help="Click to reopen the collapsed sidebar"):
+            st.markdown("""
+            <script>
+            // Immediate sidebar reopen
+            const sidebar = document.querySelector('[data-testid="stSidebar"]');
+            const toggleButton = document.querySelector('[data-testid="stSidebarToggle"]');
+            
+            if (toggleButton) {
+                toggleButton.click();
+            } else if (sidebar) {
+                sidebar.style.display = 'block';
+                sidebar.style.visibility = 'visible';
+                sidebar.classList.remove('collapsed');
+                sidebar.classList.add('expanded');
+                window.dispatchEvent(new Event('resize'));
+            }
+            </script>
+            """, unsafe_allow_html=True)
+            st.rerun()
+        
         # Add sidebar reopen button if sidebar is collapsed
         st.markdown("""
         <div id="sidebar-reopen-container" style="position: fixed; top: 20px; left: 20px; z-index: 1000;">
@@ -631,6 +652,10 @@ class HTMLResearchAssistantUI:
                 display: none;
             " title="Click to reopen sidebar">☰</button>
         </div>
+        """, unsafe_allow_html=True)
+        
+        # Add the JavaScript functionality separately to avoid rendering issues
+        st.markdown("""
         <script>
         // Show/hide manual reopen button based on sidebar state
         function updateManualReopenButton() {
