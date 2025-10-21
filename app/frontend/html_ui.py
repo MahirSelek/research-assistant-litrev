@@ -409,8 +409,8 @@ class HTMLResearchAssistantUI:
             left: 0 !important;
             width: 100vw !important;
             height: 100vh !important;
-            background: rgba(0, 0, 0, 0.35) !important;
-            backdrop-filter: blur(10px) !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+            backdrop-filter: blur(3px) !important;
             z-index: 999999 !important;
             display: none !important;
             justify-content: center !important;
@@ -442,12 +442,13 @@ class HTMLResearchAssistantUI:
         /* Light theme loading overlay adjustments */
         @media (prefers-color-scheme: light) {
             .loading-overlay {
-                background: rgba(255, 255, 255, 0.7) !important;
+                background: rgba(255, 255, 255, 0.8) !important;
+                backdrop-filter: blur(3px) !important;
             }
             
             .loading-content {
-                background: rgba(255, 255, 255, 0.8) !important;
-                box-shadow: 0 25px 80px rgba(0, 0, 0, 0.2) !important;
+                background: rgba(255, 255, 255, 0.9) !important;
+                box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3) !important;
                 border: 2px solid var(--accent-primary) !important;
             }
         }
