@@ -521,21 +521,51 @@ class HTMLResearchAssistantUI:
             border-color: #2c313a !important;
         }
         
-        /* Force dark theme on chat input */
+        /* Force dark theme on chat input - ULTRA SPECIFIC */
+        [data-testid="stBottomBlockContainer"],
+        [data-testid="stBottomBlockContainer"] *,
+        [data-testid="stVerticalBlock"],
+        [data-testid="stVerticalBlock"] *,
+        [data-testid="stElementContainer"],
+        [data-testid="stElementContainer"] *,
         [data-testid="stChatInput"],
         [data-testid="stChatInput"] *,
         [data-testid="stChatInputTextArea"],
         [data-testid="stChatInputTextArea"] *,
         [data-testid="stChatInputSubmitButton"],
-        [data-testid="stChatInputSubmitButton"] * {
+        [data-testid="stChatInputSubmitButton"] *,
+        [data-testid="InputInstructions"],
+        [data-testid="InputInstructions"] * {
             background-color: #1a1e29 !important;
             color: #D1D5DB !important;
             border-color: #2c313a !important;
         }
         
-        /* Force dark theme on textarea specifically */
-        textarea[data-testid="stChatInputTextArea"] {
+        /* Force dark theme on textarea and base-input specifically */
+        textarea[data-testid="stChatInputTextArea"],
+        [data-baseweb="textarea"],
+        [data-baseweb="textarea"] *,
+        [data-baseweb="base-input"],
+        [data-baseweb="base-input"] * {
             background-color: #262730 !important;
+            color: #D1D5DB !important;
+            border-color: #2c313a !important;
+        }
+        
+        /* Target all emotion-cache classes in chat input */
+        .st-emotion-cache-1eeryuo,
+        .st-emotion-cache-1eeryuo *,
+        .st-emotion-cache-yd4u6l,
+        .st-emotion-cache-yd4u6l *,
+        .st-emotion-cache-12o5wl7,
+        .st-emotion-cache-12o5wl7 *,
+        .st-emotion-cache-sey4o0,
+        .st-emotion-cache-sey4o0 *,
+        .st-emotion-cache-o0516v,
+        .st-emotion-cache-o0516v *,
+        .st-emotion-cache-1nzi1q1,
+        .st-emotion-cache-1nzi1q1 * {
+            background-color: #1a1e29 !important;
             color: #D1D5DB !important;
             border-color: #2c313a !important;
         }
@@ -654,6 +684,40 @@ class HTMLResearchAssistantUI:
             // Only override form elements, preserve button gradients and custom styling
             const style = document.createElement('style');
             style.textContent = `
+                /* Force dark theme on chat input - ULTRA SPECIFIC */
+                [data-testid="stBottomBlockContainer"], [data-testid="stBottomBlockContainer"] *,
+                [data-testid="stVerticalBlock"], [data-testid="stVerticalBlock"] *,
+                [data-testid="stElementContainer"], [data-testid="stElementContainer"] *,
+                [data-testid="stChatInput"], [data-testid="stChatInput"] *,
+                [data-testid="stChatInputTextArea"], [data-testid="stChatInputTextArea"] *,
+                [data-testid="stChatInputSubmitButton"], [data-testid="stChatInputSubmitButton"] *,
+                [data-testid="InputInstructions"], [data-testid="InputInstructions"] * {
+                    background-color: #1a1e29 !important;
+                    color: #D1D5DB !important;
+                    border-color: #2c313a !important;
+                }
+                
+                /* Force dark theme on textarea and base-input specifically */
+                textarea[data-testid="stChatInputTextArea"],
+                [data-baseweb="textarea"], [data-baseweb="textarea"] *,
+                [data-baseweb="base-input"], [data-baseweb="base-input"] * {
+                    background-color: #262730 !important;
+                    color: #D1D5DB !important;
+                    border-color: #2c313a !important;
+                }
+                
+                /* Target all emotion-cache classes in chat input */
+                .st-emotion-cache-1eeryuo, .st-emotion-cache-1eeryuo *,
+                .st-emotion-cache-yd4u6l, .st-emotion-cache-yd4u6l *,
+                .st-emotion-cache-12o5wl7, .st-emotion-cache-12o5wl7 *,
+                .st-emotion-cache-sey4o0, .st-emotion-cache-sey4o0 *,
+                .st-emotion-cache-o0516v, .st-emotion-cache-o0516v *,
+                .st-emotion-cache-1nzi1q1, .st-emotion-cache-1nzi1q1 * {
+                    background-color: #1a1e29 !important;
+                    color: #D1D5DB !important;
+                    border-color: #2c313a !important;
+                }
+                
                 /* Force dark theme on Streamlit header and toolbar */
                 header[data-testid="stHeader"], header[data-testid="stHeader"] *,
                 [data-testid="stToolbar"], [data-testid="stToolbar"] *,
@@ -661,22 +725,6 @@ class HTMLResearchAssistantUI:
                 [data-testid="stToolbarActionButton"], [data-testid="stToolbarActionButton"] *,
                 [data-testid="stMainMenu"], [data-testid="stMainMenu"] * {
                     background-color: #1a1e29 !important;
-                    color: #D1D5DB !important;
-                    border-color: #2c313a !important;
-                }
-                
-                /* Force dark theme on chat input */
-                [data-testid="stChatInput"], [data-testid="stChatInput"] *,
-                [data-testid="stChatInputTextArea"], [data-testid="stChatInputTextArea"] *,
-                [data-testid="stChatInputSubmitButton"], [data-testid="stChatInputSubmitButton"] * {
-                    background-color: #1a1e29 !important;
-                    color: #D1D5DB !important;
-                    border-color: #2c313a !important;
-                }
-                
-                /* Force dark theme on textarea specifically */
-                textarea[data-testid="stChatInputTextArea"] {
-                    background-color: #262730 !important;
                     color: #D1D5DB !important;
                     border-color: #2c313a !important;
                 }
