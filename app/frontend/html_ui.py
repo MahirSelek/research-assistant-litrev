@@ -452,15 +452,15 @@ class HTMLResearchAssistantUI:
             box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
         }
         
-        /* Full-Screen Transparent Loading Overlay - Background Fully Visible but Interactions Blocked */
+        /* Full-Screen Dark Loading Overlay - Covers Entire Page */
         .loading-overlay {
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             width: 100vw !important;
             height: 100vh !important;
-            background: transparent !important;
-            backdrop-filter: none !important;
+            background: rgba(0, 0, 0, 0.35) !important;
+            backdrop-filter: blur(10px) !important;
             z-index: 999999 !important;
             display: none !important;
             justify-content: center !important;
@@ -481,8 +481,8 @@ class HTMLResearchAssistantUI:
             border-radius: 20px !important;
             padding: 50px 60px !important;
             text-align: center !important;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6) !important;
-            border: 2px solid rgba(102, 126, 234, 0.6) !important;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4) !important;
+            border: 2px solid rgba(102, 126, 234, 0.4) !important;
             max-width: 600px !important;
             width: 90% !important;
             position: relative !important;
