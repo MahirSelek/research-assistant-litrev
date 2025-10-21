@@ -398,16 +398,13 @@ class HTMLResearchAssistantUI:
             display: none !important;
         }
 
-        /* Keyword Selection Dropdown Control - More Comprehensive */
-        /* Hide ALL multiselect dropdown options by default */
+        /* Keyword Selection Dropdown Control - Fixed */
+        /* Hide ONLY the dropdown list options, keep input field visible */
         [data-testid="stMultiSelect"] div[role="listbox"],
-        [data-testid="stMultiSelect"] .stSelectbox > div > div,
-        [data-testid="stMultiSelect"] div[data-baseweb="select"],
         [data-testid="stMultiSelect"] ul[role="listbox"],
-        [data-testid="stMultiSelect"] div[aria-expanded="true"],
-        [data-testid="stMultiSelect"] .stSelectbox > div > div[style*="display"],
-        [data-testid="stMultiSelect"] .stSelectbox > div > div[style*="block"],
-        [data-testid="stMultiSelect"] .stSelectbox > div > div[style*="flex"] {
+        [data-testid="stMultiSelect"] div[data-baseweb="select"] > div:not(:first-child),
+        [data-testid="stMultiSelect"] .stSelectbox > div > div:not(:first-child),
+        [data-testid="stMultiSelect"] div[aria-expanded="true"]:not(.stSelectbox > div:first-child) {
             display: none !important;
             visibility: hidden !important;
             opacity: 0 !important;
@@ -415,11 +412,21 @@ class HTMLResearchAssistantUI:
             overflow: hidden !important;
         }
         
-        /* Show dropdown when active */
+        /* Show dropdown when active - but only the list part */
         [data-testid="stMultiSelect"].dropdown-active div[role="listbox"],
-        [data-testid="stMultiSelect"].dropdown-active .stSelectbox > div > div,
-        [data-testid="stMultiSelect"].dropdown-active div[data-baseweb="select"],
-        [data-testid="stMultiSelect"].dropdown-active ul[role="listbox"] {
+        [data-testid="stMultiSelect"].dropdown-active ul[role="listbox"],
+        [data-testid="stMultiSelect"].dropdown-active div[data-baseweb="select"] > div:not(:first-child),
+        [data-testid="stMultiSelect"].dropdown-active .stSelectbox > div > div:not(:first-child) {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            height: auto !important;
+            overflow: visible !important;
+        }
+        
+        /* Ensure the input field itself is always visible */
+        [data-testid="stMultiSelect"] .stSelectbox > div:first-child,
+        [data-testid="stMultiSelect"] .stSelectbox > div:first-child > div:first-child {
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
@@ -528,7 +535,7 @@ class HTMLResearchAssistantUI:
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
         
-        // Keyword Selection Dropdown Control - Enhanced
+        // Keyword Selection Dropdown Control - Fixed
         function initializeKeywordDropdown() {
             // Find the multiselect component
             const multiselect = document.querySelector('[data-testid="stMultiSelect"]');
@@ -537,9 +544,9 @@ class HTMLResearchAssistantUI:
             // Force hide dropdown immediately
             multiselect.classList.remove('dropdown-active');
             
-            // Find all possible dropdown elements and hide them
+            // Find only the dropdown list elements (not the input field) and hide them
             const dropdownElements = multiselect.querySelectorAll(
-                'div[role="listbox"], .stSelectbox > div > div, div[data-baseweb="select"], ul[role="listbox"]'
+                'div[role="listbox"], ul[role="listbox"], div[data-baseweb="select"] > div:not(:first-child), .stSelectbox > div > div:not(:first-child)'
             );
             dropdownElements.forEach(el => {
                 el.style.display = 'none';
@@ -549,8 +556,17 @@ class HTMLResearchAssistantUI:
                 el.style.overflow = 'hidden';
             });
             
-            // Find the input field
-            const inputField = multiselect.querySelector('.stSelectbox > div');
+            // Ensure the input field is visible
+            const inputField = multiselect.querySelector('.stSelectbox > div:first-child');
+            if (inputField) {
+                inputField.style.display = 'block';
+                inputField.style.visibility = 'visible';
+                inputField.style.opacity = '1';
+                inputField.style.height = 'auto';
+                inputField.style.overflow = 'visible';
+            }
+            
+            // Use the input field we already found
             if (!inputField) return;
             
             // Add click event listener to show/hide dropdown
@@ -641,8 +657,9 @@ class HTMLResearchAssistantUI:
         function forceHideDropdown() {
             const multiselect = document.querySelector('[data-testid="stMultiSelect"]');
             if (multiselect) {
+                // Only hide dropdown list elements, not the input field
                 const dropdownElements = multiselect.querySelectorAll(
-                    'div[role="listbox"], .stSelectbox > div > div, div[data-baseweb="select"], ul[role="listbox"]'
+                    'div[role="listbox"], ul[role="listbox"], div[data-baseweb="select"] > div:not(:first-child), .stSelectbox > div > div:not(:first-child)'
                 );
                 dropdownElements.forEach(el => {
                     if (el.style.display !== 'none') {
@@ -653,6 +670,16 @@ class HTMLResearchAssistantUI:
                         el.style.overflow = 'hidden';
                     }
                 });
+                
+                // Ensure input field stays visible
+                const inputField = multiselect.querySelector('.stSelectbox > div:first-child');
+                if (inputField) {
+                    inputField.style.display = 'block';
+                    inputField.style.visibility = 'visible';
+                    inputField.style.opacity = '1';
+                    inputField.style.height = 'auto';
+                    inputField.style.overflow = 'visible';
+                }
             }
         }
         
