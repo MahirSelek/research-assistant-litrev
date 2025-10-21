@@ -398,6 +398,41 @@ class HTMLResearchAssistantUI:
             display: none !important;
         }
 
+        /* Keyword Selection Dropdown Control */
+        /* Hide multiselect dropdown by default */
+        [data-testid="stMultiSelect"] .stSelectbox > div > div {
+            display: none !important;
+        }
+        
+        /* Show dropdown when active */
+        [data-testid="stMultiSelect"].dropdown-active .stSelectbox > div > div {
+            display: block !important;
+        }
+        
+        /* Style the input field to look clickable */
+        [data-testid="stMultiSelect"] .stSelectbox > div {
+            cursor: pointer !important;
+            position: relative !important;
+        }
+        
+        /* Add a custom dropdown indicator */
+        [data-testid="stMultiSelect"] .stSelectbox > div::after {
+            content: "▼" !important;
+            position: absolute !important;
+            right: 10px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            color: #667eea !important;
+            font-size: 12px !important;
+            pointer-events: none !important;
+            transition: transform 0.2s ease !important;
+        }
+        
+        /* Rotate indicator when dropdown is active */
+        [data-testid="stMultiSelect"].dropdown-active .stSelectbox > div::after {
+            transform: translateY(-50%) rotate(180deg) !important;
+        }
+
         </style>
         <script>
         // Button styling is now handled by CSS above
@@ -474,6 +509,68 @@ class HTMLResearchAssistantUI:
         // Force overlay to show immediately when called
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
+        
+        // Keyword Selection Dropdown Control
+        function initializeKeywordDropdown() {
+            // Find the multiselect component
+            const multiselect = document.querySelector('[data-testid="stMultiSelect"]');
+            if (!multiselect) return;
+            
+            // Find the input field
+            const inputField = multiselect.querySelector('.stSelectbox > div');
+            if (!inputField) return;
+            
+            // Add click event listener to show/hide dropdown
+            inputField.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Toggle dropdown visibility
+                if (multiselect.classList.contains('dropdown-active')) {
+                    multiselect.classList.remove('dropdown-active');
+                } else {
+                    // Close any other open dropdowns first
+                    document.querySelectorAll('[data-testid="stMultiSelect"].dropdown-active').forEach(el => {
+                        el.classList.remove('dropdown-active');
+                    });
+                    multiselect.classList.add('dropdown-active');
+                }
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!multiselect.contains(e.target)) {
+                    multiselect.classList.remove('dropdown-active');
+                }
+            });
+            
+            // Close dropdown after selection (listen for changes)
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        // Check if multiselect has been updated (selection made)
+                        if (multiselect.classList.contains('dropdown-active')) {
+                            // Small delay to allow selection to complete
+                            setTimeout(() => {
+                                multiselect.classList.remove('dropdown-active');
+                            }, 100);
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(multiselect, { attributes: true });
+        }
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeKeywordDropdown);
+        } else {
+            initializeKeywordDropdown();
+        }
+        
+        // Re-initialize after Streamlit reruns
+        setTimeout(initializeKeywordDropdown, 100);
         
         </script>
         """, unsafe_allow_html=True)
