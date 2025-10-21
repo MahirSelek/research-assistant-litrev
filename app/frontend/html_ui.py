@@ -77,14 +77,10 @@ class HTMLResearchAssistantUI:
         self._initialize_empty_user_data()
         
         # Global session state (shared across users)
-        if 'is_loading' not in st.session_state:
-            st.session_state.is_loading = False
+        if 'is_loading_analysis' not in st.session_state:
+            st.session_state.is_loading_analysis = False
         if 'loading_message' not in st.session_state:
             st.session_state.loading_message = ""
-        if 'loading_subtext' not in st.session_state:
-            st.session_state.loading_subtext = ""
-        if 'loading_progress' not in st.session_state:
-            st.session_state.loading_progress = ""
     
     def _initialize_empty_user_data(self):
         """Initialize empty user data"""
@@ -260,204 +256,9 @@ class HTMLResearchAssistantUI:
             box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
         }
         
-        /* Full-Screen Dark Loading Overlay - Covers Entire Page */
-        .loading-overlay {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            background: rgba(0, 0, 0, 0.35) !important;
-            backdrop-filter: blur(10px) !important;
-            z-index: 999999 !important;
-            display: none !important;
-            justify-content: center !important;
-            align-items: center !important;
-            flex-direction: column !important;
-            pointer-events: all !important;
-            cursor: not-allowed !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        
-        .loading-overlay.show {
-            display: flex !important;
-        }
-        
-        .loading-content {
-            background: rgba(20, 20, 20, 0.85) !important;
-            border-radius: 20px !important;
-            padding: 50px 60px !important;
-            text-align: center !important;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4) !important;
-            border: 2px solid rgba(102, 126, 234, 0.4) !important;
-            max-width: 600px !important;
-            width: 90% !important;
-            position: relative !important;
-            z-index: 1000000 !important;
-        }
-        
-        .loading-spinner {
-            width: 100px !important;
-            height: 100px !important;
-            border: 8px solid rgba(102, 126, 234, 0.2) !important;
-            border-top: 8px solid #667eea !important;
-            border-radius: 50% !important;
-            animation: spin 1s linear infinite !important;
-            margin: 0 auto 40px !important;
-        }
-        
-        .loading-text {
-            color: white !important;
-            font-size: 28px !important;
-            font-weight: 700 !important;
-            text-align: center !important;
-            margin-bottom: 20px !important;
-            animation: pulse 2s ease-in-out infinite !important;
-        }
-        
-        .loading-subtext {
-            color: rgba(255, 255, 255, 0.9) !important;
-            font-size: 18px !important;
-            text-align: center !important;
-            line-height: 1.6 !important;
-            margin-bottom: 25px !important;
-        }
-        
-        .loading-progress {
-            color: rgba(255, 255, 255, 0.7) !important;
-            font-size: 16px !important;
-            font-style: italic !important;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
-        }
-        
-        /* Ensure overlay covers everything */
-        body.loading-active {
-            overflow: hidden !important;
-        }
-        
-        /* Block all interactions */
-        .loading-overlay * {
-            pointer-events: none !important;
-        }
-        
-        .loading-overlay .loading-content {
-            pointer-events: auto !important;
-        }
-        
-        /* Hide Streamlit toolbar/menu/icons (top-right) and footer badges */
-        [data-testid="stToolbar"],
-        [data-testid="stMainMenu"],
-        [data-testid="stStatusWidget"],
-        [data-testid="stActionButton"],
-        header [data-testid^="baseButton"],
-        .stDeployButton,
-        .viewerBadge_link,
-        .viewerBadge_container__,
-        footer,
-        #MainMenu {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
-        /* Fallback selectors for older/newer Streamlit/classnames */
-        header .stActionButton,
-        a[class*="viewerBadge"],
-        div[class*="viewerBadge"],
-        button[title="View source on GitHub"],
-        button[title="Share"],
-        button[title="Settings"],
-        button[aria-label="Settings"],
-        button[aria-label="Share"],
-        button[aria-label="View source on GitHub"] {
-            display: none !important;
-        }
-        
         </style>
         <script>
         // Button styling is now handled by CSS above
-        
-        // Full-Screen Loading Overlay Functions - Enhanced
-        function showLoadingOverlay(message = "Processing...", subtext = "Please wait while we work on your request", progress = "") {
-            // Remove any existing overlay first
-            let existingOverlay = document.getElementById('loading-overlay');
-            if (existingOverlay) {
-                existingOverlay.remove();
-            }
-            
-            // Create new overlay
-            let overlay = document.createElement('div');
-            overlay.id = 'loading-overlay';
-            overlay.className = 'loading-overlay';
-            
-            // Set overlay content
-            overlay.innerHTML = `
-                <div class="loading-content">
-                    <div class="loading-spinner"></div>
-                    <div class="loading-text">${message}</div>
-                    <div class="loading-subtext">${subtext}</div>
-                    ${progress ? `<div class="loading-progress">${progress}</div>` : ''}
-                </div>
-            `;
-            
-            // Add to body
-            document.body.appendChild(overlay);
-            
-            // Force show overlay immediately
-            setTimeout(() => {
-                overlay.classList.add('show');
-                document.body.classList.add('loading-active');
-            }, 10);
-            
-            // Block all interactions
-            overlay.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
-                return false;
-            });
-            
-            overlay.addEventListener('keydown', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
-                return false;
-            });
-            
-            // Block scrolling
-            document.body.style.overflow = 'hidden';
-            document.documentElement.style.overflow = 'hidden';
-        }
-        
-        function hideLoadingOverlay() {
-            const overlay = document.getElementById('loading-overlay');
-            if (overlay) {
-                overlay.classList.remove('show');
-                setTimeout(() => {
-                    if (overlay.parentNode) {
-                        overlay.parentNode.removeChild(overlay);
-                    }
-                }, 300);
-                
-                // Restore scrolling
-                document.body.classList.remove('loading-active');
-                document.body.style.overflow = '';
-                document.documentElement.style.overflow = '';
-            }
-        }
-        
-        // Force overlay to show immediately when called
-        window.showLoadingOverlay = showLoadingOverlay;
-        window.hideLoadingOverlay = hideLoadingOverlay;
         
         // Handle Return key for keyword deletion in multiselect
         setTimeout(function() {
@@ -487,53 +288,21 @@ class HTMLResearchAssistantUI:
     
     def render_main_interface(self):
         """Render the main interface using Streamlit components"""
-        
-        # Show full-screen loading overlay if loading (do NOT return; allow processing to continue)
-        if st.session_state.get('is_loading', False):
-            loading_message = st.session_state.get('loading_message', 'Processing...')
-            loading_subtext = st.session_state.get('loading_subtext', 'Please wait while we work on your request')
-            loading_progress = st.session_state.get('loading_progress', '')
-            
+        # Show loading overlay if analysis is in progress
+        if st.session_state.get('is_loading_analysis', False):
+            loading_message = st.session_state.loading_message
             st.markdown(f"""
-            <div class="loading-overlay show">
-                <div class="loading-content">
-                    <div class="loading-spinner"></div>
-                    <div class="loading-text">{loading_message}</div>
-                    <div class="loading-subtext">{loading_subtext}</div>
-                    {f'<div class="loading-progress">{loading_progress}</div>' if loading_progress else ''}
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; font-size: 18px;">
+                <div style="text-align: center;">
+                    <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite; margin: 0 auto 20px;"></div>
+                    <p>{loading_message}</p>
                 </div>
             </div>
+            <style>
+            @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
+            </style>
             """, unsafe_allow_html=True)
-            # IMPORTANT: don't return; keep running so background task can execute during this run
-        
-        # If a keyword search was scheduled on previous click, run it now while overlay is visible
-        if st.session_state.get('do_keyword_search'):
-            try:
-                pending_keywords = st.session_state.get('pending_keywords', [])
-                pending_time = st.session_state.get('pending_time_filter', 'Current year')
-                pending_mode = st.session_state.get('pending_search_mode', 'all_keywords')
-
-                success = self.process_keyword_search(pending_keywords, pending_time, pending_mode)
-
-                # Clear loading and flags
-                st.session_state['is_loading'] = False
-                st.session_state['do_keyword_search'] = False
-                st.session_state.pop('pending_keywords', None)
-                st.session_state.pop('pending_time_filter', None)
-                st.session_state.pop('pending_search_mode', None)
-
-                if success:
-                    st.rerun()
-                else:
-                    self.set_user_session('analysis_locked', False)
-                    st.error("Analysis failed. Please try again.")
-                    st.rerun()
-            except Exception as e:
-                st.session_state['is_loading'] = False
-                st.session_state['do_keyword_search'] = False
-                self.set_user_session('analysis_locked', False)
-                st.error(f"An error occurred: {e}")
-                st.rerun()
+            return
         
         # Main content area
         st.markdown("# 🧬 POLO-GGB RESEARCH ASSISTANT")
@@ -753,20 +522,18 @@ Assistant Response:"""
             # Search button
             if st.button("Search & Analyze", type="primary", use_container_width=True, disabled=analysis_locked):
                 if selected_keywords:
-                    # Set loading state and lock immediately, then schedule analysis and rerun
-                    st.session_state['is_loading'] = True
-                    st.session_state['loading_message'] = "Analyzing Research Papers"
-                    st.session_state['loading_subtext'] = "Searching for highly relevant papers and generating comprehensive report..."
-                    st.session_state['loading_progress'] = "This may take a few moments..."
-                    self.set_user_session('analysis_locked', True)
-
-                    # Stash pending action parameters to run on next script run
-                    st.session_state['do_keyword_search'] = True
-                    st.session_state['pending_keywords'] = list(selected_keywords)
-                    st.session_state['pending_time_filter'] = time_filter
-                    st.session_state['pending_search_mode'] = search_mode
-
-                    st.rerun()
+                    st.session_state.is_loading_analysis = True
+                    st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
+                    
+                    success = self.process_keyword_search(selected_keywords, time_filter, search_mode)
+                    st.session_state.is_loading_analysis = False
+                    
+                    if success:
+                        # Lock the analysis after successful search
+                        self.set_user_session('analysis_locked', True)
+                        st.rerun()
+                    else:
+                        st.error("Analysis failed. Please try again.")
                 else:
                     st.error("Please select at least one keyword.")
             
@@ -844,28 +611,12 @@ Assistant Response:"""
                 
                 # Custom summary button
                 if st.button("Generate Custom Summary", type="primary", use_container_width=True):
-                    # Show full-screen overlay immediately via JS (no pre-rerun)
-                    st.markdown(
-                        """
-                        <script>
-                        showLoadingOverlay("📄 Generating Custom Summary", "Analyzing your uploaded papers and creating comprehensive summary...", "Processing PDF content and generating AI summary...");
-                        </script>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-
+                    st.session_state.is_loading_analysis = True
+                    st.session_state.loading_message = "Generating summary of your uploaded papers..."
+                    
                     success = self.generate_custom_summary(uploaded_papers)
-
-                    # Hide overlay and refresh UI
-                    st.markdown(
-                        """
-                        <script>
-                        hideLoadingOverlay();
-                        </script>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-
+                    st.session_state.is_loading_analysis = False
+                    
                     if success:
                         st.rerun()
                     else:
@@ -890,34 +641,20 @@ Assistant Response:"""
                 )
                 
                 if uploaded_pdfs and st.button("Add PDFs", type="primary"):
-                    # Show full-screen loading overlay for PDF processing
-                    st.markdown("""
-                    <script>
-                    showLoadingOverlay("📄 Processing PDF Files", "Extracting text and metadata from uploaded papers...", "Reading PDF content and generating summaries...");
-                    </script>
-                    """, unsafe_allow_html=True)
-                    
-                    for uploaded_file in uploaded_pdfs:
-                        # Process PDF using backend API
-                        paper_data = self.api.process_uploaded_pdf(uploaded_file, uploaded_file.name)
-                        
-                        if paper_data:
-                            # Store in user-specific session state
-                            uploaded_papers = self.get_user_session('uploaded_papers', [])
-                            uploaded_papers.append(paper_data)
-                            self.set_user_session('uploaded_papers', uploaded_papers)
-                            st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_data['content'])} chars)")
-                        else:
-                            st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
-                    
-                    # Hide loading overlay
-                    st.markdown("""
-                    <script>
-                    hideLoadingOverlay();
-                    </script>
-                    """, unsafe_allow_html=True)
-                    
-                    st.rerun()
+                    with st.spinner("Processing PDF files..."):
+                        for uploaded_file in uploaded_pdfs:
+                            # Process PDF using backend API
+                            paper_data = self.api.process_uploaded_pdf(uploaded_file, uploaded_file.name)
+                            
+                            if paper_data:
+                                # Store in user-specific session state
+                                uploaded_papers = self.get_user_session('uploaded_papers', [])
+                                uploaded_papers.append(paper_data)
+                                self.set_user_session('uploaded_papers', uploaded_papers)
+                                st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_data['content'])} chars)")
+                            else:
+                                st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
+                        st.rerun()
             
             # Logout
             if st.button("Logout", type="secondary", use_container_width=True):

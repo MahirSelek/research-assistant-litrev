@@ -1,798 +1,562 @@
-# app/frontend/html_ui.py
+# app/backend/api.py
 """
-HTML/CSS/JS Frontend - Clean separation from backend logic
-This handles all UI components using HTML/CSS/JavaScript instead of Streamlit components
+Backend API Layer - All business logic separated from frontend
+This handles all data processing, AI calls, GCS operations, and authentication
 """
 
-import streamlit as st
+import json
 import time
 import os
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 import datetime
-import json
+from dateutil import parser as date_parser
+from collections import defaultdict
+
+import vertexai
+from vertexai.generative_models import GenerativeModel
+from google.cloud import storage
+from google.api_core.exceptions import NotFound
 
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.api import ResearchAssistantAPI
-from auth import show_login_page, show_logout_button
+from auth import auth_manager
+from gcs_user_storage import GCSUserStorage
+from elasticsearch_utils import get_es_manager
 
-class HTMLResearchAssistantUI:
-    def __init__(self, api: ResearchAssistantAPI):
-        """Initialize HTML-based UI with backend API"""
-        self.api = api
+class ResearchAssistantAPI:
+    def __init__(self, config: Dict[str, Any]):
+        """Initialize the backend API with configuration"""
+        self.config = config
         
-        # Clean user and assistant avatars (bigger sizes)
-        # User avatar: Simple person icon (bigger)
-        self.USER_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIiBmaWxsPSJub25lIj48cGF0aCBkPSJNMjAgMjBjLTUuNSAwLTEwIDQuNS0xMCAxMHY1aDIwdi01YzAtNS41LTQuNS0xMC0xMC0xMHoiIGZpbGw9IiM2NjdlZWEiLz48Y2lyY2xlIGN4PSIyMCIgY3k9IjEyIiByPSI3IiBmaWxsPSIjNjY3ZWVhIi8+PC9zdmc+"
+        # Initialize services
+        self.gcs_storage = GCSUserStorage(config['gcs_bucket_name'])
+        self.es_manager = get_es_manager(
+            cloud_id=config['elastic_cloud_id'],
+            username=config['elastic_username'],
+            password=config['elastic_password']
+        )
         
-        # Assistant avatar: Very basic robot/assistant icon
-        self.ASSISTANT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIiBmaWxsPSJub25lIj48cmVjdCB4PSI4IiB5PSIxMCIgd2lkdGg9IjI0IiBoZWlnaHQ9IjIwIiBmaWxsPSIjMTA5OTgxIiByeD0iNCIvPjxjaXJjbGUgY3g9IjE2IiBjeT0iMTgiIHI9IjIiIGZpbGw9IndoaXRlIi8+PGNpcmNsZSBjeD0iMjQiIGN5PSIxOCIgcj0iMiIgZmlsbD0id2hpdGUiLz48cmVjdCB4PSIxNiIgeT0iMjQiIHdpZHRoPSI4IiBoZWlnaHQ9IjMiIGZpbGw9IndoaXRlIiByeD0iMSIvPjwvc3ZnPg=="
+        # Initialize Vertex AI
+        vertexai.init(
+            project=config['vertexai_project'],
+            location=config['vertexai_location']
+        )
+        self.model = GenerativeModel(config['vertexai_model_id'])
         
-        # UI Constants
-        self.GENETICS_KEYWORDS = [
-            "Polygenic risk score", "Complex disease", "Multifactorial disease", "PRS", "Risk", "Risk prediction", "Genetic risk prediction", "GWAS", "Genome-wide association study", "GWAS summary statistics", "Relative risk", "Absolute risk", "clinical polygenic risk score", "disease prevention", "disease management", "personalized medicine", "precision medicine", "UK biobank", "biobank", "All of US biobank", "PRS pipeline", "PRS workflow", "PRS tool", "PRS conversion", "Binary trait", "Continuous trait", "Meta-analysis", "Genome-wide association", "Genetic susceptibility", "PRSs Clinical utility", "Genomic risk prediction", "clinical implementation", "PGS", "SNP hereditability", "Risk estimation", "Machine learning in genetic prediction", "PRSs clinical application", "Risk stratification", "Multiancestry PRS", "Integrative PRS model", "Longitudinal PRS analysis", "Genetic screening", "Ethical implication of PRS", "human genetics", "human genome variation", "genetics of common multifactorial diseases", "genetics of common traits", "pharmacogenetics", "pharmacogenomics"
-        ]
+    def authenticate_user(self, username: str, password: str) -> Tuple[bool, str]:
+        """Authenticate user and return success status and message"""
+        return auth_manager.authenticate_user(username, password)
     
-    def initialize_session_state(self):
-        """Initialize user session state"""
-        current_user = st.session_state.get('username', 'default')
-        
-        # Check if this is a new login (user data not loaded yet)
-        user_data_loaded_key = f"user_data_loaded_{current_user}"
-        
-        if current_user != 'default' and not st.session_state.get(user_data_loaded_key, False):
-            # Load user data from backend
-            try:
-                print(f"Loading user data for: {current_user}")
-                user_data = self.api.get_user_data(current_user)
-                if user_data:
-                    print(f"Loaded user data: {list(user_data.keys())}")
-                    # Set persistent user data from backend (conversations only)
-                    self.set_user_session('conversations', user_data.get('conversations', {}))
-                    
-                    # Clear session-specific data on each login (like in old implementation)
-                    # This includes clearing active_conversation_id to show new analysis page
-                    self.set_user_session('active_conversation_id', None)
-                    self.set_user_session('selected_keywords', [])
-                    self.set_user_session('search_mode', 'all_keywords')
-                    self.set_user_session('uploaded_papers', [])
-                    self.set_user_session('custom_summary_chat', [])
-                    
-                    # Mark user data as loaded
-                    st.session_state[user_data_loaded_key] = True
-                    print(f"Successfully loaded data for {current_user}")
-                else:
-                    # Initialize empty user data if none exists
-                    print(f"No data found for {current_user}, initializing empty data")
-                    self._initialize_empty_user_data()
-                    st.session_state[user_data_loaded_key] = True
-            except Exception as e:
-                print(f"Failed to load user data for {current_user}: {e}")
-                self._initialize_empty_user_data()
-                st.session_state[user_data_loaded_key] = True
-        
-        # Initialize user-specific session state (fallback for default user)
-        self._initialize_empty_user_data()
-        
-        # Global session state (shared across users)
-        if 'is_loading_analysis' not in st.session_state:
-            st.session_state.is_loading_analysis = False
-        if 'loading_message' not in st.session_state:
-            st.session_state.loading_message = ""
+    def login_user(self, username: str, password: str) -> Tuple[bool, str]:
+        """Login user and set session"""
+        return auth_manager.login(username, password)
     
-    def _initialize_empty_user_data(self):
-        """Initialize empty user data"""
-        if self.get_user_key('conversations') not in st.session_state:
-            self.set_user_session('conversations', {})
-        if self.get_user_key('active_conversation_id') not in st.session_state:
-            self.set_user_session('active_conversation_id', None)
-        if self.get_user_key('selected_keywords') not in st.session_state:
-            self.set_user_session('selected_keywords', [])
-        if self.get_user_key('search_mode') not in st.session_state:
-            self.set_user_session('search_mode', "all_keywords")
-        if self.get_user_key('uploaded_papers') not in st.session_state:
-            self.set_user_session('uploaded_papers', [])
-        if self.get_user_key('custom_summary_chat') not in st.session_state:
-            self.set_user_session('custom_summary_chat', [])
-        if self.get_user_key('analysis_locked') not in st.session_state:
-            self.set_user_session('analysis_locked', False)
+    def logout_user(self):
+        """Logout user and clear session"""
+        auth_manager.logout()
     
-    def get_user_key(self, key):
-        """Get user-specific session key"""
-        current_user = st.session_state.get('username', 'default')
-        return f"{key}_{current_user}"
+    def is_session_valid(self) -> bool:
+        """Check if current session is valid"""
+        return auth_manager.is_session_valid()
     
-    def get_user_session(self, key, default=None):
-        """Get user-specific session value"""
-        user_key = self.get_user_key(key)
-        return st.session_state.get(user_key, default)
+    def get_user_data(self, username: str) -> Dict[str, Any]:
+        """Get all user data from GCS"""
+        return self.gcs_storage.load_user_data_from_gcs(username)
     
-    def set_user_session(self, key, value):
-        """Set user-specific session value"""
-        user_key = self.get_user_key(key)
-        st.session_state[user_key] = value
-        
-        # Auto-sync to backend for important data
-        if key in ['conversations', 'selected_keywords', 'search_mode', 'uploaded_papers', 'custom_summary_chat', 'active_conversation_id']:
-            username = st.session_state.get('username')
-            if username and username != 'default':
-                try:
-                    user_data = {
-                        'selected_keywords': self.get_user_session('selected_keywords', []),
-                        'search_mode': self.get_user_session('search_mode', 'all_keywords'),
-                        'uploaded_papers': self.get_user_session('uploaded_papers', []),
-                        'custom_summary_chat': self.get_user_session('custom_summary_chat', []),
-                        'active_conversation_id': self.get_user_session('active_conversation_id')
-                    }
-                    self.api.save_user_data(username, user_data)
-                except Exception as e:
-                    print(f"Failed to sync to backend: {e}")
+    def save_user_data(self, username: str, data: Dict[str, Any]) -> bool:
+        """Save user data to GCS"""
+        return self.gcs_storage.save_user_data(username, 'user_preferences', data)
     
-    def inject_css_and_js(self):
-        """Inject minimal CSS for styling"""
-        st.markdown("""
-        <style>
-        /* Custom styling for better appearance */
-        .stApp {
-            background: #0e1117 !important;
-        }
-        
-        .stSidebar {
-            background: #1e1e1e !important;
-        }
-        
-        /* Primary buttons - Modern blue gradient with enhanced styling */
-        .stButton > button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 10px !important;
-            font-weight: 600 !important;
-            padding: 14px 28px !important;
-            font-size: 15px !important;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            box-shadow: 0 4px 14px rgba(102, 126, 234, 0.25) !important;
-            position: relative !important;
-            overflow: hidden !important;
-        }
-        
-        .stButton > button::before {
-            content: '' !important;
-            position: absolute !important;
-            top: 0 !important;
-            left: -100% !important;
-            width: 100% !important;
-            height: 100% !important;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent) !important;
-            transition: left 0.5s !important;
-        }
-        
-        .stButton > button:hover {
-            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%) !important;
-            transform: translateY(-3px) !important;
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4) !important;
-        }
-        
-        .stButton > button:hover::before {
-            left: 100% !important;
-        }
-        
-        .stButton > button:active {
-            transform: translateY(-1px) !important;
-            box-shadow: 0 4px 14px rgba(102, 126, 234, 0.25) !important;
-        }
-        
-        /* Secondary buttons - Subtle gray */
-        [data-testid="stSecondaryButton"] > button {
-            background: rgba(255, 255, 255, 0.1) !important;
-            color: #e2e8f0 !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            border-radius: 6px !important;
-            font-size: 13px !important;
-            font-weight: 500 !important;
-            padding: 8px 16px !important;
-            transition: all 0.2s ease !important;
-        }
-        
-        [data-testid="stSecondaryButton"] > button:hover {
-            background: rgba(255, 255, 255, 0.15) !important;
-            color: #f1f5f9 !important;
-            border-color: rgba(255, 255, 255, 0.3) !important;
-            transform: translateY(-1px) !important;
-        }
-        
-        /* Delete buttons in chat history - Red accent */
-        div[data-testid="stButton"]:has(button:contains("×")) button {
-            background: rgba(239, 68, 68, 0.1) !important;
-            color: #f87171 !important;
-            border: 1px solid rgba(239, 68, 68, 0.3) !important;
-            border-radius: 6px !important;
-            font-size: 12px !important;
-            font-weight: 600 !important;
-            min-height: 28px !important;
-            padding: 4px 8px !important;
-            transition: all 0.2s ease !important;
-        }
-        
-        div[data-testid="stButton"]:has(button:contains("×")) button:hover {
-            background: rgba(239, 68, 68, 0.2) !important;
-            color: #ef4444 !important;
-            border-color: rgba(239, 68, 68, 0.5) !important;
-            transform: translateY(-1px) !important;
-        }
-        
-        /* Special button types with enhanced styling */
-        button:contains("New Analysis") {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
-        }
-        
-        button:contains("New Analysis"):hover {
-            background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
-            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4) !important;
-        }
-        
-        button:contains("Logout") {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
-            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3) !important;
-        }
-        
-        button:contains("Logout"):hover {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
-            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4) !important;
-        }
-        
-        /* Search & Analyze button - Special styling */
-        button:contains("Search & Analyze") {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
-            box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3) !important;
-        }
-        
-        button:contains("Search & Analyze"):hover {
-            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
-            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
-        }
-        
-        </style>
-        <script>
-        // Button styling is now handled by CSS above
-        
-        // Handle Return key for keyword deletion in multiselect
-        setTimeout(function() {
-            const multiselectInputs = document.querySelectorAll('input[aria-label*="Select Keywords"]');
-            multiselectInputs.forEach(input => {
-                input.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' || e.key === 'Return') {
-                        e.preventDefault();
-                        // Find the closest selected keyword chip and remove it
-                        const container = input.closest('[data-testid="stMultiSelect"]');
-                        if (container) {
-                            const chips = container.querySelectorAll('[data-testid="stMultiSelect"] > div > div > div > div > div');
-                            if (chips.length > 0) {
-                                const lastChip = chips[chips.length - 1];
-                                const removeButton = lastChip.querySelector('button');
-                                if (removeButton) {
-                                    removeButton.click();
-                                }
-                            }
-                        }
-                    }
-                });
-            });
-        }, 1500);
-        </script>
-        """, unsafe_allow_html=True)
+    def save_conversation(self, username: str, conversation_id: str, conversation_data: Dict[str, Any]) -> bool:
+        """Save conversation to GCS"""
+        return self.gcs_storage.save_conversation(username, conversation_id, conversation_data)
     
-    def render_main_interface(self):
-        """Render the main interface using Streamlit components"""
-        # Show loading overlay if analysis is in progress
-        if st.session_state.get('is_loading_analysis', False):
-            loading_message = st.session_state.loading_message
-            st.markdown(f"""
-            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; font-size: 18px;">
-                <div style="text-align: center;">
-                    <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite; margin: 0 auto 20px;"></div>
-                    <p>{loading_message}</p>
-                </div>
-            </div>
-            <style>
-            @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
-            </style>
-            """, unsafe_allow_html=True)
-            return
-        
-        # Main content area
-        st.markdown("# 🧬 POLO-GGB RESEARCH ASSISTANT")
-        
-        # Get current state
-        active_conversation_id = self.get_user_session('active_conversation_id')
-        conversations = self.get_user_session('conversations', {})
-        
-        # Show default message if no active conversation
-        if active_conversation_id is None:
-            st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
-        elif active_conversation_id is not None and active_conversation_id in conversations:
-            active_conv = conversations[active_conversation_id]
-            
-            # Display all messages in the conversation
-            for message_index, message in enumerate(active_conv.get("messages", [])):
-                # Use custom avatars based on message role
-                avatar = self.ASSISTANT_AVATAR if message["role"] == "assistant" else self.USER_AVATAR
-                with st.chat_message(message["role"], avatar=avatar):
-                    st.markdown(message["content"], unsafe_allow_html=True)
-                    
-                    # Show papers section only for the first assistant message and regular analyses
-                    if (message["role"] == "assistant" and message_index == 0 and 
-                        "retrieved_papers" in active_conv and active_conv["retrieved_papers"] and 
-                        active_conv.get("search_mode") != "custom"):
-                        with st.expander("View and Download Retrieved Papers for this Analysis"):
-                            for paper_index, paper in enumerate(active_conv["retrieved_papers"]):
-                                meta = paper.get('metadata', {})
-                                title = meta.get('title', 'N/A')
-                                paper_id = paper.get('paper_id')
-                                
-                                col1, col2 = st.columns([4, 1])
-                                with col1:
-                                    st.markdown(f"**{paper_index+1}. {title}**")
-                                with col2:
-                                    if paper_id:
-                                        pdf_bytes = self.api.get_pdf_from_gcs(self.api.config['gcs_bucket_name'], paper_id)
-                                        if pdf_bytes:
-                                            st.download_button(
-                                                label="Download PDF",
-                                                data=pdf_bytes,
-                                                file_name=paper_id,
-                                                mime="application/pdf",
-                                                key=f"download_{active_conversation_id}_{paper_id}"
-                                            )
-            
-            # Handle follow-up responses
-            if active_conversation_id and conversations[active_conversation_id]["messages"][-1]["role"] == "user":
-                active_conv = conversations[active_conversation_id]
-                with st.spinner("Thinking..."):
-                    chat_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in active_conv["messages"]])
-                    full_context = ""
-                    if active_conv.get("retrieved_papers"):
-                        full_context += "Here is the full context of every paper found in the initial analysis:\n\n"
-                        for i, paper in enumerate(active_conv["retrieved_papers"]):
-                            meta = paper.get('metadata', {})
-                            title = meta.get('title', 'N/A')
-                            link = self.api._get_paper_link(meta)
-                            content_preview = (meta.get('abstract') or paper.get('content') or '')[:4000]
-                            full_context += f"SOURCE [{i+1}]:\nTitle: {title}\nLink: {link}\nContent: {content_preview}\n---\n\n"
-                    
-                    full_prompt = f"""Continue our conversation. You are the Polo-GGB Research Assistant.
-Your task is to answer the user's last message based on the chat history and the full context from the paper sources provided below.
-
-**CITATION INSTRUCTIONS:** When referencing sources, use citation markers in square brackets like [1], [2], [3], etc. Separate multiple citations with individual brackets like [2][3][4]. **IMPORTANT:** Limit citations to a maximum of 3 per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
-
---- CHAT HISTORY ---
-{chat_history}
---- END CHAT HISTORY ---
-
---- FULL LITERATURE CONTEXT FOR THIS ANALYSIS ---
-{full_context}
---- END FULL LITERATURE CONTEXT FOR THIS ANALYSIS ---
-
-Assistant Response:"""
-                    
-                    response_text = self.api.generate_ai_response(full_prompt)
-                    if response_text:
-                        retrieved_papers = active_conv.get("retrieved_papers", [])
-                        search_mode = active_conv.get("search_mode", "all_keywords")
-                        
-                        # For follow-up responses, use all retrieved papers to make citations clickable but don't include references section
-                        response_text = self.api._display_citations_separately(response_text, retrieved_papers, retrieved_papers, search_mode, include_references=False)
-                        active_conv["messages"].append({"role": "assistant", "content": response_text})
-                        active_conv['last_interaction_time'] = time.time()
-                        self.set_user_session('conversations', conversations)
-                        
-                        # Save conversation to backend
-                        username = st.session_state.get('username')
-                        if username:
-                            self.api.save_conversation(username, active_conversation_id, active_conv)
-                        
-                        st.rerun()
+    def delete_conversation(self, username: str, conversation_id: str) -> bool:
+        """Delete conversation from GCS"""
+        return self.gcs_storage.delete_conversation(username, conversation_id)
     
-    def render_sidebar(self):
-        """Sidebar is now part of the main HTML interface"""
-        pass
-    
-    def process_keyword_search(self, keywords: List[str], time_filter_type: str, search_mode: str = "all_keywords"):
-        """Process keyword search via backend"""
+    def generate_ai_response(self, prompt: str) -> Optional[str]:
+        """Generate AI response using Vertex AI"""
         try:
-            print(f"Processing keyword search with {len(keywords)} keywords: {keywords}")
-            analysis_result, retrieved_papers, total_found = self.api.search_papers(keywords, time_filter_type, search_mode)
-            print(f"API returned: analysis_result={bool(analysis_result)}, papers={len(retrieved_papers)}, total_found={total_found}")
-            
-            if analysis_result:
-                conv_id = f"conv_{time.time()}"
-                search_mode_display = search_mode
-                selected_keywords = keywords  # Use the actual keywords passed to the function
-                search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
-                
-                initial_message = {"role": "assistant", "content": f"""
-<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-    <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px; font-weight: 600;">Analysis Report</h2>
-    <div style="color: #f0f0f0; font-size: 16px; margin-bottom: 8px;">
-        <strong>Keywords:</strong> {', '.join(selected_keywords) if selected_keywords else 'None selected'}
-    </div>
-    <div style="color: #e0e0e0; font-size: 14px;">
-        <strong>Search Mode:</strong> {search_mode_text}
-    </div>
-    <div style="color: #f0f0f0; font-size: 16px;">
-        <strong>Time Window:</strong> {time_filter_type}
-    </div>
-</div>
-
-{analysis_result}
-"""}
-                
-                title = self.api.generate_conversation_title(analysis_result)
-                
-                conversations = self.get_user_session('conversations', {})
-                conversations[conv_id] = {
-                    "title": title, 
-                    "messages": [initial_message], 
-                    "keywords": selected_keywords,
-                    "search_mode": search_mode_display,
-                    "retrieved_papers": retrieved_papers,
-                    "total_papers_found": total_found,
-                    "created_at": time.time(),
-                    "last_interaction_time": time.time()
-                }
-                self.set_user_session('conversations', conversations)
-                print(f"Created conversation {conv_id} with message: {initial_message['content'][:100]}...")
-                
-                # Save conversation to backend
-                username = st.session_state.get('username')
-                if username:
-                    self.api.save_conversation(username, conv_id, conversations[conv_id])
-                
-                self.set_user_session('active_conversation_id', conv_id)
-                self.set_user_session('custom_summary_chat', [])
-                print(f"Successfully created conversation: {conv_id}")
-                return True
-            else:
-                search_mode_text = "ALL of the selected keywords" if search_mode == "all_keywords" else "AT LEAST ONE of the selected keywords"
-                st.error(f"No papers found that contain {search_mode_text} within the specified time window. Please try a different combination of keywords.")
-                return False
+            generation_config = {"temperature": 0.2, "max_output_tokens": 8192}
+            response = self.model.generate_content([prompt], generation_config=generation_config)
+            return response.text
         except Exception as e:
-            print(f"Error in process_keyword_search: {e}")
-            st.error(f"An error occurred while processing the search: {str(e)}")
+            print(f"AI API error: {e}")
+            return None
+    
+    def search_papers(self, keywords: List[str], time_filter_type: str, search_mode: str = "all_keywords") -> Tuple[Optional[str], List[Dict], int]:
+        """Search papers and generate analysis"""
+        if not keywords:
+            return None, [], 0
+        
+        # Process time filter
+        time_filter_dict = self._get_time_filter_dict(time_filter_type)
+        
+        # Perform search with higher limit for OR searches
+        n_results = 200 if search_mode == "any_keyword" else 100
+        all_papers, total_found = self._perform_hybrid_search(
+            keywords, 
+            time_filter_dict=None,  # No ES time filtering
+            n_results=n_results, 
+            max_final_results=15,
+            search_mode=search_mode
+        )
+        
+        # Apply GCS-based time filtering if needed
+        if time_filter_type != "All time" and all_papers:
+            all_papers = self._filter_papers_by_gcs_dates(all_papers, time_filter_type)
+            total_found = len(all_papers)
+        
+        if not all_papers:
+            return None, [], 0
+        
+        # Prepare papers for analysis
+        if search_mode == "any_keyword":
+            top_papers_for_analysis = all_papers[:15]
+            papers_for_references = all_papers
+        else:
+            top_papers_for_analysis = all_papers
+            papers_for_references = all_papers
+        
+        # Generate analysis
+        analysis = self._generate_analysis(top_papers_for_analysis, keywords, search_mode)
+        
+        # Reload metadata and make citations clickable
+        papers_for_references = self._reload_paper_metadata(papers_for_references)
+        top_papers_for_analysis = self._reload_paper_metadata(top_papers_for_analysis)
+        
+        if analysis:
+            analysis = self._display_citations_separately(analysis, papers_for_references, top_papers_for_analysis, search_mode)
+        
+        return analysis, papers_for_references, total_found
+    
+    def generate_custom_summary(self, uploaded_papers: List[Dict]) -> Optional[str]:
+        """Generate summary of uploaded papers"""
+        if not uploaded_papers:
+            return "No papers uploaded."
+        
+        # Combine all paper content
+        all_content = ""
+        paper_titles = []
+        
+        for paper in uploaded_papers:
+            title = paper['metadata'].get('title', 'Unknown Title')
+            content = paper.get('content', '')
+            paper_titles.append(title)
+            all_content += f"\n\n--- {title} ---\n{content}"
+        
+        # Create summary prompt
+        prompt = f"""
+        Please provide a comprehensive summary of the following {len(uploaded_papers)} research paper(s):
+        
+        Papers: {', '.join(paper_titles)}
+        
+        Content:
+        {all_content}
+        
+        Please provide:
+        1. A brief overview of each paper
+        2. Key findings and methodologies
+        3. Common themes across the papers
+        4. Overall conclusions and implications
+        
+        Keep the summary concise but informative.
+        """
+        
+        return self.generate_ai_response(prompt)
+    
+    def process_uploaded_pdf(self, pdf_file, filename: str) -> Optional[Dict]:
+        """Process uploaded PDF file"""
+        try:
+            import PyPDF2
+            import io
+            
+            # Get the base name without extension
+            pdf_base_name = os.path.splitext(os.path.basename(filename))[0]
+            
+            # Create basic metadata
+            metadata = {
+                'title': pdf_base_name,
+                'abstract': 'No abstract available',
+                'publication_date': '2024-01-01',
+                'authors': ['Unknown'],
+                'url': '',
+                'doi_url': '',
+                'link': ''
+            }
+            
+            # Extract PDF content
+            pdf_content_bytes = io.BytesIO(pdf_file.getvalue())
+            pdf_reader = PyPDF2.PdfReader(pdf_content_bytes)
+            paper_content = "".join(page.extract_text() for page in pdf_reader.pages)
+            
+            if paper_content:
+                return {
+                    'paper_id': f"uploaded_{pdf_base_name}",
+                    'metadata': metadata,
+                    'content': paper_content
+                }
+            return None
+        except Exception as e:
+            print(f"Error processing PDF: {e}")
+            return None
+    
+    def generate_conversation_title(self, conversation_history: str) -> str:
+        """Generate conversation title using AI"""
+        prompt = f"""Create a unique, descriptive title for this research analysis conversation. 
+Make it specific and distinguishable from other analyses. Include key topics, methods, or diseases mentioned.
+Keep it under 8 words and make it memorable.
+
+Conversation content:
+{conversation_history[:1000]}
+
+Title:"""
+        title = self.generate_ai_response(prompt)
+        if title:
+            return title.strip().replace('"', '')
+        return "Research Analysis"
+    
+    def get_pdf_from_gcs(self, bucket_name: str, blob_name: str) -> Optional[bytes]:
+        """Get PDF bytes from GCS"""
+        try:
+            storage_client = storage.Client()
+            bucket = storage_client.bucket(bucket_name)
+            blob = bucket.blob(blob_name)
+            return blob.download_as_bytes()
+        except NotFound:
+            print(f"File not found in GCS: {blob_name}")
+            return None
+        except Exception as e:
+            print(f"Failed to download from GCS: {e}")
+            return None
+    
+    # Private helper methods
+    def _get_time_filter_dict(self, time_filter_type: str) -> Optional[Dict]:
+        """Get time filter dictionary"""
+        if time_filter_type == "Current year":
+            return {"gte": f"01 Jan 2025", "lte": f"31 Dec 2025"}
+        elif time_filter_type == "Last 3 months":
+            return {"gte": f"01 Jan 2025"}
+        elif time_filter_type == "Last 6 months":
+            return {"gte": f"01 Jan 2025"}
+        elif time_filter_type in ["January", "February", "March", "April", "May", "June", 
+                                 "July", "August", "September", "October", "November", "December"]:
+            month_map = {
+                "January": "Jan", "February": "Feb", "March": "Mar", "April": "Apr", 
+                "May": "May", "June": "Jun", "July": "Jul", "August": "Aug", 
+                "September": "Sep", "October": "Oct", "November": "Nov", "December": "Dec"
+            }
+            next_month_map = {
+                "January": "Feb", "February": "Mar", "March": "Apr", "April": "May", 
+                "May": "Jun", "June": "Jul", "July": "Aug", "August": "Sep", 
+                "September": "Oct", "October": "Nov", "November": "Dec", "December": "Jan"
+            }
+            month_abbr = month_map[time_filter_type]
+            next_month_abbr = next_month_map[time_filter_type]
+            next_year = 2026 if time_filter_type == "December" else 2025
+            return {"gte": f"01 {month_abbr} 2025", "lt": f"01 {next_month_abbr} {next_year}"}
+        return None
+    
+    def _perform_hybrid_search(self, keywords: List[str], time_filter_dict: Optional[Dict], 
+                              n_results: int, max_final_results: int, search_mode: str) -> Tuple[List[Dict], int]:
+        """Perform hybrid search"""
+        operator = "AND" if search_mode == "all_keywords" else "OR"
+        
+        if search_mode == "all_keywords":
+            return self._perform_and_search(keywords, time_filter_dict, n_results, 0.005, max_final_results)
+        else:
+            return self._perform_or_search(keywords, time_filter_dict, n_results)
+    
+    def _perform_and_search(self, keywords: List[str], time_filter_dict: Optional[Dict], 
+                           n_results: int, score_threshold: float, max_final_results: int) -> Tuple[List[Dict], int]:
+        """Perform AND search"""
+        es_results = self.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="AND")
+        valid_paper_ids = {hit['_id'] for hit in es_results}
+        total_papers_found = len(valid_paper_ids)
+        
+        if not valid_paper_ids:
+            return [], 0
+        
+        fused_scores = defaultdict(lambda: {'score': 0, 'doc': None})
+        k = 60
+        
+        for i, hit in enumerate(es_results):
+            rank = i + 1
+            paper_id = hit['_id']
+            fused_scores[paper_id]['score'] += 1 / (k + rank)
+            doc_content = {'paper_id': paper_id, 'metadata': hit['_source'], 'content': hit['_source'].get('content', '')}
+            fused_scores[paper_id]['doc'] = doc_content
+        
+        valid_fused_results = [item for item in fused_scores.values() if item['doc'] is not None]
+        sorted_fused_results = sorted(valid_fused_results, key=lambda x: x['score'], reverse=True)
+        
+        final_paper_list = [
+            item['doc'] for item in sorted_fused_results 
+            if item['score'] >= score_threshold
+        ][:max_final_results]
+        
+        return final_paper_list, total_papers_found
+    
+    def _perform_or_search(self, keywords: List[str], time_filter_dict: Optional[Dict], n_results: int) -> Tuple[List[Dict], int]:
+        """Perform OR search"""
+        es_results = self.es_manager.search_papers(keywords, time_filter=time_filter_dict, size=n_results, operator="OR")
+        
+        all_papers = []
+        for hit in es_results:
+            paper_id = hit['_id']
+            relevance_score = hit.get('_score', 0.0)
+            doc_content = {
+                'paper_id': paper_id, 
+                'metadata': hit['_source'], 
+                'content': hit['_source'].get('content', ''),
+                'relevance_score': relevance_score
+            }
+            all_papers.append(doc_content)
+        
+        all_papers.sort(key=lambda x: x.get('relevance_score', 0.0), reverse=True)
+        return all_papers, len(all_papers)
+    
+    def _filter_papers_by_gcs_dates(self, papers: List[Dict], time_filter_type: str) -> List[Dict]:
+        """Filter papers by GCS dates"""
+        if not papers:
+            return papers
+        
+        try:
+            storage_client = storage.Client()
+            bucket = storage_client.bucket(self.config['gcs_bucket_name'])
+            
+            filtered_papers = []
+            for paper in papers:
+                paper_id = paper.get('paper_id')
+                if paper_id:
+                    json_filename = paper_id.rsplit('.', 1)[0] + '.metadata.json'
+                    json_blob = bucket.blob(json_filename)
+                    
+                    if json_blob.exists():
+                        try:
+                            json_content = json_blob.download_as_string()
+                            json_metadata = json.loads(json_content)
+                            publication_date = json_metadata.get('publication_date', '')
+                            
+                            if self._matches_time_filter(publication_date, time_filter_type):
+                                filtered_papers.append(paper)
+                        except Exception:
+                            filtered_papers.append(paper)
+                    else:
+                        filtered_papers.append(paper)
+                else:
+                    filtered_papers.append(paper)
+            
+            return filtered_papers
+        except Exception:
+            return papers
+    
+    def _matches_time_filter(self, publication_date: str, time_filter_type: str) -> bool:
+        """Check if publication date matches time filter"""
+        if not publication_date:
+            return False
+        
+        try:
+            parsed_date = date_parser.parse(publication_date)
+            
+            if time_filter_type == "Current year":
+                return parsed_date.year == 2025
+            elif time_filter_type in ["Last 3 months", "Last 6 months"]:
+                return parsed_date.year == 2025
+            elif time_filter_type in ["January", "February", "March", "April", "May", "June", 
+                                     "July", "August", "September", "October", "November", "December"]:
+                month_map = {
+                    "January": 1, "February": 2, "March": 3, "April": 4, "May": 5, "June": 6,
+                    "July": 7, "August": 8, "September": 9, "October": 10, "November": 11, "December": 12
+                }
+                target_month = month_map[time_filter_type]
+                return parsed_date.year == 2025 and parsed_date.month == target_month
+            
+            return True
+        except Exception:
             return False
     
-    def handle_form_submissions(self):
-        """Handle form submissions using Streamlit components"""
-        # Use regular Streamlit components instead of complex form handling
+    def _generate_analysis(self, papers: List[Dict], keywords: List[str], search_mode: str) -> Optional[str]:
+        """Generate analysis using AI"""
+        context = "You are a world-class scientific analyst and expert research assistant. Your primary objective is to generate the most detailed and extensive report possible based on the following scientific paper excerpts.\n\n"
         
-        # Create a sidebar for controls
-        with st.sidebar:
-            # Get analysis lock status
-            analysis_locked = self.get_user_session('analysis_locked', False)
+        for i, result in enumerate(papers):
+            meta = result.get('metadata', {})
+            title = meta.get('title', 'N/A')
+            link = self._get_paper_link(meta)
+            content_preview = (meta.get('abstract') or result.get('content') or '')[:4000]
+            context += f"SOURCE [{i+1}]:\n"
+            context += f"Title: {title}\n"
+            context += f"Link: {link}\n"
+            context += f"Content: {content_preview}\n---\n\n"
+        
+        prompt = f"""{context}
+---
+**CRITICAL TASK:**
+
+You are a world-class scientific analyst. Your task is to generate an exceptionally detailed and extensive multi-part report based *only* on the provided paper sources. The final report should be substantial in length, reflecting a deep synthesis of information from all provided papers.
+
+# Part 1: Thematic Analysis
+For the sections "Key Methodological Advances," "Emerging Trends," and "Overall Summary," your analysis **MUST** be exhaustive. Generate at least **three long and detailed paragraphs** or a comprehensive multi-level bulleted list for each of these sections. Do not just list findings; you must deeply synthesize information across multiple sources, explain the significance, compare and contrast approaches, and build a compelling narrative about the state of the research.
+
+   ### Diseases: List the specific diseases, conditions, or traits studied.
+   ### Sample Size & Genetic Ancestry: Summarize sample sizes and genetic ancestries mentioned across the papers.
+   ### Key Methodological Advances: Provide an in-depth description of significant methods, pipelines, or statistical approaches. Explain *why* they are important advances, how they differ from previous methods, and what new possibilities they unlock.
+   ### Emerging Trends: Identify future directions and new research areas. Synthesize recurring themes to explain what trends are emerging in the field. Discuss the implications of these trends for science and medicine.
+   ### Overall Summary: Provide a comprehensive, multi-paragraph textual summary of the key findings and clinical implications. This should be a full executive summary, not a brief conclusion.
+
+**CRITICAL INSTRUCTION FOR PART 1:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].` **IMPORTANT:** Limit citations to a maximum of 3 per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
+
+# Part 2: Key Paper Summaries
+Identify the top 3-5 most impactful papers from the sources and provide a detailed, one-paragraph summary for each.
+
+**IMPORTANT:** Do NOT create a "References" section. Focus only on the thematic analysis and key paper summaries.
+
+**CRITICAL INSTRUCTION FOR CITATIONS:** At the end of every sentence or key finding that you derive from a source, you **MUST** include a citation marker referencing the source's number in brackets. For example: `This new method improves risk prediction [1].` Multiple sources can be cited like `This was observed in several cohorts [2][3].` **IMPORTANT:** Always separate multiple citations with individual brackets, like `[2][3][4]` NOT `[234]`. **CRUCIAL:** In the Key Paper Summaries section, do NOT add citation numbers to the paper titles - only add citations at the end of the summary paragraphs. **FORMATTING RULE:** All citations MUST be in square brackets [1], [2], [3], etc. - never use unbracketed numbers for citations. **CITATION LIMIT:** Maximum 3 citations per sentence. If more than 3 sources support a finding, choose the 3 most relevant or representative sources.
+"""
+        return self.generate_ai_response(prompt)
+    
+    def _get_paper_link(self, metadata: Dict) -> str:
+        """Get paper link from metadata"""
+        if not isinstance(metadata, dict):
+            return "Not available"
+        
+        for key in ['url', 'link', 'doi_url']:
+            link = metadata.get(key)
+            if link and isinstance(link, str) and link.startswith('http'):
+                return link
+        return "Not available"
+    
+    def _reload_paper_metadata(self, papers: List[Dict]) -> List[Dict]:
+        """Reload paper metadata from GCS"""
+        if not papers:
+            return papers
+        
+        try:
+            storage_client = storage.Client()
+            bucket = storage_client.bucket(self.config['gcs_bucket_name'])
             
-            # Show analysis status
-            if analysis_locked:
-                st.info("🔒 Analysis Active - Controls Locked")
-            else:
-                st.success("🔓 Ready for New Analysis")
-            
-            st.markdown("---")
-            
-            # New Analysis button
-            if st.button("➕ New Analysis", type="primary", use_container_width=True):
-                self.set_user_session('active_conversation_id', None)
-                self.set_user_session('selected_keywords', [])
-                self.set_user_session('search_mode', "all_keywords")
-                self.set_user_session('custom_summary_chat', [])
-                self.set_user_session('analysis_locked', False)  # Unlock for new analysis
-                st.rerun()
-            
-            # Keyword selection
-            selected_keywords = st.multiselect(
-                "Select Keywords",
-                self.GENETICS_KEYWORDS,
-                default=self.get_user_session('selected_keywords', []),
-                key="html_keywords",
-                help="Select keywords for your research analysis" if not analysis_locked else "Keywords are locked for current analysis. Click 'New Analysis' to modify.",
-                disabled=analysis_locked
-            )
-            
-            # Search mode
-            search_mode = st.selectbox(
-                "Search Mode",
-                ["all_keywords", "any_keyword"],
-                format_func=lambda x: "Find papers containing ALL keywords" if x == "all_keywords" else "Find papers containing AT LEAST ONE keyword",
-                index=0 if self.get_user_session('search_mode', 'all_keywords') == 'all_keywords' else 1,
-                key="html_search_mode",
-                disabled=analysis_locked
-            )
-            
-            # Time filter
-            time_filter = st.selectbox(
-                "Filter by Time Window",
-                ["Current year", "Last 3 months", "Last 6 months", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
-                key="html_time_filter",
-                disabled=analysis_locked
-            )
-            
-            # Search button
-            if st.button("Search & Analyze", type="primary", use_container_width=True, disabled=analysis_locked):
-                if selected_keywords:
-                    st.session_state.is_loading_analysis = True
-                    st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
+            updated_papers = []
+            for paper in papers:
+                paper_id = paper.get('paper_id')
+                if paper_id:
+                    json_filename = paper_id.rsplit('.', 1)[0] + '.metadata.json'
+                    json_blob = bucket.blob(json_filename)
                     
-                    success = self.process_keyword_search(selected_keywords, time_filter, search_mode)
-                    st.session_state.is_loading_analysis = False
-                    
-                    if success:
-                        # Lock the analysis after successful search
-                        self.set_user_session('analysis_locked', True)
-                        st.rerun()
+                    if json_blob.exists():
+                        try:
+                            json_content = json_blob.download_as_string()
+                            json_metadata = json.loads(json_content)
+                            
+                            updated_metadata = paper.get('metadata', {}).copy()
+                            updated_metadata.update(json_metadata)
+                            updated_metadata['paper_id'] = paper_id
+                            
+                            updated_paper = paper.copy()
+                            updated_paper['metadata'] = updated_metadata
+                            updated_papers.append(updated_paper)
+                        except Exception:
+                            updated_papers.append(paper)
                     else:
-                        st.error("Analysis failed. Please try again.")
+                        updated_papers.append(paper)
                 else:
-                    st.error("Please select at least one keyword.")
+                    updated_papers.append(paper)
             
-            # Chat history
-            st.markdown("### Chat History")
-            conversations = self.get_user_session('conversations', {})
-            if conversations:
-                # Sort conversations by creation time (most recent first) - like ChatGPT
-                def get_creation_time(conv_id, conv_data):
-                    # Use last_interaction_time if available, otherwise fall back to creation time
-                    if 'last_interaction_time' in conv_data:
-                        return conv_data['last_interaction_time']
-                    
-                    # Extract timestamp from conversation ID
-                    try:
-                        if conv_id.startswith('custom_summary_'):
-                            timestamp_str = conv_id.split('_', 2)[2]
-                        else:
-                            timestamp_str = conv_id.split('_')[1]
-                        return float(timestamp_str)
-                    except (IndexError, ValueError):
-                        return 0
-                
-                sorted_conversations = sorted(
-                    conversations.items(), 
-                    key=lambda x: get_creation_time(x[0], x[1]), 
-                    reverse=True
-                )
-                
-                for conv_id, conv_data in sorted_conversations:
-                    title = conv_data.get("title", "Chat...")
-                    
-                    # Create columns for chat title and delete button
-                    col1, col2 = st.columns([4, 1])
-                    
-                    with col1:
-                        if st.button(title, key=f"chat_{conv_id}", use_container_width=True):
-                            self.set_user_session('active_conversation_id', conv_id)
-                            self.set_user_session('analysis_locked', True)  # Lock when viewing past analysis
-                            st.rerun()
-                    
-                    with col2:
-                        if st.button("×", key=f"delete_{conv_id}", help="Delete this analysis", type="secondary"):
-                            # Delete conversation from session
-                            del conversations[conv_id]
-                            self.set_user_session('conversations', conversations)
-                            
-                            # Delete from GCS
-                            username = st.session_state.get('username')
-                            if username:
-                                try:
-                                    self.api.delete_conversation(username, conv_id)
-                                    st.success("Analysis deleted!")
-                                except Exception as e:
-                                    st.error(f"Failed to delete from storage: {e}")
-                            
-                            # Clear active conversation if it was deleted
-                            if self.get_user_session('active_conversation_id') == conv_id:
-                                self.set_user_session('active_conversation_id', None)
-                            
-                            st.rerun()
-            else:
-                st.caption("No past analyses found.")
-            
-            # Uploaded papers section
-            st.markdown("### Uploaded Papers")
-            uploaded_papers = self.get_user_session('uploaded_papers', [])
-            
-            if uploaded_papers:
-                st.info(f"{len(uploaded_papers)} papers uploaded")
-                with st.expander("View uploaded papers"):
-                    for i, paper in enumerate(uploaded_papers):
-                        title = paper['metadata'].get('title', 'Unknown title')
-                        st.write(f"{i+1}. {title}")
-                
-                # Custom summary button
-                if st.button("Generate Custom Summary", type="primary", use_container_width=True):
-                    st.session_state.is_loading_analysis = True
-                    st.session_state.loading_message = "Generating summary of your uploaded papers..."
-                    
-                    success = self.generate_custom_summary(uploaded_papers)
-                    st.session_state.is_loading_analysis = False
-                    
-                    if success:
-                        st.rerun()
-                    else:
-                        st.error("Custom summary generation failed. Please try again.")
-                
-                # Clear uploaded papers button
-                if st.button("Clear uploaded papers", type="secondary", use_container_width=True):
-                    self.set_user_session('uploaded_papers', [])
-                    st.rerun()
-            else:
-                st.caption("No papers uploaded yet")
-            
-            # PDF upload section
-            with st.expander("Upload PDF Files"):
-                st.info("Upload PDF files to generate custom summary of your documents.")
-                
-                uploaded_pdfs = st.file_uploader(
-                    "Choose PDF files", 
-                    accept_multiple_files=True, 
-                    type=['pdf'], 
-                    key="pdf_uploader_html"
-                )
-                
-                if uploaded_pdfs and st.button("Add PDFs", type="primary"):
-                    with st.spinner("Processing PDF files..."):
-                        for uploaded_file in uploaded_pdfs:
-                            # Process PDF using backend API
-                            paper_data = self.api.process_uploaded_pdf(uploaded_file, uploaded_file.name)
-                            
-                            if paper_data:
-                                # Store in user-specific session state
-                                uploaded_papers = self.get_user_session('uploaded_papers', [])
-                                uploaded_papers.append(paper_data)
-                                self.set_user_session('uploaded_papers', uploaded_papers)
-                                st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_data['content'])} chars)")
-                            else:
-                                st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
-                        st.rerun()
-            
-            # Logout
-            if st.button("Logout", type="secondary", use_container_width=True):
-                # Clear session state
-                for key in list(st.session_state.keys()):
-                    if not key.startswith('_'):
-                        del st.session_state[key]
-                st.rerun()
+            return updated_papers
+        except Exception:
+            return papers
+    
+    def _display_citations_separately(self, analysis_text: str, papers: List[Dict], 
+                                    analysis_papers: List[Dict] = None, search_mode: str = "all_keywords", 
+                                    include_references: bool = True) -> str:
+        """Make citations clickable and add references section"""
+        if not papers:
+            return analysis_text
         
-        # Handle chat input
-        active_conversation_id = self.get_user_session('active_conversation_id')
-        if active_conversation_id:
-            if prompt := st.chat_input("Ask a follow-up question..."):
-                conversations = self.get_user_session('conversations', {})
-                if active_conversation_id in conversations:
-                    active_conv = conversations[active_conversation_id]
-                    active_conv["messages"].append({"role": "user", "content": prompt})
-                    active_conv['last_interaction_time'] = time.time()
-                    self.set_user_session('conversations', conversations)
-                    
-                    # Save conversation to backend
-                    username = st.session_state.get('username')
-                    if username:
-                        self.api.save_conversation(username, active_conversation_id, active_conv)
-                    
-                    st.rerun()
-    
-    def generate_custom_summary(self, uploaded_papers: List[Dict]):
-        """Generate custom summary via backend"""
-        try:
-            print(f"Generating custom summary for {len(uploaded_papers)} papers")
-            summary = self.api.generate_custom_summary(uploaded_papers)
+        # Make inline citations clickable for analysis papers
+        if analysis_papers:
+            analysis_text = self._make_inline_citations_clickable(analysis_text, analysis_papers)
+        
+        if not include_references:
+            return analysis_text
+        
+        citations_section = "\n\n---\n\n### References\n\n"
+        
+        if search_mode == "any_keyword" and analysis_papers:
+            citations_section += "#### References Used in Analysis\n\n"
             
-            if summary:
-                conv_id = f"custom_summary_{time.time()}"
+            for i, paper in enumerate(analysis_papers):
+                meta = paper.get('metadata', {})
+                title = meta.get('title', 'N/A')
+                link = self._get_paper_link(meta)
                 
-                def generate_custom_summary_title(papers, summary_text):
-                    """Generate descriptive title like ChatGPT - unique and specific"""
-                    paper_count = len(papers)
-                    summary_lower = summary_text.lower()
+                if link != "Not available":
+                    citations_section += f"**[{i+1}]** [{title}]({link})\n\n"
+                else:
+                    citations_section += f"**[{i+1}]** {title}\n\n"
+            
+            additional_papers = [p for p in papers if p not in analysis_papers]
+            if additional_papers:
+                citations_section += "#### Additional References Found\n\n"
+                start_num = len(analysis_papers) + 1
+                
+                for i, paper in enumerate(additional_papers):
+                    meta = paper.get('metadata', {})
+                    title = meta.get('title', 'N/A')
+                    link = self._get_paper_link(meta)
                     
-                    # Extract key topics and methodologies
-                    topics = []
-                    methodologies = []
-                    applications = []
-                    
-                    # Topic detection
-                    if any(word in summary_lower for word in ['polygenic risk', 'prs', 'genetic risk']):
-                        topics.append('Polygenic Risk')
-                    if any(word in summary_lower for word in ['gwas', 'genome-wide association']):
-                        topics.append('GWAS')
-                    if any(word in summary_lower for word in ['machine learning', 'ai', 'artificial intelligence', 'ml']):
-                        methodologies.append('AI/ML')
-                    if any(word in summary_lower for word in ['genetics', 'genetic', 'dna', 'genome']):
-                        topics.append('Genetics')
-                    if any(word in summary_lower for word in ['disease', 'medical', 'health', 'clinical']):
-                        applications.append('Medical')
-                    if any(word in summary_lower for word in ['prediction', 'predictive', 'modeling']):
-                        methodologies.append('Prediction')
-                    if any(word in summary_lower for word in ['risk', 'risk assessment']):
-                        applications.append('Risk Analysis')
-                    if any(word in summary_lower for word in ['ancestry', 'population', 'ethnic']):
-                        topics.append('Ancestry')
-                    if any(word in summary_lower for word in ['pharmacogenomics', 'drug', 'therapy']):
-                        applications.append('Pharmacogenomics')
-                    if any(word in summary_lower for word in ['cancer', 'oncology']):
-                        applications.append('Cancer Research')
-                    if any(word in summary_lower for word in ['cardiovascular', 'heart', 'cardiac']):
-                        applications.append('Cardiovascular')
-                    
-                    # Create descriptive title
-                    title_parts = []
-                    
-                    # Add main topic
-                    if topics:
-                        title_parts.append(topics[0])
-                    
-                    # Add methodology if available
-                    if methodologies:
-                        title_parts.append(f"via {methodologies[0]}")
-                    
-                    # Add application if available
-                    if applications:
-                        title_parts.append(f"for {applications[0]}")
-                    
-                    # Add paper count
-                    title_parts.append(f"({paper_count} papers)")
-                    
-                    if title_parts:
-                        return " ".join(title_parts)
+                    if link != "Not available":
+                        citations_section += f"**[{start_num + i}]** [{title}]({link})\n\n"
                     else:
-                        # Fallback: use first meaningful words from summary
-                        words = summary_text.split()
-                        meaningful_words = [w for w in words[:6] if len(w) > 3 and w.lower() not in ['the', 'and', 'for', 'with', 'this', 'that']]
-                        return f"{' '.join(meaningful_words[:4])}... ({paper_count} papers)"
+                        citations_section += f"**[{start_num + i}]** {title}\n\n"
+        else:
+            for i, paper in enumerate(papers):
+                meta = paper.get('metadata', {})
+                title = meta.get('title', 'N/A')
+                link = self._get_paper_link(meta)
                 
-                title = generate_custom_summary_title(uploaded_papers, summary)
-                
-                initial_message = {
-                    "role": "assistant", 
-                    "content": f"**Custom Summary of {len(uploaded_papers)} Uploaded Papers**\n\n{summary}"
-                }
-                
-                conversations = self.get_user_session('conversations', {})
-                conversations[conv_id] = {
-                    "title": title,
-                    "messages": [initial_message],
-                    "keywords": ["Custom Summary"],
-                    "search_mode": "custom",
-                    "retrieved_papers": uploaded_papers,
-                    "total_papers_found": len(uploaded_papers),
-                    "created_at": time.time(),
-                    "last_interaction_time": time.time(),
-                    "paper_count": len(uploaded_papers)
-                }
-                self.set_user_session('conversations', conversations)
-                print(f"Created custom summary conversation {conv_id} with message: {initial_message['content'][:100]}...")
-                
-                # Save conversation to backend
-                username = st.session_state.get('username')
-                if username:
-                    self.api.save_conversation(username, conv_id, conversations[conv_id])
-                
-                self.set_user_session('active_conversation_id', conv_id)
-                print(f"Successfully generated custom summary: {conv_id}")
-                return True
-            else:
-                st.error("Failed to generate summary. Please try again.")
-                return False
-        except Exception as e:
-            print(f"Error in generate_custom_summary: {e}")
-            st.error(f"An error occurred while generating the summary: {str(e)}")
-            return False
+                if link != "Not available":
+                    citations_section += f"**[{i+1}]** [{title}]({link})\n\n"
+                else:
+                    citations_section += f"**[{i+1}]** {title}\n\n"
+        
+        return analysis_text + citations_section
     
-    def local_css(self, file_name):
-        """Load local CSS file"""
-        try:
-            with open(file_name) as f:
-                st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-        except FileNotFoundError:
-            st.warning(f"CSS file '{file_name}' not found. Using default styles.")
+    def _make_inline_citations_clickable(self, analysis_text: str, analysis_papers: List[Dict]) -> str:
+        """Make inline citations clickable"""
+        if not analysis_papers:
+            return analysis_text
+        
+        import re
+        
+        citation_links = {}
+        for i, paper in enumerate(analysis_papers):
+            meta = paper.get('metadata', {})
+            link = self._get_paper_link(meta)
+            if link != "Not available":
+                citation_links[i + 1] = link
+        
+        def replace_citation(match):
+            citation_text = match.group(0)
+            citation_numbers = re.findall(r'\[(\d+)\]', citation_text)
+            
+            if len(citation_numbers) > 3:
+                citation_numbers = citation_numbers[:3]
+            
+            result_parts = []
+            for num_str in citation_numbers:
+                num = int(num_str)
+                if num in citation_links:
+                    result_parts.append(f'<a href="{citation_links[num]}" target="_blank" class="citation-link">[{num}]</a>')
+                else:
+                    result_parts.append(f'[{num}]')
+            
+            return ''.join(result_parts)
+        
+        citation_pattern = r'\[\d+\](?:\[\d+\])*'
+        clickable_text = re.sub(citation_pattern, replace_citation, analysis_text)
+        
+        return clickable_text
