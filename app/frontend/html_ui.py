@@ -686,33 +686,35 @@ class HTMLResearchAssistantUI:
         # Handle sidebar toggle state
         sidebar_visible = st.session_state.get('sidebar_visible', True)
         
-        # Create a component to communicate sidebar state and ensure toggle button is visible
-        st.components.v1.html("""
-        <div id="sidebar-toggle-container" style="position: fixed; top: 20px; right: 20px; z-index: 999999;">
-            <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" title="Show Sidebar" style="display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; background: rgba(102, 126, 234, 0.9); border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); backdrop-filter: blur(10px);">
-                <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;">
-                    <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                </svg>
-            </button>
-        </div>
-        <script>
-        // Send sidebar state to parent window
-        window.parent.postMessage({
-            type: 'streamlit:sidebarState',
-            visible: """ + str(sidebar_visible).lower() + """
-        }, '*');
+        # Add a visible toggle button using Streamlit's native components
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col3:
+            if st.button("🔧 Show Sidebar", key="sidebar_toggle_btn", help="Click to show the sidebar"):
+                st.session_state.sidebar_visible = True
+                st.rerun()
         
-        // Ensure button is visible and functional
-        document.addEventListener('DOMContentLoaded', function() {
-            const btn = document.getElementById('sidebar-toggle-btn');
-            if (btn) {
-                btn.style.display = 'flex';
-                btn.style.visibility = 'visible';
-                btn.style.opacity = '1';
+        # Also add JavaScript to handle sidebar visibility
+        st.markdown("""
+        <script>
+        // Force show sidebar
+        function showSidebar() {
+            const sidebar = document.querySelector('[data-testid="stSidebar"]');
+            if (sidebar) {
+                sidebar.style.display = 'block';
+                sidebar.style.visibility = 'visible';
+                sidebar.style.width = '21rem';
+                sidebar.style.minWidth = '21rem';
             }
-        });
+        }
+        
+        // Run immediately
+        showSidebar();
+        
+        // Also run when page loads
+        document.addEventListener('DOMContentLoaded', showSidebar);
+        window.addEventListener('load', showSidebar);
         </script>
-        """, height=0)
+        """, unsafe_allow_html=True)
         
         # Show full-screen loading overlay if loading (do NOT return; allow processing to continue)
         if st.session_state.get('is_loading', False):
