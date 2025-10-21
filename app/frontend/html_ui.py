@@ -398,41 +398,6 @@ class HTMLResearchAssistantUI:
             display: none !important;
         }
 
-        /* Keyword Selection Dropdown Control - Simple */
-        /* Hide dropdown list by default */
-        [data-testid="stMultiSelect"] .stSelectbox > div > div {
-            display: none !important;
-        }
-        
-        /* Show dropdown when clicked */
-        [data-testid="stMultiSelect"].show-dropdown .stSelectbox > div > div {
-            display: block !important;
-        }
-        
-        /* Style the input field to look clickable */
-        [data-testid="stMultiSelect"] .stSelectbox > div {
-            cursor: pointer !important;
-            position: relative !important;
-        }
-        
-        /* Add a custom dropdown indicator */
-        [data-testid="stMultiSelect"] .stSelectbox > div::after {
-            content: "▼" !important;
-            position: absolute !important;
-            right: 10px !important;
-            top: 50% !important;
-            transform: translateY(-50%) !important;
-            color: #667eea !important;
-            font-size: 12px !important;
-            pointer-events: none !important;
-            transition: transform 0.2s ease !important;
-        }
-        
-        /* Rotate indicator when dropdown is active */
-        [data-testid="stMultiSelect"].dropdown-active .stSelectbox > div::after {
-            transform: translateY(-50%) rotate(180deg) !important;
-        }
-
         </style>
         <script>
         // Button styling is now handled by CSS above
@@ -509,60 +474,6 @@ class HTMLResearchAssistantUI:
         // Force overlay to show immediately when called
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
-        
-        // Keyword Selection Dropdown Control - Simple
-        function initializeKeywordDropdown() {
-            const multiselect = document.querySelector('[data-testid="stMultiSelect"]');
-            if (!multiselect) return;
-            
-            // Hide dropdown by default
-            multiselect.classList.remove('show-dropdown');
-            
-            // Find the input field
-            const inputField = multiselect.querySelector('.stSelectbox > div');
-            if (!inputField) return;
-            
-            // Add click event listener
-            inputField.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                // Toggle dropdown
-                if (multiselect.classList.contains('show-dropdown')) {
-                    multiselect.classList.remove('show-dropdown');
-                } else {
-                    multiselect.classList.add('show-dropdown');
-                }
-            });
-            
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!multiselect.contains(e.target)) {
-                    multiselect.classList.remove('show-dropdown');
-                }
-            });
-            
-            // Close dropdown after selection
-            const observer = new MutationObserver(function(mutations) {
-                if (multiselect.classList.contains('show-dropdown')) {
-                    setTimeout(() => {
-                        multiselect.classList.remove('show-dropdown');
-                    }, 100);
-                }
-            });
-            
-            observer.observe(multiselect, { attributes: true, childList: true });
-        }
-        
-        // Initialize when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeKeywordDropdown);
-        } else {
-            initializeKeywordDropdown();
-        }
-        
-        // Re-initialize after Streamlit reruns
-        setTimeout(initializeKeywordDropdown, 100);
         
         </script>
         """, unsafe_allow_html=True)
