@@ -839,6 +839,10 @@ Assistant Response:"""
                 # Force clear the multiselect by updating session state
                 if 'html_keywords' in st.session_state:
                     st.session_state['html_keywords'] = []
+                
+                # Reset dropdown state for new analysis
+                st.session_state['keyword_dropdown_open'] = True
+                
                 if 'html_search_mode' in st.session_state:
                     st.session_state['html_search_mode'] = "all_keywords"
                 if 'html_time_filter' in st.session_state:
@@ -851,15 +855,58 @@ Assistant Response:"""
             if 'html_keywords' not in st.session_state:
                 st.session_state['html_keywords'] = self.get_user_session('selected_keywords', [])
             
-            selected_keywords = st.multiselect(
-                "Select Keywords",
-                self.GENETICS_KEYWORDS,
-                key="html_keywords",
-                help="Select keywords for your research analysis" if not analysis_locked else "Keywords are locked for current analysis. Click 'New Analysis' to modify.",
-                disabled=analysis_locked
-            )
+            # Initialize dropdown visibility state
+            if 'keyword_dropdown_open' not in st.session_state:
+                st.session_state['keyword_dropdown_open'] = True
+            
+            # Show keyword selection interface
+            col1, col2 = st.columns([4, 1])
+            
+            with col1:
+                if st.session_state['keyword_dropdown_open']:
+                    # Show dropdown for selection
+                    selected_keyword = st.selectbox(
+                        "Select Keywords",
+                        [""] + self.GENETICS_KEYWORDS,
+                        key="html_keyword_select",
+                        help="Select a keyword for your research analysis" if not analysis_locked else "Keywords are locked for current analysis. Click 'New Analysis' to modify.",
+                        disabled=analysis_locked,
+                        index=0
+                    )
+                    
+                    # If a keyword is selected, add it to the list and close dropdown
+                    if selected_keyword and selected_keyword != "":
+                        current_keywords = st.session_state.get('html_keywords', [])
+                        if selected_keyword not in current_keywords:
+                            current_keywords.append(selected_keyword)
+                            st.session_state['html_keywords'] = current_keywords
+                        st.session_state['keyword_dropdown_open'] = False
+                        st.rerun()
+                else:
+                    # Show selected keywords as tags
+                    st.write("**Selected Keywords:**")
+                    current_keywords = st.session_state.get('html_keywords', [])
+                    if current_keywords:
+                        for i, keyword in enumerate(current_keywords):
+                            col_tag, col_remove = st.columns([4, 1])
+                            with col_tag:
+                                st.write(f"• {keyword}")
+                            with col_remove:
+                                if st.button("×", key=f"remove_keyword_{i}", disabled=analysis_locked):
+                                    current_keywords.remove(keyword)
+                                    st.session_state['html_keywords'] = current_keywords
+                                    st.rerun()
+                    else:
+                        st.write("No keywords selected")
+            
+            with col2:
+                if not st.session_state['keyword_dropdown_open']:
+                    if st.button("+ Add Keyword", disabled=analysis_locked):
+                        st.session_state['keyword_dropdown_open'] = True
+                        st.rerun()
             
             # Update session state with selected keywords
+            selected_keywords = st.session_state.get('html_keywords', [])
             self.set_user_session('selected_keywords', selected_keywords)
             
             # Search mode
