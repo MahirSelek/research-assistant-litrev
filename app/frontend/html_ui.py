@@ -427,7 +427,7 @@ class HTMLResearchAssistantUI:
         }
         
         .loading-content {
-            background: rgba(20, 20, 20, 0.85) !important;
+            background: rgba(20, 20, 20, 0.35) !important;
             border-radius: 20px !important;
             padding: 50px 60px !important;
             text-align: center !important;
@@ -446,7 +446,7 @@ class HTMLResearchAssistantUI:
             }
             
             .loading-content {
-                background: rgba(255, 255, 255, 0.95) !important;
+                background: rgba(255, 255, 255, 0.35) !important;
                 box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15) !important;
                 border: 2px solid var(--accent-primary) !important;
             }
