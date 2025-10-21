@@ -442,7 +442,7 @@ class HTMLResearchAssistantUI:
         /* Light theme loading overlay adjustments */
         @media (prefers-color-scheme: light) {
             .loading-overlay {
-                background: rgba(255, 255, 255, 0.8) !important;
+                background: rgba(255, 255, 255, 0.4) !important;
             }
             
             .loading-content {
