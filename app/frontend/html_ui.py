@@ -284,7 +284,7 @@ class HTMLResearchAssistantUI:
             width: 100vw !important;
             height: 100vh !important;
             background: rgba(0, 0, 0, 0.35) !important;
-            backdrop-filter: blur(2px) !important;
+            backdrop-filter: blur(10px) !important;
             z-index: 999999 !important;
             display: none !important;
             justify-content: center !important;
