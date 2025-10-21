@@ -163,141 +163,6 @@ class HTMLResearchAssistantUI:
             background: #1e1e1e !important;
         }
         
-        /* Force dark theme for all elements */
-        * {
-            color-scheme: dark !important;
-        }
-        
-        /* SELECTIVE DARK THEME - Only force where needed, preserve custom styling */
-        html, body {
-            color-scheme: dark !important;
-        }
-        
-        /* Only force dark theme on form elements, preserve button gradients */
-        input, select, textarea, option {
-            color-scheme: dark !important;
-        }
-        
-        /* AGGRESSIVE FORCE DARK THEME - Override all Streamlit components */
-        .stSelectbox,
-        .stSelectbox *,
-        .stSelectbox > div,
-        .stSelectbox > div > div,
-        .stSelectbox > div > div > div,
-        .stSelectbox > div > div > div > div,
-        .stSelectbox > div > div > div > div > div,
-        .stMultiselect,
-        .stMultiselect *,
-        .stTextInput,
-        .stTextInput *,
-        .stNumberInput,
-        .stNumberInput *,
-        .stDateInput,
-        .stDateInput *,
-        .stTimeInput,
-        .stTimeInput *,
-        .stTextArea,
-        .stTextArea *,
-        .stFileUploader,
-        .stFileUploader * {
-            background-color: #262730 !important;
-            color: #D1D5DB !important;
-            border-color: #2c313a !important;
-            color-scheme: dark !important;
-        }
-        
-        /* Force dropdown options to dark theme */
-        .stSelectbox [role="listbox"],
-        .stSelectbox [role="option"],
-        .stSelectbox .stSelectbox-option,
-        .stSelectbox .stSelectbox-option * {
-            background-color: #262730 !important;
-            color: #D1D5DB !important;
-        }
-        
-        /* ULTRA-AGGRESSIVE: Target ALL possible Streamlit selectbox internal elements */
-        .stSelectbox [data-baseweb="select"],
-        .stSelectbox [data-baseweb="select"] > div,
-        .stSelectbox [data-baseweb="select"] > div > div,
-        .stSelectbox [data-baseweb="select"] > div > div > div,
-        .stSelectbox [data-baseweb="select"] > div > div > div > div,
-        .stSelectbox [data-baseweb="select"] > div > div > div > div > div,
-        .stSelectbox [data-baseweb="select"] > div > div > div > div > div > div,
-        .stSelectbox [data-baseweb="select"] > div > div > div > div > div > div > div,
-        .stSelectbox [data-baseweb="select"] > div > div > div > div > div > div > div > div,
-        .stSelectbox [data-baseweb="select"] > div > div > div > div > div > div > div > div > div,
-        .stSelectbox [data-baseweb="select"] > div > div > div > div > div > div > div > div > div > div {
-            background-color: #262730 !important;
-            color: #D1D5DB !important;
-            border-color: #2c313a !important;
-        }
-        
-        /* Target dropdown listbox and options specifically */
-        .stSelectbox [role="listbox"],
-        .stSelectbox [role="listbox"] *,
-        .stSelectbox [role="option"],
-        .stSelectbox [role="option"] *,
-        .stSelectbox [data-baseweb="menu"],
-        .stSelectbox [data-baseweb="menu"] *,
-        .stSelectbox [data-baseweb="menu"] > div,
-        .stSelectbox [data-baseweb="menu"] > div *,
-        .stSelectbox [data-baseweb="menu"] > div > div,
-        .stSelectbox [data-baseweb="menu"] > div > div *,
-        .stSelectbox [data-baseweb="menu"] > div > div > div,
-        .stSelectbox [data-baseweb="menu"] > div > div > div *,
-        .stSelectbox [data-baseweb="menu"] > div > div > div > div,
-        .stSelectbox [data-baseweb="menu"] > div > div > div > div *,
-        .stSelectbox [data-baseweb="menu"] > div > div > div > div > div,
-        .stSelectbox [data-baseweb="menu"] > div > div > div > div > div * {
-            background-color: #262730 !important;
-            color: #D1D5DB !important;
-            border-color: #2c313a !important;
-        }
-        
-        /* Target any remaining select elements */
-        .stSelectbox select,
-        .stSelectbox select *,
-        .stSelectbox select option,
-        .stSelectbox select option * {
-            background-color: #262730 !important;
-            color: #D1D5DB !important;
-            border-color: #2c313a !important;
-        }
-        
-        /* NUCLEAR OPTION: Target ALL elements within selectbox containers */
-        .stSelectbox *,
-        .stSelectbox *:before,
-        .stSelectbox *:after,
-        .stSelectbox *:hover,
-        .stSelectbox *:focus,
-        .stSelectbox *:active {
-            background-color: #262730 !important;
-            color: #D1D5DB !important;
-            border-color: #2c313a !important;
-        }
-        
-        /* Force dark theme on any dropdown that might be rendered outside the normal flow */
-        [data-baseweb="menu"],
-        [data-baseweb="menu"] *,
-        [data-baseweb="select"],
-        [data-baseweb="select"] *,
-        [role="listbox"],
-        [role="listbox"] *,
-        [role="option"],
-        [role="option"] * {
-            background-color: #262730 !important;
-            color: #D1D5DB !important;
-            border-color: #2c313a !important;
-        }
-        
-        /* Override any browser default styling */
-        select,
-        input,
-        textarea,
-        button {
-            color-scheme: dark !important;
-        }
-        
         /* Primary buttons - Modern blue gradient with enhanced styling */
         .stButton > button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
@@ -411,15 +276,15 @@ class HTMLResearchAssistantUI:
             box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
         }
         
-        /* Full-Screen Dark Loading Overlay - Covers Entire Page */
+        /* Full-Screen Transparent Loading Overlay - Background Fully Visible but Interactions Blocked */
         .loading-overlay {
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             width: 100vw !important;
             height: 100vh !important;
-            background: rgba(0, 0, 0, 0.35) !important;
-            backdrop-filter: blur(10px) !important;
+            background: transparent !important;
+            backdrop-filter: none !important;
             z-index: 999999 !important;
             display: none !important;
             justify-content: center !important;
@@ -440,8 +305,8 @@ class HTMLResearchAssistantUI:
             border-radius: 20px !important;
             padding: 50px 60px !important;
             text-align: center !important;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4) !important;
-            border: 2px solid rgba(102, 126, 234, 0.4) !important;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6) !important;
+            border: 2px solid rgba(102, 126, 234, 0.6) !important;
             max-width: 600px !important;
             width: 90% !important;
             position: relative !important;
@@ -503,71 +368,6 @@ class HTMLResearchAssistantUI:
         
         .loading-overlay .loading-content {
             pointer-events: auto !important;
-        }
-        
-        /* Force dark theme on Streamlit header and toolbar */
-        header[data-testid="stHeader"],
-        header[data-testid="stHeader"] *,
-        [data-testid="stToolbar"],
-        [data-testid="stToolbar"] *,
-        [data-testid="stToolbarActions"],
-        [data-testid="stToolbarActions"] *,
-        [data-testid="stToolbarActionButton"],
-        [data-testid="stToolbarActionButton"] *,
-        [data-testid="stMainMenu"],
-        [data-testid="stMainMenu"] * {
-            background-color: #1a1e29 !important;
-            color: #D1D5DB !important;
-            border-color: #2c313a !important;
-        }
-        
-        /* Force dark theme on chat input - ULTRA SPECIFIC */
-        [data-testid="stBottomBlockContainer"],
-        [data-testid="stBottomBlockContainer"] *,
-        [data-testid="stVerticalBlock"],
-        [data-testid="stVerticalBlock"] *,
-        [data-testid="stElementContainer"],
-        [data-testid="stElementContainer"] *,
-        [data-testid="stChatInput"],
-        [data-testid="stChatInput"] *,
-        [data-testid="stChatInputTextArea"],
-        [data-testid="stChatInputTextArea"] *,
-        [data-testid="stChatInputSubmitButton"],
-        [data-testid="stChatInputSubmitButton"] *,
-        [data-testid="InputInstructions"],
-        [data-testid="InputInstructions"] * {
-            background-color: #1a1e29 !important;
-            color: #D1D5DB !important;
-            border-color: #2c313a !important;
-        }
-        
-        /* Force dark theme on textarea and base-input specifically */
-        textarea[data-testid="stChatInputTextArea"],
-        [data-baseweb="textarea"],
-        [data-baseweb="textarea"] *,
-        [data-baseweb="base-input"],
-        [data-baseweb="base-input"] * {
-            background-color: #262730 !important;
-            color: #D1D5DB !important;
-            border-color: #2c313a !important;
-        }
-        
-        /* Target all emotion-cache classes in chat input */
-        .st-emotion-cache-1eeryuo,
-        .st-emotion-cache-1eeryuo *,
-        .st-emotion-cache-yd4u6l,
-        .st-emotion-cache-yd4u6l *,
-        .st-emotion-cache-12o5wl7,
-        .st-emotion-cache-12o5wl7 *,
-        .st-emotion-cache-sey4o0,
-        .st-emotion-cache-sey4o0 *,
-        .st-emotion-cache-o0516v,
-        .st-emotion-cache-o0516v *,
-        .st-emotion-cache-1nzi1q1,
-        .st-emotion-cache-1nzi1q1 * {
-            background-color: #1a1e29 !important;
-            color: #D1D5DB !important;
-            border-color: #2c313a !important;
         }
         
         /* Hide Streamlit toolbar/menu/icons (top-right) and footer badges */
