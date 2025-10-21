@@ -476,6 +476,63 @@ class HTMLResearchAssistantUI:
         window.hideLoadingOverlay = hideLoadingOverlay;
         
         </script>
+        
+        <script>
+        // Simple sidebar toggle - show button when sidebar is hidden
+        function checkSidebarAndShowButton() {
+            const sidebar = document.querySelector('[data-testid="stSidebar"]');
+            const existingBtn = document.getElementById('show-sidebar-btn');
+            
+            // Remove existing button if it exists
+            if (existingBtn) {
+                existingBtn.remove();
+            }
+            
+            // Check if sidebar is hidden
+            if (sidebar && (sidebar.style.display === 'none' || sidebar.offsetWidth === 0)) {
+                // Create show sidebar button
+                const showBtn = document.createElement('button');
+                showBtn.id = 'show-sidebar-btn';
+                showBtn.innerHTML = '>>';
+                showBtn.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 999999;
+                    background: rgba(102, 126, 234, 0.9);
+                    border: none;
+                    border-radius: 8px;
+                    width: 50px;
+                    height: 50px;
+                    color: white;
+                    font-size: 20px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                `;
+                
+                showBtn.onclick = function() {
+                    // Show sidebar
+                    sidebar.style.display = 'block';
+                    sidebar.style.visibility = 'visible';
+                    sidebar.style.width = '21rem';
+                    sidebar.style.minWidth = '21rem';
+                    // Remove the button
+                    showBtn.remove();
+                };
+                
+                document.body.appendChild(showBtn);
+            }
+        }
+        
+        // Check immediately and on page load
+        checkSidebarAndShowButton();
+        document.addEventListener('DOMContentLoaded', checkSidebarAndShowButton);
+        window.addEventListener('load', checkSidebarAndShowButton);
+        
+        // Check periodically in case sidebar gets hidden
+        setInterval(checkSidebarAndShowButton, 1000);
+        </script>
         """, unsafe_allow_html=True)
     
     def render_main_interface(self):
