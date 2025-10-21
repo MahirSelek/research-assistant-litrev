@@ -475,6 +475,90 @@ class HTMLResearchAssistantUI:
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
         
+        // Auto-close multiselect dropdown after selection
+        function setupMultiselectAutoClose() {
+            // Use MutationObserver to watch for DOM changes
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList') {
+                        // Check for new multiselect elements
+                        mutation.addedNodes.forEach(function(node) {
+                            if (node.nodeType === 1) { // Element node
+                                const multiselects = node.querySelectorAll ? node.querySelectorAll('[data-testid="stMultiSelect"]') : [];
+                                multiselects.forEach(setupMultiselectListeners);
+                                
+                                // Also check if the node itself is a multiselect
+                                if (node.getAttribute && node.getAttribute('data-testid') === 'stMultiSelect') {
+                                    setupMultiselectListeners(node);
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+            
+            // Start observing
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+            
+            // Also setup listeners for existing multiselects
+            setTimeout(() => {
+                const existingMultiselects = document.querySelectorAll('[data-testid="stMultiSelect"]');
+                existingMultiselects.forEach(setupMultiselectListeners);
+            }, 100);
+        }
+        
+        function setupMultiselectListeners(multiselect) {
+            // Find the dropdown button
+            const button = multiselect.querySelector('button[aria-expanded]');
+            if (!button) return;
+            
+            // Listen for clicks on the button to track when dropdown opens
+            button.addEventListener('click', function() {
+                setTimeout(() => {
+                    // Find the dropdown list
+                    const dropdown = multiselect.querySelector('[role="listbox"]');
+                    if (dropdown) {
+                        // Add click listeners to all options
+                        const options = dropdown.querySelectorAll('[role="option"]');
+                        options.forEach(option => {
+                            // Remove existing listeners to avoid duplicates
+                            option.removeEventListener('click', closeDropdown);
+                            option.addEventListener('click', closeDropdown);
+                        });
+                    }
+                }, 50);
+            });
+        }
+        
+        function closeDropdown() {
+            // Close the dropdown by clicking outside or pressing escape
+            setTimeout(() => {
+                // Find the currently open multiselect
+                const openMultiselect = document.querySelector('[data-testid="stMultiSelect"] button[aria-expanded="true"]');
+                if (openMultiselect) {
+                    // Simulate escape key press to close dropdown
+                    const escapeEvent = new KeyboardEvent('keydown', {
+                        key: 'Escape',
+                        code: 'Escape',
+                        keyCode: 27,
+                        which: 27,
+                        bubbles: true
+                    });
+                    openMultiselect.dispatchEvent(escapeEvent);
+                }
+            }, 150);
+        }
+        
+        // Initialize when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupMultiselectAutoClose);
+        } else {
+            setupMultiselectAutoClose();
+        }
+        
         </script>
         """, unsafe_allow_html=True)
     
