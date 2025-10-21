@@ -168,15 +168,13 @@ class HTMLResearchAssistantUI:
             color-scheme: dark !important;
         }
         
-        /* ABSOLUTE FORCE DARK THEME - Override everything */
-        html, body, .stApp, .stApp * {
+        /* SELECTIVE DARK THEME - Only force where needed, preserve custom styling */
+        html, body {
             color-scheme: dark !important;
-            background-color: #0E1117 !important;
-            color: #D1D5DB !important;
         }
         
-        /* Force dark theme on ALL possible elements */
-        div, span, p, h1, h2, h3, h4, h5, h6, a, button, input, select, textarea, option {
+        /* Only force dark theme on form elements, preserve button gradients */
+        input, select, textarea, option {
             color-scheme: dark !important;
         }
         
@@ -612,28 +610,16 @@ class HTMLResearchAssistantUI:
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
         
-        // FORCE DARK THEME - Override browser preferences
+        // SELECTIVE DARK THEME - Only force form elements, preserve custom styling
         function forceDarkTheme() {
-            // Force dark color scheme on all elements
+            // Force dark color scheme only on document level
             document.documentElement.style.colorScheme = 'dark';
             document.body.style.colorScheme = 'dark';
             
-            // Override any light theme styles
+            // Only override form elements, preserve button gradients and custom styling
             const style = document.createElement('style');
             style.textContent = `
-                * {
-                    color-scheme: dark !important;
-                    background-color: #0E1117 !important;
-                    color: #D1D5DB !important;
-                }
-                html, body {
-                    background-color: #0E1117 !important;
-                    color: #D1D5DB !important;
-                }
-                .stApp {
-                    background-color: #0E1117 !important;
-                    color: #D1D5DB !important;
-                }
+                /* Only force dark theme on form elements */
                 .stSelectbox, .stSelectbox * {
                     background-color: #262730 !important;
                     color: #D1D5DB !important;
@@ -647,6 +633,10 @@ class HTMLResearchAssistantUI:
                 [role="listbox"], [role="option"] {
                     background-color: #262730 !important;
                     color: #D1D5DB !important;
+                }
+                /* Preserve button gradients - don't override */
+                .stButton > button {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
                 }
             `;
             document.head.appendChild(style);
