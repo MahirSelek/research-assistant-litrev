@@ -138,14 +138,14 @@ class HTMLResearchAssistantUI:
                     # Always allow immediate syncs for conversations; throttle others to once per 5s
                     must_sync = key == 'conversations' or (now_ts - last_sync) >= 5.0
                     if must_sync:
-                    user_data = {
-                        'selected_keywords': self.get_user_session('selected_keywords', []),
-                        'search_mode': self.get_user_session('search_mode', 'all_keywords'),
-                        'uploaded_papers': self.get_user_session('uploaded_papers', []),
-                        'custom_summary_chat': self.get_user_session('custom_summary_chat', []),
-                        'active_conversation_id': self.get_user_session('active_conversation_id')
-                    }
-                    self.api.save_user_data(username, user_data)
+                        user_data = {
+                            'selected_keywords': self.get_user_session('selected_keywords', []),
+                            'search_mode': self.get_user_session('search_mode', 'all_keywords'),
+                            'uploaded_papers': self.get_user_session('uploaded_papers', []),
+                            'custom_summary_chat': self.get_user_session('custom_summary_chat', []),
+                            'active_conversation_id': self.get_user_session('active_conversation_id')
+                        }
+                        self.api.save_user_data(username, user_data)
                         st.session_state[rate_key] = now_ts
                 except Exception as e:
                     print(f"Failed to sync to backend: {e}")
@@ -300,53 +300,6 @@ class HTMLResearchAssistantUI:
             display: flex !important;
         }
         
-        /* Main-Area Only Loading Overlay - Sidebar Visible but Locked */
-        .loading-overlay-main-only {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            background: transparent !important;
-            z-index: 999999 !important;
-            display: none !important;
-            pointer-events: none !important;
-        }
-        
-        .loading-overlay-main-only.show {
-            display: block !important;
-        }
-        
-        /* Cover main content area with dark overlay */
-        .loading-overlay-main-only::before {
-            content: '' !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            background: rgba(0, 0, 0, 0.8) !important;
-            backdrop-filter: blur(5px) !important;
-            z-index: -1 !important;
-        }
-        
-        /* Make sidebar visible but non-interactive */
-        .loading-overlay-main-only ~ * [data-testid="stSidebar"],
-        .loading-overlay-main-only ~ * [data-testid="stSidebar"] * {
-            pointer-events: none !important;
-            opacity: 0.7 !important;
-        }
-        
-        /* Center loading content in main area */
-        .loading-overlay-main-only .loading-content {
-            position: fixed !important;
-            top: 50% !important;
-            left: 50% !important;
-            transform: translate(-50%, -50%) !important;
-            z-index: 1000000 !important;
-            pointer-events: all !important;
-        }
-        
         .loading-content {
             background: rgba(20, 20, 20, 0.95) !important;
             border-radius: 20px !important;
@@ -444,13 +397,13 @@ class HTMLResearchAssistantUI:
         button[aria-label="View source on GitHub"] {
             display: none !important;
         }
-        
+
         </style>
         <script>
         // Button styling is now handled by CSS above
         
-        // Loading Overlay Functions - Enhanced with Main-Area Only Option
-        function showLoadingOverlay(message = "Processing...", subtext = "Please wait while we work on your request", progress = "", mainOnly = false) {
+        // Full-Screen Loading Overlay Functions - Enhanced
+        function showLoadingOverlay(message = "Processing...", subtext = "Please wait while we work on your request", progress = "") {
             // Remove any existing overlay first
             let existingOverlay = document.getElementById('loading-overlay');
             if (existingOverlay) {
@@ -460,7 +413,7 @@ class HTMLResearchAssistantUI:
             // Create new overlay
             let overlay = document.createElement('div');
             overlay.id = 'loading-overlay';
-            overlay.className = mainOnly ? 'loading-overlay-main-only' : 'loading-overlay';
+            overlay.className = 'loading-overlay';
             
             // Set overlay content
             overlay.innerHTML = `
@@ -478,12 +431,10 @@ class HTMLResearchAssistantUI:
             // Force show overlay immediately
             setTimeout(() => {
                 overlay.classList.add('show');
-                if (!mainOnly) {
-                    document.body.classList.add('loading-active');
-                }
+                document.body.classList.add('loading-active');
             }, 10);
             
-            // Block interactions only on overlay itself
+            // Block all interactions
             overlay.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -498,11 +449,9 @@ class HTMLResearchAssistantUI:
                 return false;
             });
             
-            // Block scrolling only for full-screen overlay
-            if (!mainOnly) {
-                document.body.style.overflow = 'hidden';
-                document.documentElement.style.overflow = 'hidden';
-            }
+            // Block scrolling
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
         }
         
         function hideLoadingOverlay() {
@@ -539,7 +488,7 @@ class HTMLResearchAssistantUI:
             loading_progress = st.session_state.get('loading_progress', '')
             
             st.markdown(f"""
-            <div class="loading-overlay-main-only show">
+            <div class="loading-overlay show">
                 <div class="loading-content">
                     <div class="loading-spinner"></div>
                     <div class="loading-text">{loading_message}</div>
@@ -760,7 +709,7 @@ Assistant Response:"""
                 pass
         
         return current_title  # Return original if no improvement needed
-    
+
     def process_keyword_search(self, keywords: List[str], time_filter_type: str, search_mode: str = "all_keywords"):
         """Process keyword search via backend"""
         try:
@@ -960,7 +909,7 @@ Assistant Response:"""
                     st.session_state['pending_time_filter'] = time_filter
                     st.session_state['pending_search_mode'] = search_mode
 
-                        st.rerun()
+                    st.rerun()
                 else:
                     st.error("Please select at least one keyword.")
             
@@ -1065,12 +1014,12 @@ Assistant Response:"""
                     st.markdown(
                         """
                         <script>
-                        showLoadingOverlay("📄 Generating Custom Summary", "Analyzing your uploaded papers and creating comprehensive summary...", "Processing PDF content and generating AI summary...", true);
+                        showLoadingOverlay("📄 Generating Custom Summary", "Analyzing your uploaded papers and creating comprehensive summary...", "Processing PDF content and generating AI summary...");
                         </script>
                         """,
                         unsafe_allow_html=True,
                     )
-                    
+
                     success = self.generate_custom_summary(uploaded_papers)
 
                     # Hide overlay and refresh UI
@@ -1082,7 +1031,7 @@ Assistant Response:"""
                         """,
                         unsafe_allow_html=True,
                     )
-                    
+
                     if success:
                         st.rerun()
                     else:
@@ -1110,22 +1059,22 @@ Assistant Response:"""
                     # Show full-screen loading overlay for PDF processing
                     st.markdown("""
                     <script>
-                    showLoadingOverlay("📄 Processing PDF Files", "Extracting text and metadata from uploaded papers...", "Reading PDF content and generating summaries...", true);
+                    showLoadingOverlay("📄 Processing PDF Files", "Extracting text and metadata from uploaded papers...", "Reading PDF content and generating summaries...");
                     </script>
                     """, unsafe_allow_html=True)
                     
-                        for uploaded_file in uploaded_pdfs:
-                            # Process PDF using backend API
-                            paper_data = self.api.process_uploaded_pdf(uploaded_file, uploaded_file.name)
-                            
-                            if paper_data:
-                                # Store in user-specific session state
-                                uploaded_papers = self.get_user_session('uploaded_papers', [])
-                                uploaded_papers.append(paper_data)
-                                self.set_user_session('uploaded_papers', uploaded_papers)
-                                st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_data['content'])} chars)")
-                            else:
-                                st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
+                    for uploaded_file in uploaded_pdfs:
+                        # Process PDF using backend API
+                        paper_data = self.api.process_uploaded_pdf(uploaded_file, uploaded_file.name)
+                        
+                        if paper_data:
+                            # Store in user-specific session state
+                            uploaded_papers = self.get_user_session('uploaded_papers', [])
+                            uploaded_papers.append(paper_data)
+                            self.set_user_session('uploaded_papers', uploaded_papers)
+                            st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_data['content'])} chars)")
+                        else:
+                            st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
                     
                     # Hide loading overlay
                     st.markdown("""
@@ -1134,7 +1083,7 @@ Assistant Response:"""
                     </script>
                     """, unsafe_allow_html=True)
                     
-                        st.rerun()
+                    st.rerun()
             
             # Logout
             if st.button("Logout", type="secondary", use_container_width=True):
@@ -1156,12 +1105,12 @@ Assistant Response:"""
                     active_conv["messages"].append({"role": "user", "content": prompt})
                     active_conv['last_interaction_time'] = time.time()
                     self.set_user_session('conversations', conversations)
-                    
+
                     # Save conversation to backend (no overlay)
                     username = st.session_state.get('username')
                     if username:
                         self.api.save_conversation(username, active_conversation_id, active_conv)
-                    
+
                     st.rerun()
     
     def generate_custom_summary(self, uploaded_papers: List[Dict]):
