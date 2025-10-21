@@ -300,6 +300,53 @@ class HTMLResearchAssistantUI:
             display: flex !important;
         }
         
+        /* Main-Area Only Loading Overlay - Sidebar Visible but Locked */
+        .loading-overlay-main-only {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: transparent !important;
+            z-index: 999999 !important;
+            display: none !important;
+            pointer-events: none !important;
+        }
+        
+        .loading-overlay-main-only.show {
+            display: block !important;
+        }
+        
+        /* Cover main content area with dark overlay */
+        .loading-overlay-main-only::before {
+            content: '' !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(0, 0, 0, 0.8) !important;
+            backdrop-filter: blur(5px) !important;
+            z-index: -1 !important;
+        }
+        
+        /* Make sidebar visible but non-interactive */
+        .loading-overlay-main-only ~ * [data-testid="stSidebar"],
+        .loading-overlay-main-only ~ * [data-testid="stSidebar"] * {
+            pointer-events: none !important;
+            opacity: 0.7 !important;
+        }
+        
+        /* Center loading content in main area */
+        .loading-overlay-main-only .loading-content {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            z-index: 1000000 !important;
+            pointer-events: all !important;
+        }
+        
         .loading-content {
             background: rgba(20, 20, 20, 0.95) !important;
             border-radius: 20px !important;
@@ -402,8 +449,8 @@ class HTMLResearchAssistantUI:
         <script>
         // Button styling is now handled by CSS above
         
-        // Full-Screen Loading Overlay Functions - Enhanced
-        function showLoadingOverlay(message = "Processing...", subtext = "Please wait while we work on your request", progress = "") {
+        // Loading Overlay Functions - Enhanced with Main-Area Only Option
+        function showLoadingOverlay(message = "Processing...", subtext = "Please wait while we work on your request", progress = "", mainOnly = false) {
             // Remove any existing overlay first
             let existingOverlay = document.getElementById('loading-overlay');
             if (existingOverlay) {
@@ -413,7 +460,7 @@ class HTMLResearchAssistantUI:
             // Create new overlay
             let overlay = document.createElement('div');
             overlay.id = 'loading-overlay';
-            overlay.className = 'loading-overlay';
+            overlay.className = mainOnly ? 'loading-overlay-main-only' : 'loading-overlay';
             
             // Set overlay content
             overlay.innerHTML = `
@@ -431,10 +478,12 @@ class HTMLResearchAssistantUI:
             // Force show overlay immediately
             setTimeout(() => {
                 overlay.classList.add('show');
-                document.body.classList.add('loading-active');
+                if (!mainOnly) {
+                    document.body.classList.add('loading-active');
+                }
             }, 10);
             
-            // Block all interactions
+            // Block interactions only on overlay itself
             overlay.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -449,9 +498,11 @@ class HTMLResearchAssistantUI:
                 return false;
             });
             
-            // Block scrolling
-            document.body.style.overflow = 'hidden';
-            document.documentElement.style.overflow = 'hidden';
+            // Block scrolling only for full-screen overlay
+            if (!mainOnly) {
+                document.body.style.overflow = 'hidden';
+                document.documentElement.style.overflow = 'hidden';
+            }
         }
         
         function hideLoadingOverlay() {
@@ -488,7 +539,7 @@ class HTMLResearchAssistantUI:
             loading_progress = st.session_state.get('loading_progress', '')
             
             st.markdown(f"""
-            <div class="loading-overlay show">
+            <div class="loading-overlay-main-only show">
                 <div class="loading-content">
                     <div class="loading-spinner"></div>
                     <div class="loading-text">{loading_message}</div>
@@ -1014,7 +1065,7 @@ Assistant Response:"""
                     st.markdown(
                         """
                         <script>
-                        showLoadingOverlay("📄 Generating Custom Summary", "Analyzing your uploaded papers and creating comprehensive summary...", "Processing PDF content and generating AI summary...");
+                        showLoadingOverlay("📄 Generating Custom Summary", "Analyzing your uploaded papers and creating comprehensive summary...", "Processing PDF content and generating AI summary...", true);
                         </script>
                         """,
                         unsafe_allow_html=True,
@@ -1059,7 +1110,7 @@ Assistant Response:"""
                     # Show full-screen loading overlay for PDF processing
                     st.markdown("""
                     <script>
-                    showLoadingOverlay("📄 Processing PDF Files", "Extracting text and metadata from uploaded papers...", "Reading PDF content and generating summaries...");
+                    showLoadingOverlay("📄 Processing PDF Files", "Extracting text and metadata from uploaded papers...", "Reading PDF content and generating summaries...", true);
                     </script>
                     """, unsafe_allow_html=True)
                     
