@@ -398,21 +398,46 @@ class HTMLResearchAssistantUI:
             display: none !important;
         }
 
-        /* Keyword Selection Dropdown Control - Fixed */
-        /* Hide ONLY the dropdown list options, keep input field visible */
+        /* Keyword Selection Dropdown Control - Ultra Aggressive */
+        /* Hide ALL possible dropdown elements */
+        [data-testid="stMultiSelect"] * {
+            max-height: 0 !important;
+            overflow: hidden !important;
+        }
+        
+        /* Show only the input field container */
+        [data-testid="stMultiSelect"] .stSelectbox,
+        [data-testid="stMultiSelect"] .stSelectbox > div:first-child {
+            max-height: none !important;
+            overflow: visible !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            height: auto !important;
+        }
+        
+        /* Hide all dropdown lists specifically */
         [data-testid="stMultiSelect"] div[role="listbox"],
         [data-testid="stMultiSelect"] ul[role="listbox"],
         [data-testid="stMultiSelect"] div[data-baseweb="select"] > div:not(:first-child),
         [data-testid="stMultiSelect"] .stSelectbox > div > div:not(:first-child),
-        [data-testid="stMultiSelect"] div[aria-expanded="true"]:not(.stSelectbox > div:first-child) {
+        [data-testid="stMultiSelect"] div[aria-expanded="true"],
+        [data-testid="stMultiSelect"] div[style*="position: absolute"],
+        [data-testid="stMultiSelect"] div[style*="z-index"],
+        [data-testid="stMultiSelect"] .stSelectbox > div > div[style*="display: block"],
+        [data-testid="stMultiSelect"] .stSelectbox > div > div[style*="display: flex"] {
             display: none !important;
             visibility: hidden !important;
             opacity: 0 !important;
             height: 0 !important;
+            max-height: 0 !important;
             overflow: hidden !important;
+            position: absolute !important;
+            left: -9999px !important;
+            top: -9999px !important;
         }
         
-        /* Show dropdown when active - but only the list part */
+        /* Show dropdown when active */
         [data-testid="stMultiSelect"].dropdown-active div[role="listbox"],
         [data-testid="stMultiSelect"].dropdown-active ul[role="listbox"],
         [data-testid="stMultiSelect"].dropdown-active div[data-baseweb="select"] > div:not(:first-child),
@@ -421,17 +446,11 @@ class HTMLResearchAssistantUI:
             visibility: visible !important;
             opacity: 1 !important;
             height: auto !important;
+            max-height: none !important;
             overflow: visible !important;
-        }
-        
-        /* Ensure the input field itself is always visible */
-        [data-testid="stMultiSelect"] .stSelectbox > div:first-child,
-        [data-testid="stMultiSelect"] .stSelectbox > div:first-child > div:first-child {
-            display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            height: auto !important;
-            overflow: visible !important;
+            position: relative !important;
+            left: auto !important;
+            top: auto !important;
         }
         
         /* Style the input field to look clickable */
@@ -535,7 +554,7 @@ class HTMLResearchAssistantUI:
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
         
-        // Keyword Selection Dropdown Control - Fixed
+        // Keyword Selection Dropdown Control - Ultra Aggressive
         function initializeKeywordDropdown() {
             // Find the multiselect component
             const multiselect = document.querySelector('[data-testid="stMultiSelect"]');
@@ -544,16 +563,26 @@ class HTMLResearchAssistantUI:
             // Force hide dropdown immediately
             multiselect.classList.remove('dropdown-active');
             
-            // Find only the dropdown list elements (not the input field) and hide them
-            const dropdownElements = multiselect.querySelectorAll(
-                'div[role="listbox"], ul[role="listbox"], div[data-baseweb="select"] > div:not(:first-child), .stSelectbox > div > div:not(:first-child)'
-            );
-            dropdownElements.forEach(el => {
+            // Hide ALL possible dropdown elements aggressively
+            const allElements = multiselect.querySelectorAll('*');
+            allElements.forEach(el => {
+                // Skip the main container and input field
+                if (el === multiselect || el.classList.contains('stSelectbox') || 
+                    (el.parentElement && el.parentElement.classList.contains('stSelectbox') && 
+                     el.parentElement.children[0] === el)) {
+                    return;
+                }
+                
+                // Hide everything else
                 el.style.display = 'none';
                 el.style.visibility = 'hidden';
                 el.style.opacity = '0';
                 el.style.height = '0';
+                el.style.maxHeight = '0';
                 el.style.overflow = 'hidden';
+                el.style.position = 'absolute';
+                el.style.left = '-9999px';
+                el.style.top = '-9999px';
             });
             
             // Ensure the input field is visible
@@ -563,7 +592,11 @@ class HTMLResearchAssistantUI:
                 inputField.style.visibility = 'visible';
                 inputField.style.opacity = '1';
                 inputField.style.height = 'auto';
+                inputField.style.maxHeight = 'none';
                 inputField.style.overflow = 'visible';
+                inputField.style.position = 'relative';
+                inputField.style.left = 'auto';
+                inputField.style.top = 'auto';
             }
             
             // Use the input field we already found
@@ -653,22 +686,30 @@ class HTMLResearchAssistantUI:
         // Re-initialize after Streamlit reruns
         setTimeout(initializeKeywordDropdown, 100);
         
-        // Continuous monitoring to ensure dropdown stays hidden
+        // Continuous monitoring to ensure dropdown stays hidden - Ultra Aggressive
         function forceHideDropdown() {
             const multiselect = document.querySelector('[data-testid="stMultiSelect"]');
             if (multiselect) {
-                // Only hide dropdown list elements, not the input field
-                const dropdownElements = multiselect.querySelectorAll(
-                    'div[role="listbox"], ul[role="listbox"], div[data-baseweb="select"] > div:not(:first-child), .stSelectbox > div > div:not(:first-child)'
-                );
-                dropdownElements.forEach(el => {
-                    if (el.style.display !== 'none') {
-                        el.style.display = 'none';
-                        el.style.visibility = 'hidden';
-                        el.style.opacity = '0';
-                        el.style.height = '0';
-                        el.style.overflow = 'hidden';
+                // Hide ALL elements except the input field
+                const allElements = multiselect.querySelectorAll('*');
+                allElements.forEach(el => {
+                    // Skip the main container and input field
+                    if (el === multiselect || el.classList.contains('stSelectbox') || 
+                        (el.parentElement && el.parentElement.classList.contains('stSelectbox') && 
+                         el.parentElement.children[0] === el)) {
+                        return;
                     }
+                    
+                    // Hide everything else
+                    el.style.display = 'none';
+                    el.style.visibility = 'hidden';
+                    el.style.opacity = '0';
+                    el.style.height = '0';
+                    el.style.maxHeight = '0';
+                    el.style.overflow = 'hidden';
+                    el.style.position = 'absolute';
+                    el.style.left = '-9999px';
+                    el.style.top = '-9999px';
                 });
                 
                 // Ensure input field stays visible
@@ -678,13 +719,17 @@ class HTMLResearchAssistantUI:
                     inputField.style.visibility = 'visible';
                     inputField.style.opacity = '1';
                     inputField.style.height = 'auto';
+                    inputField.style.maxHeight = 'none';
                     inputField.style.overflow = 'visible';
+                    inputField.style.position = 'relative';
+                    inputField.style.left = 'auto';
+                    inputField.style.top = 'auto';
                 }
             }
         }
         
-        // Run force hide every 500ms to ensure dropdown stays hidden
-        setInterval(forceHideDropdown, 500);
+        // Run force hide every 100ms to ensure dropdown stays hidden
+        setInterval(forceHideDropdown, 100);
         
         </script>
         """, unsafe_allow_html=True)
