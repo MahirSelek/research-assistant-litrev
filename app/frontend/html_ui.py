@@ -179,6 +179,13 @@ class HTMLResearchAssistantUI:
             overflow: hidden !important;
         }
         
+        /* Light mode button adjustments */
+        @media (prefers-color-scheme: light) {
+            .stButton > button {
+                box-shadow: 0 4px 14px rgba(102, 126, 234, 0.15) !important;
+            }
+        }
+        
         .stButton > button::before {
             content: '' !important;
             position: absolute !important;
@@ -724,7 +731,7 @@ Assistant Response:"""
                 search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
                 
                 initial_message = {"role": "assistant", "content": f"""
-<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+<div class="analysis-report-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
     <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px; font-weight: 600;">Analysis Report</h2>
     <div style="color: #f0f0f0; font-size: 16px; margin-bottom: 8px;">
         <strong>Keywords:</strong> {', '.join(selected_keywords) if selected_keywords else 'None selected'}
@@ -1272,13 +1279,16 @@ Assistant Response:"""
                 # Add viewport meta tag and other HTML head optimizations
                 html_head = """
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-                <meta name="theme-color" content="#0E1117">
-                <meta name="color-scheme" content="dark">
+                <meta name="theme-color" content="#0E1117" media="(prefers-color-scheme: dark)">
+                <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+                <meta name="color-scheme" content="dark light">
                 <meta name="format-detection" content="telephone=no">
                 <meta name="mobile-web-app-capable" content="yes">
                 <meta name="apple-mobile-web-app-capable" content="yes">
-                <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-                <meta name="msapplication-navbutton-color" content="#0E1117">
+                <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" media="(prefers-color-scheme: dark)">
+                <meta name="apple-mobile-web-app-status-bar-style" content="default" media="(prefers-color-scheme: light)">
+                <meta name="msapplication-navbutton-color" content="#0E1117" media="(prefers-color-scheme: dark)">
+                <meta name="msapplication-navbutton-color" content="#ffffff" media="(prefers-color-scheme: light)">
                 <meta name="apple-mobile-web-app-title" content="Research Assistant">
                 <style>
                 {css_content}
