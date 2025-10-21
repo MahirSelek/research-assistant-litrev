@@ -10,7 +10,6 @@ import os
 from typing import Dict, List, Any, Optional
 import datetime
 import json
-import base64
 
 import sys
 import os
@@ -28,19 +27,8 @@ class HTMLResearchAssistantUI:
         # User avatar: Simple person icon (bigger)
         self.USER_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIiBmaWxsPSJub25lIj48cGF0aCBkPSJNMjAgMjBjLTUuNSAwLTEwIDQuNS0xMCAxMHY1aDIwdi01YzAtNS41LTQuNS0xMC0xMC0xMHoiIGZpbGw9IiM2NjdlZWEiLz48Y2lyY2xlIGN4PSIyMCIgY3k9IjEyIiByPSI3IiBmaWxsPSIjNjY3ZWVhIi8+PC9zdmc+"
         
-        # Assistant avatar: Simple DNA double-helix in Polo-GGB color (no circle)
-        assistant_svg = (
-            '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none">'
-            '<g stroke="#667eea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-            '<path d="M12 8c8 0 8 24 16 24"/>'
-            '<path d="M28 8c-8 0-8 24-16 24"/>'
-            '<line x1="14" y1="13" x2="26" y2="13"/>'
-            '<line x1="14" y1="20" x2="26" y2="20"/>'
-            '<line x1="14" y1="27" x2="26" y2="27"/>'
-            '</g>'
-            '</svg>'
-        )
-        self.ASSISTANT_AVATAR = "data:image/svg+xml;base64," + base64.b64encode(assistant_svg.encode("utf-8")).decode("utf-8")
+        # Assistant avatar: Very basic robot/assistant icon
+        self.ASSISTANT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIiBmaWxsPSJub25lIj48cmVjdCB4PSI4IiB5PSIxMCIgd2lkdGg9IjI0IiBoZWlnaHQ9IjIwIiBmaWxsPSIjMTA5OTgxIiByeD0iNCIvPjxjaXJjbGUgY3g9IjE2IiBjeT0iMTgiIHI9IjIiIGZpbGw9IndoaXRlIi8+PGNpcmNsZSBjeD0iMjQiIGN5PSIxOCIgcj0iMiIgZmlsbD0id2hpdGUiLz48cmVjdCB4PSIxNiIgeT0iMjQiIHdpZHRoPSI4IiBoZWlnaHQ9IjMiIGZpbGw9IndoaXRlIiByeD0iMSIvPjwvc3ZnPg=="
         
         # UI Constants
         self.GENETICS_KEYWORDS = [
@@ -127,26 +115,18 @@ class HTMLResearchAssistantUI:
         st.session_state[user_key] = value
         
         # Auto-sync to backend for important data
-        if key in ['conversations', 'selected_keywords', 'search_mode', 'uploaded_papers', 'custom_summary_chat', 'active_conversation_id', 'time_filter']:
+        if key in ['conversations', 'selected_keywords', 'search_mode', 'uploaded_papers', 'custom_summary_chat', 'active_conversation_id']:
             username = st.session_state.get('username')
             if username and username != 'default':
                 try:
-                    # Simple rate limiting to avoid GCS 429 errors
-                    rate_key = f"last_backend_sync_{username}"
-                    now_ts = time.time()
-                    last_sync = st.session_state.get(rate_key, 0)
-                    # Always allow immediate syncs for conversations; throttle others to once per 5s
-                    must_sync = key == 'conversations' or (now_ts - last_sync) >= 5.0
-                    if must_sync:
-                        user_data = {
-                            'selected_keywords': self.get_user_session('selected_keywords', []),
-                            'search_mode': self.get_user_session('search_mode', 'all_keywords'),
-                            'uploaded_papers': self.get_user_session('uploaded_papers', []),
-                            'custom_summary_chat': self.get_user_session('custom_summary_chat', []),
-                            'active_conversation_id': self.get_user_session('active_conversation_id')
-                        }
-                        self.api.save_user_data(username, user_data)
-                        st.session_state[rate_key] = now_ts
+                    user_data = {
+                        'selected_keywords': self.get_user_session('selected_keywords', []),
+                        'search_mode': self.get_user_session('search_mode', 'all_keywords'),
+                        'uploaded_papers': self.get_user_session('uploaded_papers', []),
+                        'custom_summary_chat': self.get_user_session('custom_summary_chat', []),
+                        'active_conversation_id': self.get_user_session('active_conversation_id')
+                    }
+                    self.api.save_user_data(username, user_data)
                 except Exception as e:
                     print(f"Failed to sync to backend: {e}")
     
@@ -165,7 +145,6 @@ class HTMLResearchAssistantUI:
         
         /* Primary buttons - Modern blue gradient with enhanced styling */
         .stButton > button {
-            background: #667eea !important; /* Fallback solid color */
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
             color: white !important;
             border: none !important;
@@ -174,10 +153,7 @@ class HTMLResearchAssistantUI:
             padding: 14px 28px !important;
             font-size: 15px !important;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-            -webkit-transition: all 0.3s ease !important; /* Safari fallback */
-            -moz-transition: all 0.3s ease !important; /* Firefox fallback */
-            -o-transition: all 0.3s ease !important; /* Opera fallback */
-            transition: all 0.3s ease !important; /* Standard */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
             box-shadow: 0 4px 14px rgba(102, 126, 234, 0.25) !important;
             position: relative !important;
             overflow: hidden !important;
@@ -195,11 +171,7 @@ class HTMLResearchAssistantUI:
         }
         
         .stButton > button:hover {
-            background: #5a6fd8 !important; /* Fallback solid color */
             background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%) !important;
-            -webkit-transform: translateY(-3px) !important; /* Safari fallback */
-            -moz-transform: translateY(-3px) !important; /* Firefox fallback */
-            -ms-transform: translateY(-3px) !important; /* IE fallback */
             transform: translateY(-3px) !important;
             box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4) !important;
         }
@@ -213,44 +185,27 @@ class HTMLResearchAssistantUI:
             box-shadow: 0 4px 14px rgba(102, 126, 234, 0.25) !important;
         }
         
-        /* Secondary buttons - Subtle gray (with fallbacks) */
+        /* Secondary buttons - Subtle gray */
         [data-testid="stSecondaryButton"] > button {
             background: rgba(255, 255, 255, 0.1) !important;
-            background: #f0f0f0 !important; /* Fallback for older browsers */
             color: #e2e8f0 !important;
-            color: #333 !important; /* Fallback for older browsers */
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            border: 1px solid #ccc !important; /* Fallback for older browsers */
             border-radius: 6px !important;
             font-size: 13px !important;
             font-weight: 500 !important;
             padding: 8px 16px !important;
-            -webkit-transition: all 0.2s ease !important;
-            -moz-transition: all 0.2s ease !important;
-            -o-transition: all 0.2s ease !important;
             transition: all 0.2s ease !important;
         }
         
         [data-testid="stSecondaryButton"] > button:hover {
             background: rgba(255, 255, 255, 0.15) !important;
-            background: #e0e0e0 !important; /* Fallback for older browsers */
             color: #f1f5f9 !important;
-            color: #000 !important; /* Fallback for older browsers */
             border-color: rgba(255, 255, 255, 0.3) !important;
-            border-color: #999 !important; /* Fallback for older browsers */
-            -webkit-transform: translateY(-1px) !important;
-            -moz-transform: translateY(-1px) !important;
-            -ms-transform: translateY(-1px) !important;
             transform: translateY(-1px) !important;
         }
         
-        /* Delete buttons in chat history - Red accent (compatible approach) */
-        button[aria-label*="delete"], 
-        button[title*="delete"], 
-        button[title*="Delete"],
-        button:contains("×"),
-        button:contains("✕"),
-        button:contains("🗑") {
+        /* Delete buttons in chat history - Red accent */
+        div[data-testid="stButton"]:has(button:contains("×")) button {
             background: rgba(239, 68, 68, 0.1) !important;
             color: #f87171 !important;
             border: 1px solid rgba(239, 68, 68, 0.3) !important;
@@ -259,24 +214,13 @@ class HTMLResearchAssistantUI:
             font-weight: 600 !important;
             min-height: 28px !important;
             padding: 4px 8px !important;
-            -webkit-transition: all 0.2s ease !important;
-            -moz-transition: all 0.2s ease !important;
-            -o-transition: all 0.2s ease !important;
             transition: all 0.2s ease !important;
         }
         
-        button[aria-label*="delete"]:hover, 
-        button[title*="delete"]:hover, 
-        button[title*="Delete"]:hover,
-        button:contains("×"):hover,
-        button:contains("✕"):hover,
-        button:contains("🗑"):hover {
+        div[data-testid="stButton"]:has(button:contains("×")) button:hover {
             background: rgba(239, 68, 68, 0.2) !important;
             color: #ef4444 !important;
             border-color: rgba(239, 68, 68, 0.5) !important;
-            -webkit-transform: translateY(-1px) !important;
-            -moz-transform: translateY(-1px) !important;
-            -ms-transform: translateY(-1px) !important;
             transform: translateY(-1px) !important;
         }
         
@@ -312,371 +256,53 @@ class HTMLResearchAssistantUI:
             box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
         }
         
-        /* Full-Screen Dark Loading Overlay - Covers Entire Page */
-        .loading-overlay {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            width: 100% !important; /* Fallback for older browsers */
-            height: 100vh !important;
-            height: 100% !important; /* Fallback for older browsers */
-            background: rgba(0, 0, 0, 0.35) !important;
-            /* backdrop-filter: blur(10px) !important; */ /* Removed for compatibility */
-            z-index: 999999 !important;
-            display: none !important;
-            display: -webkit-box !important; /* Safari fallback */
-            display: -ms-flexbox !important; /* IE fallback */
-            display: flex !important;
-            -webkit-box-pack: center !important; /* Safari */
-            -ms-flex-pack: center !important; /* IE */
-            justify-content: center !important;
-            -webkit-box-align: center !important; /* Safari */
-            -ms-flex-align: center !important; /* IE */
-            align-items: center !important;
-            -webkit-box-orient: vertical !important; /* Safari */
-            -ms-flex-direction: column !important; /* IE */
-            flex-direction: column !important;
-            pointer-events: all !important;
-            cursor: not-allowed !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        
-        .loading-overlay.show {
-            display: flex !important;
-        }
-        
-        .loading-content {
-            background: rgba(20, 20, 20, 0.85) !important;
-            border-radius: 20px !important;
-            padding: 50px 60px !important;
-            text-align: center !important;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4) !important;
-            border: 2px solid rgba(102, 126, 234, 0.4) !important;
-            max-width: 600px !important;
-            width: 90% !important;
-            position: relative !important;
-            z-index: 1000000 !important;
-        }
-        
-        .loading-spinner {
-            width: 100px !important;
-            height: 100px !important;
-            border: 8px solid rgba(102, 126, 234, 0.2) !important;
-            border-top: 8px solid #667eea !important;
-            border-radius: 50% !important;
-            animation: spin 1s linear infinite !important;
-            margin: 0 auto 40px !important;
-        }
-        
-        .loading-text {
-            color: white !important;
-            font-size: 28px !important;
-            font-weight: 700 !important;
-            text-align: center !important;
-            margin-bottom: 20px !important;
-            animation: pulse 2s ease-in-out infinite !important;
-        }
-        
-        .loading-subtext {
-            color: rgba(255, 255, 255, 0.9) !important;
-            font-size: 18px !important;
-            text-align: center !important;
-            line-height: 1.6 !important;
-            margin-bottom: 25px !important;
-        }
-        
-        .loading-progress {
-            color: rgba(255, 255, 255, 0.7) !important;
-            font-size: 16px !important;
-            font-style: italic !important;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
-        }
-        
-        /* Ensure overlay covers everything */
-        body.loading-active {
-            overflow: hidden !important;
-        }
-        
-        /* Block all interactions */
-        .loading-overlay * {
-            pointer-events: none !important;
-        }
-        
-        .loading-overlay .loading-content {
-            pointer-events: auto !important;
-        }
-        
-        /* Hide Streamlit toolbar/menu/icons (top-right) and footer badges */
-        [data-testid="stToolbar"],
-        [data-testid="stMainMenu"],
-        [data-testid="stStatusWidget"],
-        [data-testid="stActionButton"],
-        header [data-testid^="baseButton"],
-        .stDeployButton,
-        .viewerBadge_link,
-        .viewerBadge_container__,
-        footer,
-        #MainMenu {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
-        /* Browser-specific fallbacks */
-        .browser-ie .stButton > button {
-            background: #667eea !important; /* Solid color fallback for IE */
-            filter: none !important; /* Remove any filters that might cause issues */
-        }
-        
-        .browser-ie .loading-overlay {
-            background: #000 !important; /* Solid background for IE */
-            opacity: 0.8 !important;
-        }
-        
-        .no-flexbox .loading-overlay {
-            display: table !important; /* Fallback for browsers without flexbox */
-        }
-        
-        .no-flexbox .loading-content {
-            display: table-cell !important;
-            vertical-align: middle !important;
-            text-align: center !important;
-        }
-        
-        .no-transform .stButton > button:hover {
-            transform: none !important; /* Remove transforms for browsers that don't support them */
-        }
-        
-        .no-transition .stButton > button,
-        .no-transition [data-testid="stSecondaryButton"] > button {
-            transition: none !important; /* Remove transitions for browsers that don't support them */
-        }
-        
-        /* Fallback selectors for older/newer Streamlit/classnames */
-        header .stActionButton,
-        a[class*="viewerBadge"],
-        div[class*="viewerBadge"],
-        button[title="View source on GitHub"],
-        button[title="Share"],
-        button[title="Settings"],
-        button[aria-label="Settings"],
-        button[aria-label="Share"],
-        button[aria-label="View source on GitHub"] {
-            display: none !important;
-        }
-
         </style>
         <script>
         // Button styling is now handled by CSS above
         
-        // Full-Screen Loading Overlay Functions - Enhanced (ES5 Compatible)
-        function showLoadingOverlay(message, subtext, progress) {
-            // Set default values for older browsers
-            message = message || "Processing...";
-            subtext = subtext || "Please wait while we work on your request";
-            progress = progress || "";
-            
-            // Remove any existing overlay first
-            var existingOverlay = document.getElementById('loading-overlay');
-            if (existingOverlay) {
-                existingOverlay.remove();
-            }
-            
-            // Create new overlay
-            var overlay = document.createElement('div');
-            overlay.id = 'loading-overlay';
-            overlay.className = 'loading-overlay';
-            
-            // Set overlay content (ES5 compatible)
-            var progressHtml = progress ? '<div class="loading-progress">' + progress + '</div>' : '';
-            overlay.innerHTML = 
-                '<div class="loading-content">' +
-                    '<div class="loading-spinner"></div>' +
-                    '<div class="loading-text">' + message + '</div>' +
-                    '<div class="loading-subtext">' + subtext + '</div>' +
-                    progressHtml +
-                '</div>';
-            
-            // Add to body
-            document.body.appendChild(overlay);
-            
-            // Force show overlay immediately
-            setTimeout(function() {
-                overlay.classList.add('show');
-                document.body.classList.add('loading-active');
-            }, 10);
-            
-            // Block all interactions
-            overlay.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                if (e.stopImmediatePropagation) {
-                    e.stopImmediatePropagation();
-                }
-                return false;
-            });
-            
-            overlay.addEventListener('keydown', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                if (e.stopImmediatePropagation) {
-                    e.stopImmediatePropagation();
-                }
-                return false;
-            });
-            
-            // Block scrolling
-            document.body.style.overflow = 'hidden';
-            if (document.documentElement) {
-                document.documentElement.style.overflow = 'hidden';
-            }
-        }
-        
-        function hideLoadingOverlay() {
-            var overlay = document.getElementById('loading-overlay');
-            if (overlay) {
-                overlay.classList.remove('show');
-                setTimeout(function() {
-                    if (overlay.parentNode) {
-                        overlay.parentNode.removeChild(overlay);
-                    }
-                }, 300);
-                
-                // Restore scrolling
-                document.body.classList.remove('loading-active');
-                document.body.style.overflow = '';
-                if (document.documentElement) {
-                    document.documentElement.style.overflow = '';
-                }
-            }
-        }
-        
-        // Browser compatibility checks and fallbacks
-        function checkBrowserCompatibility() {
-            var userAgent = navigator.userAgent;
-            var isIE = userAgent.indexOf('MSIE') !== -1 || userAgent.indexOf('Trident') !== -1;
-            var isOldSafari = userAgent.indexOf('Safari') !== -1 && userAgent.indexOf('Chrome') === -1 && parseFloat(userAgent.match(/Version\\/(\\d+)/)[1]) < 6;
-            var isOldFirefox = userAgent.indexOf('Firefox') !== -1 && parseFloat(userAgent.match(/Firefox\\/(\\d+)/)[1]) < 20;
-            
-            // Add browser-specific classes for CSS targeting
-            if (isIE) {
-                document.documentElement.className += ' browser-ie';
-            }
-            if (isOldSafari) {
-                document.documentElement.className += ' browser-old-safari';
-            }
-            if (isOldFirefox) {
-                document.documentElement.className += ' browser-old-firefox';
-            }
-            
-            // Check for classList support (IE9+)
-            if (!document.body.classList) {
-                // Fallback for older browsers
-                Element.prototype.classList = {
-                    add: function(className) {
-                        if (this.className.indexOf(className) === -1) {
-                            this.className += ' ' + className;
+        // Handle Return key for keyword deletion in multiselect
+        setTimeout(function() {
+            const multiselectInputs = document.querySelectorAll('input[aria-label*="Select Keywords"]');
+            multiselectInputs.forEach(input => {
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === 'Return') {
+                        e.preventDefault();
+                        // Find the closest selected keyword chip and remove it
+                        const container = input.closest('[data-testid="stMultiSelect"]');
+                        if (container) {
+                            const chips = container.querySelectorAll('[data-testid="stMultiSelect"] > div > div > div > div > div');
+                            if (chips.length > 0) {
+                                const lastChip = chips[chips.length - 1];
+                                const removeButton = lastChip.querySelector('button');
+                                if (removeButton) {
+                                    removeButton.click();
+                                }
+                            }
                         }
-                    },
-                    remove: function(className) {
-                        this.className = this.className.replace(new RegExp('\\b' + className + '\\b', 'g'), '');
-                    },
-                    contains: function(className) {
-                        return this.className.indexOf(className) !== -1;
                     }
-                };
-            }
-            
-            // Check for addEventListener support (IE8+)
-            if (!document.addEventListener) {
-                Element.prototype.addEventListener = function(type, listener) {
-                    this.attachEvent('on' + type, listener);
-                };
-                Element.prototype.removeEventListener = function(type, listener) {
-                    this.detachEvent('on' + type, listener);
-                };
-            }
-            
-            // Check for querySelector support (IE8+)
-            if (!document.querySelector) {
-                // Basic fallback - this is a simplified version
-                document.querySelector = function(selector) {
-                    // Very basic fallback - would need more complex implementation for full compatibility
-                    return null;
-                };
-                document.querySelectorAll = function(selector) {
-                    return [];
-                };
-            }
-            
-            // Check for Array.from support (IE not supported)
-            if (!Array.from) {
-                Array.from = function(arrayLike) {
-                    var result = [];
-                    for (var i = 0; i < arrayLike.length; i++) {
-                        result.push(arrayLike[i]);
-                    }
-                    return result;
-                };
-            }
-            
-            // Check for CSS3 support and add fallbacks
-            var testElement = document.createElement('div');
-            var supportsFlexbox = 'flex' in testElement.style || 'webkitFlex' in testElement.style || 'msFlex' in testElement.style;
-            var supportsTransform = 'transform' in testElement.style || 'webkitTransform' in testElement.style || 'msTransform' in testElement.style;
-            var supportsTransition = 'transition' in testElement.style || 'webkitTransition' in testElement.style || 'msTransition' in testElement.style;
-            
-            if (!supportsFlexbox) {
-                document.documentElement.className += ' no-flexbox';
-            }
-            if (!supportsTransform) {
-                document.documentElement.className += ' no-transform';
-            }
-            if (!supportsTransition) {
-                document.documentElement.className += ' no-transition';
-            }
-        }
-        
-        // Run compatibility check
-        checkBrowserCompatibility();
-        
-        // Force overlay to show immediately when called
-        window.showLoadingOverlay = showLoadingOverlay;
-        window.hideLoadingOverlay = hideLoadingOverlay;
-        
+                });
+            });
+        }, 1500);
         </script>
         """, unsafe_allow_html=True)
     
     def render_main_interface(self):
         """Render the main interface using Streamlit components"""
-        
-        # Show full-screen loading overlay if loading (do NOT return; allow processing to continue)
-        if st.session_state.get('is_loading', False):
-            loading_message = st.session_state.get('loading_message', 'Processing...')
-            loading_subtext = st.session_state.get('loading_subtext', 'Please wait while we work on your request')
-            loading_progress = st.session_state.get('loading_progress', '')
-            
+        # Show loading overlay if analysis is in progress
+        if st.session_state.get('is_loading_analysis', False):
+            loading_message = st.session_state.loading_message
             st.markdown(f"""
-            <div class="loading-overlay show">
-                <div class="loading-content">
-                    <div class="loading-spinner"></div>
-                    <div class="loading-text">{loading_message}</div>
-                    <div class="loading-subtext">{loading_subtext}</div>
-                    {f'<div class="loading-progress">{loading_progress}</div>' if loading_progress else ''}
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; font-size: 18px;">
+                <div style="text-align: center;">
+                    <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite; margin: 0 auto 20px;"></div>
+                    <p>{loading_message}</p>
                 </div>
             </div>
+            <style>
+            @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
+            </style>
             """, unsafe_allow_html=True)
-            # IMPORTANT: don't return; keep running so background task can execute during this run
+            return
         
         # Main content area
         st.markdown("# 🧬 POLO-GGB RESEARCH ASSISTANT")
@@ -684,35 +310,6 @@ class HTMLResearchAssistantUI:
         # Get current state
         active_conversation_id = self.get_user_session('active_conversation_id')
         conversations = self.get_user_session('conversations', {})
-
-        # If a keyword search was scheduled on previous click, run it now while overlay is visible
-        if st.session_state.get('do_keyword_search'):
-            try:
-                pending_keywords = st.session_state.get('pending_keywords', [])
-                pending_time = st.session_state.get('pending_time_filter', 'Current year')
-                pending_mode = st.session_state.get('pending_search_mode', 'all_keywords')
-
-                success = self.process_keyword_search(pending_keywords, pending_time, pending_mode)
-
-                # Clear loading and flags
-                st.session_state['is_loading'] = False
-                st.session_state['do_keyword_search'] = False
-                st.session_state.pop('pending_keywords', None)
-                st.session_state.pop('pending_time_filter', None)
-                st.session_state.pop('pending_search_mode', None)
-
-                if success:
-                    st.rerun()
-                else:
-                    self.set_user_session('analysis_locked', False)
-                    st.error("Analysis failed. Please try again.")
-                    st.rerun()
-            except Exception as e:
-                st.session_state['is_loading'] = False
-                st.session_state['do_keyword_search'] = False
-                self.set_user_session('analysis_locked', False)
-                st.error(f"An error occurred: {e}")
-                st.rerun()
         
         # Show default message if no active conversation
         if active_conversation_id is None:
@@ -804,91 +401,6 @@ Assistant Response:"""
         """Sidebar is now part of the main HTML interface"""
         pass
     
-    def improve_conversation_title(self, conv_data: Dict, conv_id: str) -> str:
-        """Improve existing conversation titles that are too generic"""
-        current_title = conv_data.get("title", "Untitled")
-        
-        # Check if title needs improvement
-        if (current_title in ["Research Analysis", "Analysis", "Research", "Chat..."] or 
-            len(current_title.split()) < 3 or 
-            "Genetics via" in current_title or 
-            ("Medical" in current_title and len(current_title.split()) < 4)):
-            
-            # Try to extract better title from conversation content
-            messages = conv_data.get("messages", [])
-            if messages:
-                # Get the first assistant message (analysis content)
-                for msg in messages:
-                    if msg.get("role") == "assistant":
-                        content = msg.get("content", "")
-                        
-                        # Extract keywords from conversation
-                        keywords = conv_data.get("keywords", [])
-                        if keywords:
-                            keyword_str = ", ".join(keywords[:3])
-                            
-                            # Look for disease mentions in content
-                            content_lower = content.lower()
-                            diseases = []
-                            if 'lung cancer' in content_lower or 'nsclc' in content_lower:
-                                diseases.append('Lung Cancer')
-                            elif 'breast cancer' in content_lower:
-                                diseases.append('Breast Cancer')
-                            elif 'coronary' in content_lower or 'cad' in content_lower:
-                                diseases.append('CAD')
-                            elif 'diabetes' in content_lower:
-                                diseases.append('Diabetes')
-                            elif 'alzheimer' in content_lower:
-                                diseases.append('Alzheimer\'s')
-                            
-                            if diseases:
-                                return f"{keyword_str}: {diseases[0]} Analysis"
-                            else:
-                                return f"{keyword_str} Analysis"
-            
-            # Fallback: use conversation ID timestamp for uniqueness
-            try:
-                if conv_id.startswith('custom_summary_'):
-                    # Try to extract more info from custom summary
-                    retrieved_papers = conv_data.get("retrieved_papers", [])
-                    if retrieved_papers:
-                        # Use the enhanced title generation for custom summaries
-                        summary_text = ""
-                        for msg in messages:
-                            if msg.get("role") == "assistant":
-                                summary_text = msg.get("content", "")
-                                break
-                        
-                        if summary_text:
-                            # Use the same logic as generate_custom_summary_title
-                            summary_lower = summary_text.lower()
-                            
-                            # Quick disease detection
-                            if 'lung cancer' in summary_lower or 'nsclc' in summary_lower:
-                                return f"Custom Summary: Lung Cancer Analysis"
-                            elif 'breast cancer' in summary_lower:
-                                return f"Custom Summary: Breast Cancer Analysis"
-                            elif 'coronary' in summary_lower or 'cad' in summary_lower:
-                                return f"Custom Summary: CAD Analysis"
-                            elif 'diabetes' in summary_lower:
-                                return f"Custom Summary: Diabetes Analysis"
-                            elif 'alzheimer' in summary_lower:
-                                return f"Custom Summary: Alzheimer's Analysis"
-                            elif 'kras' in summary_lower:
-                                return f"Custom Summary: KRAS Analysis"
-                            elif 'prs' in summary_lower or 'polygenic' in summary_lower:
-                                return f"Custom Summary: PRS Analysis"
-                            elif 'biomarker' in summary_lower:
-                                return f"Custom Summary: Biomarker Analysis"
-                    
-                    return f"Custom Summary Analysis"
-                elif conv_id.startswith('conv_'):
-                    return f"Research Analysis"
-            except:
-                pass
-        
-        return current_title  # Return original if no improvement needed
-
     def process_keyword_search(self, keywords: List[str], time_filter_type: str, search_mode: str = "all_keywords"):
         """Process keyword search via backend"""
         try:
@@ -919,42 +431,7 @@ Assistant Response:"""
 {analysis_result}
 """}
                 
-                # Generate better title using keywords and analysis content
                 title = self.api.generate_conversation_title(analysis_result)
-                
-                # If AI title is too generic, create a better one from keywords
-                if title in ["Research Analysis", "Analysis", "Research"] or len(title.split()) < 3:
-                    # Create title from keywords and paper topics
-                    keyword_str = ", ".join(selected_keywords[:3])  # First 3 keywords
-                    
-                    # Extract disease/topic from retrieved papers
-                    if retrieved_papers:
-                        paper_titles = [paper.get('metadata', {}).get('title', '') for paper in retrieved_papers[:3]]
-                        # Look for common disease terms
-                        diseases = []
-                        for title_text in paper_titles:
-                            title_lower = title_text.lower()
-                            if 'lung cancer' in title_lower or 'nsclc' in title_lower:
-                                diseases.append('Lung Cancer')
-                            elif 'breast cancer' in title_lower:
-                                diseases.append('Breast Cancer')
-                            elif 'coronary' in title_lower or 'cad' in title_lower:
-                                diseases.append('CAD')
-                            elif 'diabetes' in title_lower:
-                                diseases.append('Diabetes')
-                            elif 'alzheimer' in title_lower:
-                                diseases.append('Alzheimer\'s')
-                        
-                        if diseases:
-                            # Use most common disease
-                            from collections import Counter
-                            disease_counts = Counter(diseases)
-                            main_disease = disease_counts.most_common(1)[0][0]
-                            title = f"{keyword_str}: {main_disease} Analysis"
-                        else:
-                            title = f"{keyword_str} Analysis"
-                    else:
-                        title = f"{keyword_str} Analysis"
                 
                 conversations = self.get_user_session('conversations', {})
                 conversations[conv_id] = {
@@ -1007,61 +484,34 @@ Assistant Response:"""
             
             # New Analysis button
             if st.button("➕ New Analysis", type="primary", use_container_width=True):
-                # Clear ALL session state for fresh start
                 self.set_user_session('active_conversation_id', None)
                 self.set_user_session('selected_keywords', [])
                 self.set_user_session('search_mode', "all_keywords")
-                self.set_user_session('time_filter', "Current year")
                 self.set_user_session('custom_summary_chat', [])
                 self.set_user_session('analysis_locked', False)  # Unlock for new analysis
-                
-                # Force clear the multiselect by updating session state
-                if 'html_keywords' in st.session_state:
-                    st.session_state['html_keywords'] = []
-                if 'html_search_mode' in st.session_state:
-                    st.session_state['html_search_mode'] = "all_keywords"
-                if 'html_time_filter' in st.session_state:
-                    st.session_state['html_time_filter'] = "Current year"
-                
                 st.rerun()
             
             # Keyword selection
-            # Initialize keywords in session state if not exists
-            if 'html_keywords' not in st.session_state:
-                st.session_state['html_keywords'] = self.get_user_session('selected_keywords', [])
-            
             selected_keywords = st.multiselect(
                 "Select Keywords",
                 self.GENETICS_KEYWORDS,
+                default=self.get_user_session('selected_keywords', []),
                 key="html_keywords",
                 help="Select keywords for your research analysis" if not analysis_locked else "Keywords are locked for current analysis. Click 'New Analysis' to modify.",
                 disabled=analysis_locked
             )
             
-            # Update session state with selected keywords
-            self.set_user_session('selected_keywords', selected_keywords)
-            
             # Search mode
-            # Initialize search mode in session state if not exists
-            if 'html_search_mode' not in st.session_state:
-                st.session_state['html_search_mode'] = self.get_user_session('search_mode', 'all_keywords')
-            
             search_mode = st.selectbox(
                 "Search Mode",
                 ["all_keywords", "any_keyword"],
                 format_func=lambda x: "Find papers containing ALL keywords" if x == "all_keywords" else "Find papers containing AT LEAST ONE keyword",
+                index=0 if self.get_user_session('search_mode', 'all_keywords') == 'all_keywords' else 1,
                 key="html_search_mode",
                 disabled=analysis_locked
             )
             
-            # Update session state with search mode
-            self.set_user_session('search_mode', search_mode)
-            
             # Time filter
-            # Initialize time filter in session state if not exists
-            if 'html_time_filter' not in st.session_state:
-                st.session_state['html_time_filter'] = self.get_user_session('time_filter', 'Current year')
-            
             time_filter = st.selectbox(
                 "Filter by Time Window",
                 ["Current year", "Last 3 months", "Last 6 months", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
@@ -1069,26 +519,21 @@ Assistant Response:"""
                 disabled=analysis_locked
             )
             
-            # Update session state with time filter
-            self.set_user_session('time_filter', time_filter)
-            
             # Search button
             if st.button("Search & Analyze", type="primary", use_container_width=True, disabled=analysis_locked):
                 if selected_keywords:
-                    # Set loading state and lock immediately, then schedule analysis and rerun
-                    st.session_state['is_loading'] = True
-                    st.session_state['loading_message'] = "Analyzing Research Papers"
-                    st.session_state['loading_subtext'] = "Searching for highly relevant papers and generating comprehensive report..."
-                    st.session_state['loading_progress'] = "This may take a few moments..."
-                    self.set_user_session('analysis_locked', True)
-
-                    # Stash pending action parameters to run on next script run
-                    st.session_state['do_keyword_search'] = True
-                    st.session_state['pending_keywords'] = list(selected_keywords)
-                    st.session_state['pending_time_filter'] = time_filter
-                    st.session_state['pending_search_mode'] = search_mode
-
-                    st.rerun()
+                    st.session_state.is_loading_analysis = True
+                    st.session_state.loading_message = "Searching for highly relevant papers and generating a comprehensive, in-depth report..."
+                    
+                    success = self.process_keyword_search(selected_keywords, time_filter, search_mode)
+                    st.session_state.is_loading_analysis = False
+                    
+                    if success:
+                        # Lock the analysis after successful search
+                        self.set_user_session('analysis_locked', True)
+                        st.rerun()
+                    else:
+                        st.error("Analysis failed. Please try again.")
                 else:
                     st.error("Please select at least one keyword.")
             
@@ -1119,30 +564,7 @@ Assistant Response:"""
                 )
                 
                 for conv_id, conv_data in sorted_conversations:
-                    # Get and potentially improve the title
                     title = conv_data.get("title", "Chat...")
-                    
-                    # Check if title needs improvement (too generic)
-                    if (title in ["Research Analysis", "Analysis", "Research", "Chat..."] or 
-                        len(title.split()) < 3 or 
-                        "Genetics via" in title or 
-                        ("Medical" in title and len(title.split()) < 4)):
-                        
-                        # Try to improve the title
-                        improved_title = self.improve_conversation_title(conv_data, conv_id)
-                        if improved_title != title:
-                            # Update the conversation with improved title
-                            conversations = self.get_user_session('conversations', {})
-                            if conv_id in conversations:
-                                conversations[conv_id]['title'] = improved_title
-                                self.set_user_session('conversations', conversations)
-                                
-                                # Save to backend
-                                username = st.session_state.get('username')
-                                if username:
-                                    self.api.save_conversation(username, conv_id, conversations[conv_id])
-                                
-                                title = improved_title
                     
                     # Create columns for chat title and delete button
                     col1, col2 = st.columns([4, 1])
@@ -1189,28 +611,12 @@ Assistant Response:"""
                 
                 # Custom summary button
                 if st.button("Generate Custom Summary", type="primary", use_container_width=True):
-                    # Show full-screen overlay immediately via JS (no pre-rerun)
-                    st.markdown(
-                        """
-                        <script>
-                        showLoadingOverlay("📄 Generating Custom Summary", "Analyzing your uploaded papers and creating comprehensive summary...", "Processing PDF content and generating AI summary...");
-                        </script>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-
+                    st.session_state.is_loading_analysis = True
+                    st.session_state.loading_message = "Generating summary of your uploaded papers..."
+                    
                     success = self.generate_custom_summary(uploaded_papers)
-
-                    # Hide overlay and refresh UI
-                    st.markdown(
-                        """
-                        <script>
-                        hideLoadingOverlay();
-                        </script>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-
+                    st.session_state.is_loading_analysis = False
+                    
                     if success:
                         st.rerun()
                     else:
@@ -1235,34 +641,20 @@ Assistant Response:"""
                 )
                 
                 if uploaded_pdfs and st.button("Add PDFs", type="primary"):
-                    # Show full-screen loading overlay for PDF processing
-                    st.markdown("""
-                    <script>
-                    showLoadingOverlay("📄 Processing PDF Files", "Extracting text and metadata from uploaded papers...", "Reading PDF content and generating summaries...");
-                    </script>
-                    """, unsafe_allow_html=True)
-                    
-                    for uploaded_file in uploaded_pdfs:
-                        # Process PDF using backend API
-                        paper_data = self.api.process_uploaded_pdf(uploaded_file, uploaded_file.name)
-                        
-                        if paper_data:
-                            # Store in user-specific session state
-                            uploaded_papers = self.get_user_session('uploaded_papers', [])
-                            uploaded_papers.append(paper_data)
-                            self.set_user_session('uploaded_papers', uploaded_papers)
-                            st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_data['content'])} chars)")
-                        else:
-                            st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
-                    
-                    # Hide loading overlay
-                    st.markdown("""
-                    <script>
-                    hideLoadingOverlay();
-                    </script>
-                    """, unsafe_allow_html=True)
-                    
-                    st.rerun()
+                    with st.spinner("Processing PDF files..."):
+                        for uploaded_file in uploaded_pdfs:
+                            # Process PDF using backend API
+                            paper_data = self.api.process_uploaded_pdf(uploaded_file, uploaded_file.name)
+                            
+                            if paper_data:
+                                # Store in user-specific session state
+                                uploaded_papers = self.get_user_session('uploaded_papers', [])
+                                uploaded_papers.append(paper_data)
+                                self.set_user_session('uploaded_papers', uploaded_papers)
+                                st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_data['content'])} chars)")
+                            else:
+                                st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
+                        st.rerun()
             
             # Logout
             if st.button("Logout", type="secondary", use_container_width=True):
@@ -1276,20 +668,18 @@ Assistant Response:"""
         active_conversation_id = self.get_user_session('active_conversation_id')
         if active_conversation_id:
             if prompt := st.chat_input("Ask a follow-up question..."):
-                # Fast path: just append user message and rerun; the "Handle follow-up responses"
-                # section above will generate the assistant reply with a lightweight spinner.
                 conversations = self.get_user_session('conversations', {})
                 if active_conversation_id in conversations:
                     active_conv = conversations[active_conversation_id]
                     active_conv["messages"].append({"role": "user", "content": prompt})
                     active_conv['last_interaction_time'] = time.time()
                     self.set_user_session('conversations', conversations)
-
-                    # Save conversation to backend (no overlay)
+                    
+                    # Save conversation to backend
                     username = st.session_state.get('username')
                     if username:
                         self.api.save_conversation(username, active_conversation_id, active_conv)
-
+                    
                     st.rerun()
     
     def generate_custom_summary(self, uploaded_papers: List[Dict]):
@@ -1302,108 +692,64 @@ Assistant Response:"""
                 conv_id = f"custom_summary_{time.time()}"
                 
                 def generate_custom_summary_title(papers, summary_text):
-                    """Generate detailed custom summary title with specific information"""
+                    """Generate descriptive title like ChatGPT - unique and specific"""
                     paper_count = len(papers)
                     summary_lower = summary_text.lower()
                     
-                    # Extract detailed information from papers and summary
-                    diseases = []
+                    # Extract key topics and methodologies
+                    topics = []
                     methodologies = []
-                    specific_topics = []
-                    drug_names = []
-                    gene_names = []
+                    applications = []
                     
-                    # Enhanced disease detection
-                    if any(word in summary_lower for word in ['lung cancer', 'nsclc', 'non-small cell lung cancer']):
-                        diseases.append('Lung Cancer')
-                    elif any(word in summary_lower for word in ['breast cancer', 'mammary carcinoma']):
-                        diseases.append('Breast Cancer')
-                    elif any(word in summary_lower for word in ['prostate cancer', 'prostate carcinoma']):
-                        diseases.append('Prostate Cancer')
-                    elif any(word in summary_lower for word in ['colorectal cancer', 'colon cancer', 'rectal cancer']):
-                        diseases.append('Colorectal Cancer')
-                    elif any(word in summary_lower for word in ['coronary artery disease', 'cad', 'heart disease', 'myocardial infarction']):
-                        diseases.append('Coronary Artery Disease')
-                    elif any(word in summary_lower for word in ['diabetes', 'diabetic', 'type 2 diabetes', 't2d']):
-                        diseases.append('Diabetes')
-                    elif any(word in summary_lower for word in ['alzheimer', 'dementia', 'alzheimer\'s disease']):
-                        diseases.append('Alzheimer\'s Disease')
-                    elif any(word in summary_lower for word in ['cancer', 'oncology', 'tumor', 'carcinoma']):
-                        diseases.append('Cancer')
-                    elif any(word in summary_lower for word in ['cardiovascular', 'heart', 'cardiac', 'cvd']):
-                        diseases.append('Cardiovascular Disease')
-                    elif any(word in summary_lower for word in ['obesity', 'obese']):
-                        diseases.append('Obesity')
-                    
-                    # Enhanced methodology and topic detection
-                    if any(word in summary_lower for word in ['kras', 'krasg12c', 'sotorasib']):
-                        specific_topics.append('KRAS Inhibition')
-                        drug_names.append('Sotorasib')
-                    elif any(word in summary_lower for word in ['polygenic risk score', 'prs', 'polygenic score']):
-                        specific_topics.append('Polygenic Risk Scoring')
-                    elif any(word in summary_lower for word in ['gwas', 'genome-wide association study']):
-                        specific_topics.append('GWAS Analysis')
-                    elif any(word in summary_lower for word in ['machine learning', 'ai', 'artificial intelligence', 'ml', 'deep learning']):
+                    # Topic detection
+                    if any(word in summary_lower for word in ['polygenic risk', 'prs', 'genetic risk']):
+                        topics.append('Polygenic Risk')
+                    if any(word in summary_lower for word in ['gwas', 'genome-wide association']):
+                        topics.append('GWAS')
+                    if any(word in summary_lower for word in ['machine learning', 'ai', 'artificial intelligence', 'ml']):
                         methodologies.append('AI/ML')
-                    elif any(word in summary_lower for word in ['ctdna', 'circulating tumor dna', 'liquid biopsy']):
-                        specific_topics.append('ctDNA Analysis')
-                    elif any(word in summary_lower for word in ['biomarker', 'biomarkers', 'biomarker discovery']):
-                        specific_topics.append('Biomarker Discovery')
-                    elif any(word in summary_lower for word in ['transcriptomic', 'transcriptome', 'rna-seq']):
-                        specific_topics.append('Transcriptomics')
-                    elif any(word in summary_lower for word in ['genomic', 'genome', 'genomics']):
-                        specific_topics.append('Genomics')
-                    elif any(word in summary_lower for word in ['pharmacogenomics', 'drug response', 'pharmacogenetics']):
-                        specific_topics.append('Pharmacogenomics')
-                    elif any(word in summary_lower for word in ['clinical trial', 'clinical study']):
-                        methodologies.append('Clinical Trial')
-                    elif any(word in summary_lower for word in ['therapeutic', 'therapy', 'treatment']):
-                        methodologies.append('Therapeutic')
+                    if any(word in summary_lower for word in ['genetics', 'genetic', 'dna', 'genome']):
+                        topics.append('Genetics')
+                    if any(word in summary_lower for word in ['disease', 'medical', 'health', 'clinical']):
+                        applications.append('Medical')
+                    if any(word in summary_lower for word in ['prediction', 'predictive', 'modeling']):
+                        methodologies.append('Prediction')
+                    if any(word in summary_lower for word in ['risk', 'risk assessment']):
+                        applications.append('Risk Analysis')
+                    if any(word in summary_lower for word in ['ancestry', 'population', 'ethnic']):
+                        topics.append('Ancestry')
+                    if any(word in summary_lower for word in ['pharmacogenomics', 'drug', 'therapy']):
+                        applications.append('Pharmacogenomics')
+                    if any(word in summary_lower for word in ['cancer', 'oncology']):
+                        applications.append('Cancer Research')
+                    if any(word in summary_lower for word in ['cardiovascular', 'heart', 'cardiac']):
+                        applications.append('Cardiovascular')
                     
-                    # Extract gene names
-                    import re
-                    gene_patterns = [r'\b[A-Z]{2,}\d*\b', r'\b[A-Z]{1,2}[a-z]+\d*\b']
-                    for pattern in gene_patterns:
-                        genes = re.findall(pattern, summary_text)
-                        gene_names.extend([g for g in genes if len(g) > 2 and g not in ['DNA', 'RNA', 'PCR', 'GWAS', 'PRS']])
-                    
-                    # Create detailed title
+                    # Create descriptive title
                     title_parts = []
                     
-                    # Priority 1: Specific topic + Disease + Drug/Gene
-                    if specific_topics and diseases:
-                        base_title = f"{specific_topics[0]}: {diseases[0]}"
-                        if drug_names:
-                            base_title += f" ({drug_names[0]})"
-                        elif gene_names[:2]:  # Take first 2 genes
-                            base_title += f" ({', '.join(gene_names[:2])})"
-                        title = base_title
-                    # Priority 2: Disease + Methodology
-                    elif diseases and methodologies:
-                        title = f"{diseases[0]}: {methodologies[0]} Analysis"
-                    # Priority 3: Specific topic only
-                    elif specific_topics:
-                        title = specific_topics[0]
-                    # Priority 4: Disease only
-                    elif diseases:
-                        title = diseases[0]
-                    # Priority 5: Methodology only
-                    elif methodologies:
-                        title = f"{methodologies[0]} Analysis"
-                    # Fallback: Extract from paper titles
-                    else:
-                        paper_titles = [paper.get('metadata', {}).get('title', '') for paper in papers]
-                        if paper_titles and paper_titles[0]:
-                            # Extract meaningful words from paper title
-                            words = paper_titles[0].split()
-                            meaningful_words = [w for w in words[:5] if len(w) > 3 and w.lower() not in 
-                                             ['the', 'and', 'for', 'with', 'this', 'that', 'analysis', 'study', 'research', 'investigation']]
-                            title = ' '.join(meaningful_words[:4]) if meaningful_words else "Research Analysis"
-                        else:
-                            title = "Research Analysis"
+                    # Add main topic
+                    if topics:
+                        title_parts.append(topics[0])
+                    
+                    # Add methodology if available
+                    if methodologies:
+                        title_parts.append(f"via {methodologies[0]}")
+                    
+                    # Add application if available
+                    if applications:
+                        title_parts.append(f"for {applications[0]}")
                     
                     # Add paper count
-                    return f"{title} ({paper_count} papers)"
+                    title_parts.append(f"({paper_count} papers)")
+                    
+                    if title_parts:
+                        return " ".join(title_parts)
+                    else:
+                        # Fallback: use first meaningful words from summary
+                        words = summary_text.split()
+                        meaningful_words = [w for w in words[:6] if len(w) > 3 and w.lower() not in ['the', 'and', 'for', 'with', 'this', 'that']]
+                        return f"{' '.join(meaningful_words[:4])}... ({paper_count} papers)"
                 
                 title = generate_custom_summary_title(uploaded_papers, summary)
                 
