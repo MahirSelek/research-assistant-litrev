@@ -165,6 +165,7 @@ class HTMLResearchAssistantUI:
         
         /* Primary buttons - Modern blue gradient with enhanced styling */
         .stButton > button {
+            background: #667eea !important; /* Fallback solid color */
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
             color: white !important;
             border: none !important;
@@ -173,7 +174,10 @@ class HTMLResearchAssistantUI:
             padding: 14px 28px !important;
             font-size: 15px !important;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            -webkit-transition: all 0.3s ease !important; /* Safari fallback */
+            -moz-transition: all 0.3s ease !important; /* Firefox fallback */
+            -o-transition: all 0.3s ease !important; /* Opera fallback */
+            transition: all 0.3s ease !important; /* Standard */
             box-shadow: 0 4px 14px rgba(102, 126, 234, 0.25) !important;
             position: relative !important;
             overflow: hidden !important;
@@ -191,7 +195,11 @@ class HTMLResearchAssistantUI:
         }
         
         .stButton > button:hover {
+            background: #5a6fd8 !important; /* Fallback solid color */
             background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%) !important;
+            -webkit-transform: translateY(-3px) !important; /* Safari fallback */
+            -moz-transform: translateY(-3px) !important; /* Firefox fallback */
+            -ms-transform: translateY(-3px) !important; /* IE fallback */
             transform: translateY(-3px) !important;
             box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4) !important;
         }
@@ -205,27 +213,44 @@ class HTMLResearchAssistantUI:
             box-shadow: 0 4px 14px rgba(102, 126, 234, 0.25) !important;
         }
         
-        /* Secondary buttons - Subtle gray */
+        /* Secondary buttons - Subtle gray (with fallbacks) */
         [data-testid="stSecondaryButton"] > button {
             background: rgba(255, 255, 255, 0.1) !important;
+            background: #f0f0f0 !important; /* Fallback for older browsers */
             color: #e2e8f0 !important;
+            color: #333 !important; /* Fallback for older browsers */
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border: 1px solid #ccc !important; /* Fallback for older browsers */
             border-radius: 6px !important;
             font-size: 13px !important;
             font-weight: 500 !important;
             padding: 8px 16px !important;
+            -webkit-transition: all 0.2s ease !important;
+            -moz-transition: all 0.2s ease !important;
+            -o-transition: all 0.2s ease !important;
             transition: all 0.2s ease !important;
         }
         
         [data-testid="stSecondaryButton"] > button:hover {
             background: rgba(255, 255, 255, 0.15) !important;
+            background: #e0e0e0 !important; /* Fallback for older browsers */
             color: #f1f5f9 !important;
+            color: #000 !important; /* Fallback for older browsers */
             border-color: rgba(255, 255, 255, 0.3) !important;
+            border-color: #999 !important; /* Fallback for older browsers */
+            -webkit-transform: translateY(-1px) !important;
+            -moz-transform: translateY(-1px) !important;
+            -ms-transform: translateY(-1px) !important;
             transform: translateY(-1px) !important;
         }
         
-        /* Delete buttons in chat history - Red accent */
-        div[data-testid="stButton"]:has(button:contains("×")) button {
+        /* Delete buttons in chat history - Red accent (compatible approach) */
+        button[aria-label*="delete"], 
+        button[title*="delete"], 
+        button[title*="Delete"],
+        button:contains("×"),
+        button:contains("✕"),
+        button:contains("🗑") {
             background: rgba(239, 68, 68, 0.1) !important;
             color: #f87171 !important;
             border: 1px solid rgba(239, 68, 68, 0.3) !important;
@@ -234,13 +259,24 @@ class HTMLResearchAssistantUI:
             font-weight: 600 !important;
             min-height: 28px !important;
             padding: 4px 8px !important;
+            -webkit-transition: all 0.2s ease !important;
+            -moz-transition: all 0.2s ease !important;
+            -o-transition: all 0.2s ease !important;
             transition: all 0.2s ease !important;
         }
         
-        div[data-testid="stButton"]:has(button:contains("×")) button:hover {
+        button[aria-label*="delete"]:hover, 
+        button[title*="delete"]:hover, 
+        button[title*="Delete"]:hover,
+        button:contains("×"):hover,
+        button:contains("✕"):hover,
+        button:contains("🗑"):hover {
             background: rgba(239, 68, 68, 0.2) !important;
             color: #ef4444 !important;
             border-color: rgba(239, 68, 68, 0.5) !important;
+            -webkit-transform: translateY(-1px) !important;
+            -moz-transform: translateY(-1px) !important;
+            -ms-transform: translateY(-1px) !important;
             transform: translateY(-1px) !important;
         }
         
@@ -282,13 +318,24 @@ class HTMLResearchAssistantUI:
             top: 0 !important;
             left: 0 !important;
             width: 100vw !important;
+            width: 100% !important; /* Fallback for older browsers */
             height: 100vh !important;
+            height: 100% !important; /* Fallback for older browsers */
             background: rgba(0, 0, 0, 0.35) !important;
-            backdrop-filter: blur(10px) !important;
+            /* backdrop-filter: blur(10px) !important; */ /* Removed for compatibility */
             z-index: 999999 !important;
             display: none !important;
+            display: -webkit-box !important; /* Safari fallback */
+            display: -ms-flexbox !important; /* IE fallback */
+            display: flex !important;
+            -webkit-box-pack: center !important; /* Safari */
+            -ms-flex-pack: center !important; /* IE */
             justify-content: center !important;
+            -webkit-box-align: center !important; /* Safari */
+            -ms-flex-align: center !important; /* IE */
             align-items: center !important;
+            -webkit-box-orient: vertical !important; /* Safari */
+            -ms-flex-direction: column !important; /* IE */
             flex-direction: column !important;
             pointer-events: all !important;
             cursor: not-allowed !important;
@@ -385,6 +432,36 @@ class HTMLResearchAssistantUI:
             visibility: hidden !important;
         }
 
+        /* Browser-specific fallbacks */
+        .browser-ie .stButton > button {
+            background: #667eea !important; /* Solid color fallback for IE */
+            filter: none !important; /* Remove any filters that might cause issues */
+        }
+        
+        .browser-ie .loading-overlay {
+            background: #000 !important; /* Solid background for IE */
+            opacity: 0.8 !important;
+        }
+        
+        .no-flexbox .loading-overlay {
+            display: table !important; /* Fallback for browsers without flexbox */
+        }
+        
+        .no-flexbox .loading-content {
+            display: table-cell !important;
+            vertical-align: middle !important;
+            text-align: center !important;
+        }
+        
+        .no-transform .stButton > button:hover {
+            transform: none !important; /* Remove transforms for browsers that don't support them */
+        }
+        
+        .no-transition .stButton > button,
+        .no-transition [data-testid="stSecondaryButton"] > button {
+            transition: none !important; /* Remove transitions for browsers that don't support them */
+        }
+        
         /* Fallback selectors for older/newer Streamlit/classnames */
         header .stActionButton,
         a[class*="viewerBadge"],
@@ -402,34 +479,39 @@ class HTMLResearchAssistantUI:
         <script>
         // Button styling is now handled by CSS above
         
-        // Full-Screen Loading Overlay Functions - Enhanced
-        function showLoadingOverlay(message = "Processing...", subtext = "Please wait while we work on your request", progress = "") {
+        // Full-Screen Loading Overlay Functions - Enhanced (ES5 Compatible)
+        function showLoadingOverlay(message, subtext, progress) {
+            // Set default values for older browsers
+            message = message || "Processing...";
+            subtext = subtext || "Please wait while we work on your request";
+            progress = progress || "";
+            
             // Remove any existing overlay first
-            let existingOverlay = document.getElementById('loading-overlay');
+            var existingOverlay = document.getElementById('loading-overlay');
             if (existingOverlay) {
                 existingOverlay.remove();
             }
             
             // Create new overlay
-            let overlay = document.createElement('div');
+            var overlay = document.createElement('div');
             overlay.id = 'loading-overlay';
             overlay.className = 'loading-overlay';
             
-            // Set overlay content
-            overlay.innerHTML = `
-                <div class="loading-content">
-                    <div class="loading-spinner"></div>
-                    <div class="loading-text">${message}</div>
-                    <div class="loading-subtext">${subtext}</div>
-                    ${progress ? `<div class="loading-progress">${progress}</div>` : ''}
-                </div>
-            `;
+            // Set overlay content (ES5 compatible)
+            var progressHtml = progress ? '<div class="loading-progress">' + progress + '</div>' : '';
+            overlay.innerHTML = 
+                '<div class="loading-content">' +
+                    '<div class="loading-spinner"></div>' +
+                    '<div class="loading-text">' + message + '</div>' +
+                    '<div class="loading-subtext">' + subtext + '</div>' +
+                    progressHtml +
+                '</div>';
             
             // Add to body
             document.body.appendChild(overlay);
             
             // Force show overlay immediately
-            setTimeout(() => {
+            setTimeout(function() {
                 overlay.classList.add('show');
                 document.body.classList.add('loading-active');
             }, 10);
@@ -438,27 +520,33 @@ class HTMLResearchAssistantUI:
             overlay.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                e.stopImmediatePropagation();
+                if (e.stopImmediatePropagation) {
+                    e.stopImmediatePropagation();
+                }
                 return false;
             });
             
             overlay.addEventListener('keydown', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                e.stopImmediatePropagation();
+                if (e.stopImmediatePropagation) {
+                    e.stopImmediatePropagation();
+                }
                 return false;
             });
             
             // Block scrolling
             document.body.style.overflow = 'hidden';
-            document.documentElement.style.overflow = 'hidden';
+            if (document.documentElement) {
+                document.documentElement.style.overflow = 'hidden';
+            }
         }
         
         function hideLoadingOverlay() {
-            const overlay = document.getElementById('loading-overlay');
+            var overlay = document.getElementById('loading-overlay');
             if (overlay) {
                 overlay.classList.remove('show');
-                setTimeout(() => {
+                setTimeout(function() {
                     if (overlay.parentNode) {
                         overlay.parentNode.removeChild(overlay);
                     }
@@ -467,9 +555,100 @@ class HTMLResearchAssistantUI:
                 // Restore scrolling
                 document.body.classList.remove('loading-active');
                 document.body.style.overflow = '';
-                document.documentElement.style.overflow = '';
+                if (document.documentElement) {
+                    document.documentElement.style.overflow = '';
+                }
             }
         }
+        
+        // Browser compatibility checks and fallbacks
+        function checkBrowserCompatibility() {
+            var userAgent = navigator.userAgent;
+            var isIE = userAgent.indexOf('MSIE') !== -1 || userAgent.indexOf('Trident') !== -1;
+            var isOldSafari = userAgent.indexOf('Safari') !== -1 && userAgent.indexOf('Chrome') === -1 && parseFloat(userAgent.match(/Version\/(\d+)/)[1]) < 6;
+            var isOldFirefox = userAgent.indexOf('Firefox') !== -1 && parseFloat(userAgent.match(/Firefox\/(\d+)/)[1]) < 20;
+            
+            // Add browser-specific classes for CSS targeting
+            if (isIE) {
+                document.documentElement.className += ' browser-ie';
+            }
+            if (isOldSafari) {
+                document.documentElement.className += ' browser-old-safari';
+            }
+            if (isOldFirefox) {
+                document.documentElement.className += ' browser-old-firefox';
+            }
+            
+            // Check for classList support (IE9+)
+            if (!document.body.classList) {
+                // Fallback for older browsers
+                Element.prototype.classList = {
+                    add: function(className) {
+                        if (this.className.indexOf(className) === -1) {
+                            this.className += ' ' + className;
+                        }
+                    },
+                    remove: function(className) {
+                        this.className = this.className.replace(new RegExp('\\b' + className + '\\b', 'g'), '');
+                    },
+                    contains: function(className) {
+                        return this.className.indexOf(className) !== -1;
+                    }
+                };
+            }
+            
+            // Check for addEventListener support (IE8+)
+            if (!document.addEventListener) {
+                Element.prototype.addEventListener = function(type, listener) {
+                    this.attachEvent('on' + type, listener);
+                };
+                Element.prototype.removeEventListener = function(type, listener) {
+                    this.detachEvent('on' + type, listener);
+                };
+            }
+            
+            // Check for querySelector support (IE8+)
+            if (!document.querySelector) {
+                // Basic fallback - this is a simplified version
+                document.querySelector = function(selector) {
+                    // Very basic fallback - would need more complex implementation for full compatibility
+                    return null;
+                };
+                document.querySelectorAll = function(selector) {
+                    return [];
+                };
+            }
+            
+            // Check for Array.from support (IE not supported)
+            if (!Array.from) {
+                Array.from = function(arrayLike) {
+                    var result = [];
+                    for (var i = 0; i < arrayLike.length; i++) {
+                        result.push(arrayLike[i]);
+                    }
+                    return result;
+                };
+            }
+            
+            // Check for CSS3 support and add fallbacks
+            var testElement = document.createElement('div');
+            var supportsFlexbox = 'flex' in testElement.style || 'webkitFlex' in testElement.style || 'msFlex' in testElement.style;
+            var supportsTransform = 'transform' in testElement.style || 'webkitTransform' in testElement.style || 'msTransform' in testElement.style;
+            var supportsTransition = 'transition' in testElement.style || 'webkitTransition' in testElement.style || 'msTransition' in testElement.style;
+            
+            if (!supportsFlexbox) {
+                document.documentElement.className += ' no-flexbox';
+            }
+            if (!supportsTransform) {
+                document.documentElement.className += ' no-transform';
+            }
+            if (!supportsTransition) {
+                document.documentElement.className += ' no-transition';
+            }
+        }
+        
+        // Run compatibility check
+        checkBrowserCompatibility();
         
         // Force overlay to show immediately when called
         window.showLoadingOverlay = showLoadingOverlay;
