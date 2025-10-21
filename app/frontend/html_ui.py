@@ -385,61 +385,6 @@ class HTMLResearchAssistantUI:
             visibility: hidden !important;
         }
 
-        /* Custom Sidebar Toggle Button */
-        .custom-sidebar-toggle {
-            position: fixed !important;
-            top: 20px !important;
-            left: 20px !important;
-            z-index: 1000 !important;
-            background: rgba(30, 30, 30, 0.9) !important;
-            border: 2px solid rgba(102, 126, 234, 0.6) !important;
-            border-radius: 8px !important;
-            padding: 8px 12px !important;
-            cursor: pointer !important;
-            transition: all 0.3s ease !important;
-            backdrop-filter: blur(10px) !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-        }
-
-        .custom-sidebar-toggle:hover {
-            background: rgba(102, 126, 234, 0.2) !important;
-            border-color: rgba(102, 126, 234, 0.8) !important;
-            transform: translateY(-2px) !important;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
-        }
-
-        .custom-sidebar-toggle .toggle-icon {
-            color: #667eea !important;
-            font-size: 18px !important;
-            font-weight: bold !important;
-            transition: transform 0.3s ease !important;
-        }
-
-        .custom-sidebar-toggle:hover .toggle-icon {
-            color: #8b9cff !important;
-        }
-
-        /* Sidebar visibility control */
-        .sidebar-hidden .stSidebar {
-            transform: translateX(-100%) !important;
-            transition: transform 0.3s ease !important;
-        }
-
-        .sidebar-hidden .main .block-container {
-            margin-left: 0 !important;
-            transition: margin-left 0.3s ease !important;
-        }
-
-        .sidebar-visible .stSidebar {
-            transform: translateX(0) !important;
-            transition: transform 0.3s ease !important;
-        }
-
-        .sidebar-visible .main .block-container {
-            margin-left: 21rem !important;
-            transition: margin-left 0.3s ease !important;
-        }
-
         /* Fallback selectors for older/newer Streamlit/classnames */
         header .stActionButton,
         a[class*="viewerBadge"],
@@ -529,56 +474,6 @@ class HTMLResearchAssistantUI:
         // Force overlay to show immediately when called
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
-        
-        // Sidebar Toggle Functionality
-        function toggleSidebar() {
-            const body = document.body;
-            const toggleButton = document.getElementById('sidebar-toggle');
-            const toggleIcon = document.getElementById('toggle-icon');
-            
-            if (body.classList.contains('sidebar-hidden')) {
-                // Show sidebar
-                body.classList.remove('sidebar-hidden');
-                body.classList.add('sidebar-visible');
-                toggleIcon.textContent = '<<';
-                toggleIcon.title = 'Hide Sidebar';
-            } else {
-                // Hide sidebar
-                body.classList.remove('sidebar-visible');
-                body.classList.add('sidebar-hidden');
-                toggleIcon.textContent = '>>';
-                toggleIcon.title = 'Show Sidebar';
-            }
-        }
-        
-        // Initialize sidebar state
-        function initializeSidebar() {
-            // Check if sidebar toggle button exists, if not create it
-            if (!document.getElementById('sidebar-toggle')) {
-                const toggleButton = document.createElement('div');
-                toggleButton.id = 'sidebar-toggle';
-                toggleButton.className = 'custom-sidebar-toggle';
-                toggleButton.innerHTML = '<span id="toggle-icon" class="toggle-icon" title="Hide Sidebar"><<</span>';
-                toggleButton.onclick = toggleSidebar;
-                document.body.appendChild(toggleButton);
-            }
-            
-            // Set initial state - sidebar visible by default
-            const body = document.body;
-            if (!body.classList.contains('sidebar-hidden') && !body.classList.contains('sidebar-visible')) {
-                body.classList.add('sidebar-visible');
-            }
-        }
-        
-        // Initialize when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeSidebar);
-        } else {
-            initializeSidebar();
-        }
-        
-        // Also initialize after a short delay to ensure Streamlit has loaded
-        setTimeout(initializeSidebar, 1000);
         
         </script>
         """, unsafe_allow_html=True)
