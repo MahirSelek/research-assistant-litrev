@@ -476,109 +476,10 @@ class HTMLResearchAssistantUI:
         window.hideLoadingOverlay = hideLoadingOverlay;
         
         </script>
-        
-        <script>
-        // Force create show sidebar button - DEBUG VERSION
-        function forceCreateShowButton() {
-            console.log('Creating show sidebar button...');
-            
-            // Remove any existing button
-            const existingBtn = document.getElementById('show-sidebar-btn');
-            if (existingBtn) {
-                existingBtn.remove();
-            }
-            
-            // Always create the button for now (for debugging)
-            const showBtn = document.createElement('button');
-            showBtn.id = 'show-sidebar-btn';
-            showBtn.innerHTML = '>>';
-            showBtn.title = 'Show Sidebar';
-            showBtn.style.cssText = `
-                position: fixed !important;
-                top: 20px !important;
-                right: 20px !important;
-                z-index: 999999 !important;
-                background: rgba(102, 126, 234, 0.9) !important;
-                border: none !important;
-                border-radius: 8px !important;
-                width: 50px !important;
-                height: 50px !important;
-                color: white !important;
-                font-size: 20px !important;
-                font-weight: bold !important;
-                cursor: pointer !important;
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-            `;
-            
-            showBtn.onclick = function() {
-                console.log('Show sidebar button clicked!');
-                const sidebar = document.querySelector('[data-testid="stSidebar"]');
-                if (sidebar) {
-                    console.log('Found sidebar, showing it...');
-                    sidebar.style.display = 'block';
-                    sidebar.style.visibility = 'visible';
-                    sidebar.style.width = '21rem';
-                    sidebar.style.minWidth = '21rem';
-                    sidebar.style.opacity = '1';
-                    // Remove the button
-                    showBtn.remove();
-                } else {
-                    console.log('Sidebar not found!');
-                }
-            };
-            
-            document.body.appendChild(showBtn);
-            console.log('Show sidebar button created and added to DOM');
-        }
-        
-        // Run immediately
-        forceCreateShowButton();
-        
-        // Also run when DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded, creating button...');
-            setTimeout(forceCreateShowButton, 100);
-        });
-        
-        // Also run when page loads
-        window.addEventListener('load', function() {
-            console.log('Window loaded, creating button...');
-            setTimeout(forceCreateShowButton, 200);
-        });
-        
-        // Run every 2 seconds to ensure button stays
-        setInterval(function() {
-            const btn = document.getElementById('show-sidebar-btn');
-            if (!btn) {
-                console.log('Button missing, recreating...');
-                forceCreateShowButton();
-            }
-        }, 2000);
-        </script>
         """, unsafe_allow_html=True)
     
     def render_main_interface(self):
         """Render the main interface using Streamlit components"""
-        
-        # Add a native Streamlit button to show sidebar (backup method)
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col3:
-            if st.button(">> Show Sidebar", key="native_show_sidebar", help="Click to show the sidebar"):
-                st.markdown("""
-                <script>
-                const sidebar = document.querySelector('[data-testid="stSidebar"]');
-                if (sidebar) {
-                    sidebar.style.display = 'block';
-                    sidebar.style.visibility = 'visible';
-                    sidebar.style.width = '21rem';
-                    sidebar.style.minWidth = '21rem';
-                }
-                </script>
-                """, unsafe_allow_html=True)
-                st.rerun()
         
         # Show full-screen loading overlay if loading (do NOT return; allow processing to continue)
         if st.session_state.get('is_loading', False):
