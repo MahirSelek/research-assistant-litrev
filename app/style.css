@@ -6,7 +6,40 @@
     box-sizing: border-box;
 }
 
-:root { color-scheme: only dark; }
+/* CSS Variables for Theme Support */
+:root {
+    /* Dark theme colors (default) */
+    --bg-primary: #0E1117;
+    --bg-secondary: #1a1e29;
+    --bg-tertiary: #262730;
+    --text-primary: #FAFAFA;
+    --text-secondary: #D1D5DB;
+    --text-muted: #9CA3AF;
+    --border-primary: #2c313a;
+    --border-secondary: #30333d;
+    --accent-primary: #667eea;
+    --accent-secondary: #764ba2;
+    --shadow-primary: rgba(0, 0, 0, 0.1);
+    --shadow-secondary: rgba(0, 0, 0, 0.2);
+}
+
+/* Light theme colors */
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg-primary: #ffffff;
+        --bg-secondary: #f9fafb;
+        --bg-tertiary: #f3f4f6;
+        --text-primary: #1f2937;
+        --text-secondary: #374151;
+        --text-muted: #6b7280;
+        --border-primary: #e5e7eb;
+        --border-secondary: #d1d5db;
+        --accent-primary: #3b82f6;
+        --accent-secondary: #1d4ed8;
+        --shadow-primary: rgba(0, 0, 0, 0.05);
+        --shadow-secondary: rgba(0, 0, 0, 0.1);
+    }
+}
 
 html, body {
     margin: 0;
@@ -14,11 +47,13 @@ html, body {
     width: 100%;
     height: 100%;
     overflow-x: hidden;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
 }
 
 /* --- Streamlit App Container --- */
 .stApp {
-    background-color: #0E1117 !important;
+    background-color: var(--bg-primary) !important;
     min-height: 100vh;
     width: 100vw;
     margin: 0;
@@ -37,25 +72,25 @@ html, body {
 
 /* --- Sidebar Styling --- */
 [data-testid="stSidebar"] {
-    background-color: #1a1e29 !important;
-    border-right: 1px solid #2c313a !important;
+    background-color: var(--bg-secondary) !important;
+    border-right: 1px solid var(--border-primary) !important;
     min-height: 100vh;
 }
 
 [data-testid="stSidebar"] > div {
-    background-color: #1a1e29 !important;
+    background-color: var(--bg-secondary) !important;
 }
 
 /* --- Header Styling --- */
 header[data-testid="stHeader"] {
-    background-color: #1a1e29 !important;
-    border-bottom: 1px solid #2c313a !important;
+    background-color: var(--bg-secondary) !important;
+    border-bottom: 1px solid var(--border-primary) !important;
 }
 
 /* --- Footer/Chat Input Area --- */
 [data-testid="stChatInput"] {
-    background-color: #1a1e29 !important;
-    border-top: 1px solid #2c313a !important;
+    background-color: var(--bg-secondary) !important;
+    border-top: 1px solid var(--border-primary) !important;
     position: fixed;
     bottom: 0;
     left: 0;
@@ -65,12 +100,12 @@ header[data-testid="stHeader"] {
 
 /* --- Typography --- */
 h1, h2, h3, h4, h5, h6 {
-    color: #FAFAFA !important;
+    color: var(--text-primary) !important;
     font-family: 'Inter', sans-serif !important;
 }
 
 .stMarkdown, .stText, .stSelectbox, .stMultiselect, .stTextInput {
-    color: #D1D5DB !important;
+    color: var(--text-secondary) !important;
 }
 
 /* --- Button Styles (overridden by inline CSS in html_ui.py) --- */
@@ -78,41 +113,41 @@ h1, h2, h3, h4, h5, h6 {
 
 /* --- Chat Interface --- */
 [data-testid="stChatMessage"] {
-    background-color: #262730 !important;
+    background-color: var(--bg-tertiary) !important;
     border-radius: 0.75rem !important;
     padding: 1rem !important;
     margin-bottom: 1rem !important;
-    border: 1px solid #30333d !important;
+    border: 1px solid var(--border-secondary) !important;
 }
 
 /* --- Form Elements --- */
 .stSelectbox > div > div {
-    background-color: #262730 !important;
-    border: 1px solid #2c313a !important;
-    color: #D1D5DB !important;
+    background-color: var(--bg-tertiary) !important;
+    border: 1px solid var(--border-primary) !important;
+    color: var(--text-secondary) !important;
 }
 
 .stMultiselect > div > div {
-    background-color: #262730 !important;
-    border: 1px solid #2c313a !important;
+    background-color: var(--bg-tertiary) !important;
+    border: 1px solid var(--border-primary) !important;
 }
 
 .stTextInput > div > div > input {
-    background-color: #262730 !important;
-    border: 1px solid #2c313a !important;
-    color: #D1D5DB !important;
+    background-color: var(--bg-tertiary) !important;
+    border: 1px solid var(--border-primary) !important;
+    color: var(--text-secondary) !important;
 }
 
 /* --- Expander Styling --- */
 .stExpander {
-    border: 1px solid #2c313a !important;
+    border: 1px solid var(--border-primary) !important;
     border-radius: 0.5rem !important;
-    background-color: #1a1e29 !important;
+    background-color: var(--bg-secondary) !important;
 }
 
 .stExpander header {
-    background-color: #1a1e29 !important;
-    color: #FAFAFA !important;
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
 }
 
 /* --- Responsive Design --- */
@@ -147,36 +182,8 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
-/* --- Dark Mode Compatibility --- */
-@media (prefers-color-scheme: dark) {
-    .stApp {
-        background-color: #0E1117 !important;
-    }
-}
-
-/* @media (prefers-color-scheme: light) {
-    .stApp {
-        background-color: #ffffff !important;
-    }
-    
-    h1, h2, h3, h4, h5, h6 {
-        color: #1f2937 !important;
-    }
-    
-    .stMarkdown, .stText, .stSelectbox, .stMultiselect, .stTextInput {
-        color: #374151 !important;
-    }
-    
-    [data-testid="stSidebar"] {
-        background-color: #f9fafb !important;
-        border-right: 1px solid #e5e7eb !important;
-    }
-    
-    [data-testid="stChatMessage"] {
-        background-color: #f9fafb !important;
-        border: 1px solid #e5e7eb !important;
-    }
-} */
+/* --- Theme Compatibility --- */
+/* Dark and light themes are now handled by CSS variables above */
 
 /* --- Fix for white bars and layout issues --- */
 .stApp > div {
@@ -214,6 +221,7 @@ h1, h2, h3, h4, h5, h6 {
 @-moz-document url-prefix() {
     .stButton > button {
         -moz-appearance: none;
+        appearance: none;
     }
 }
 
@@ -226,7 +234,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* --- Loading and Error States --- */
 .stSpinner {
-    color: #3b82f6 !important;
+    color: var(--accent-primary) !important;
 }
 
 .stAlert {
@@ -239,38 +247,71 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-track {
-    background: #1a1e29;
+    background: var(--bg-secondary);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #2c313a;
+    background: var(--border-primary);
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #374151;
+    background: var(--text-muted);
 }
 
+/* --- Fix for white bars and layout issues --- */
+.stApp > div {
+    width: 100% !important;
+    max-width: 100% !important;
+}
 
-/* === FINAL OVERRIDES: force dark background + dark header everywhere === */
-:root { color-scheme: only dark; }
-html { background: #0E1117 !important; }
-body { background: transparent !important; margin: 0; min-height: 100dvh; }
+.stApp > div > div {
+    width: 100% !important;
+    max-width: 100% !important;
+}
 
-/* Header sits outside .stApp → force it dark */
+/* Ensure full width for main content */
+.main .block-container {
+    width: 100% !important;
+    max-width: none !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+}
+
+/* Fix sidebar width issues */
+[data-testid="stSidebar"] {
+    width: 21rem !important;
+    min-width: 21rem !important;
+    max-width: 21rem !important;
+}
+
+/* === FINAL OVERRIDES: Theme-aware styling === */
+html { 
+    background: var(--bg-primary) !important; 
+}
+
+body { 
+    background: transparent !important; 
+    margin: 0; 
+    min-height: 100dvh; 
+    color: var(--text-primary);
+}
+
+/* Header sits outside .stApp → force it theme-aware */
 header[data-testid="stHeader"],
 header[data-testid="stHeader"] * {
-  background-color: #1a1e29 !important;
-  color: #000000 !important;
-  box-shadow: none !important;
-}
-header[data-testid="stHeader"] {
-  border-bottom: 1px solid #2c313a !important;
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    box-shadow: none !important;
 }
 
-/* Make sure core surfaces stay dark */
+header[data-testid="stHeader"] {
+    border-bottom: 1px solid var(--border-primary) !important;
+}
+
+/* Make sure core surfaces stay theme-aware */
 .stApp,
 [data-testid="stSidebar"],
 [data-testid="stChatInput"] {
-  background-color: #0E1117 !important;
+    background-color: var(--bg-primary) !important;
 }

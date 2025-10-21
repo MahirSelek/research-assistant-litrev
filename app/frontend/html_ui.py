@@ -151,21 +151,56 @@ class HTMLResearchAssistantUI:
                     print(f"Failed to sync to backend: {e}")
     
     def inject_css_and_js(self):
-        """Inject minimal CSS for styling"""
+        """Inject theme-aware CSS for styling"""
         st.markdown("""
         <style>
+        /* CSS Variables for Theme Support */
+        :root {
+            /* Dark theme colors (default) */
+            --bg-primary: #0e1117;
+            --bg-secondary: #1e1e1e;
+            --bg-tertiary: #262730;
+            --text-primary: #FAFAFA;
+            --text-secondary: #D1D5DB;
+            --text-muted: #9CA3AF;
+            --border-primary: #2c313a;
+            --border-secondary: #30333d;
+            --accent-primary: #667eea;
+            --accent-secondary: #764ba2;
+            --shadow-primary: rgba(0, 0, 0, 0.1);
+            --shadow-secondary: rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Light theme colors */
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-primary: #ffffff;
+                --bg-secondary: #f9fafb;
+                --bg-tertiary: #f3f4f6;
+                --text-primary: #1f2937;
+                --text-secondary: #374151;
+                --text-muted: #6b7280;
+                --border-primary: #e5e7eb;
+                --border-secondary: #d1d5db;
+                --accent-primary: #3b82f6;
+                --accent-secondary: #1d4ed8;
+                --shadow-primary: rgba(0, 0, 0, 0.05);
+                --shadow-secondary: rgba(0, 0, 0, 0.1);
+            }
+        }
+        
         /* Custom styling for better appearance */
         .stApp {
-            background: #0e1117 !important;
+            background: var(--bg-primary) !important;
         }
         
         .stSidebar {
-            background: #1e1e1e !important;
+            background: var(--bg-secondary) !important;
         }
         
-        /* Primary buttons - Modern blue gradient with enhanced styling */
+        /* Primary buttons - Theme-aware gradient with enhanced styling */
         .stButton > button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%) !important;
             color: white !important;
             border: none !important;
             border-radius: 10px !important;
@@ -205,11 +240,11 @@ class HTMLResearchAssistantUI:
             box-shadow: 0 4px 14px rgba(102, 126, 234, 0.25) !important;
         }
         
-        /* Secondary buttons - Subtle gray */
+        /* Secondary buttons - Theme-aware subtle styling */
         [data-testid="stSecondaryButton"] > button {
             background: rgba(255, 255, 255, 0.1) !important;
-            color: #e2e8f0 !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            color: var(--text-secondary) !important;
+            border: 1px solid var(--border-primary) !important;
             border-radius: 6px !important;
             font-size: 13px !important;
             font-weight: 500 !important;
@@ -219,9 +254,24 @@ class HTMLResearchAssistantUI:
         
         [data-testid="stSecondaryButton"] > button:hover {
             background: rgba(255, 255, 255, 0.15) !important;
-            color: #f1f5f9 !important;
-            border-color: rgba(255, 255, 255, 0.3) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--border-secondary) !important;
             transform: translateY(-1px) !important;
+        }
+        
+        /* Light theme secondary button adjustments */
+        @media (prefers-color-scheme: light) {
+            [data-testid="stSecondaryButton"] > button {
+                background: rgba(0, 0, 0, 0.05) !important;
+                color: var(--text-secondary) !important;
+                border: 1px solid var(--border-primary) !important;
+            }
+            
+            [data-testid="stSecondaryButton"] > button:hover {
+                background: rgba(0, 0, 0, 0.1) !important;
+                color: var(--text-primary) !important;
+                border-color: var(--border-secondary) !important;
+            }
         }
         
         /* Delete buttons in chat history - Red accent */
@@ -276,7 +326,7 @@ class HTMLResearchAssistantUI:
             box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
         }
         
-        /* Full-Screen Dark Loading Overlay - Covers Entire Page */
+        /* Full-Screen Loading Overlay - Theme-aware */
         .loading-overlay {
             position: fixed !important;
             top: 0 !important;
@@ -306,18 +356,31 @@ class HTMLResearchAssistantUI:
             padding: 50px 60px !important;
             text-align: center !important;
             box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4) !important;
-            border: 2px solid rgba(102, 126, 234, 0.4) !important;
+            border: 2px solid var(--accent-primary) !important;
             max-width: 600px !important;
             width: 90% !important;
             position: relative !important;
             z-index: 1000000 !important;
         }
         
+        /* Light theme loading overlay adjustments */
+        @media (prefers-color-scheme: light) {
+            .loading-overlay {
+                background: rgba(255, 255, 255, 0.8) !important;
+            }
+            
+            .loading-content {
+                background: rgba(255, 255, 255, 0.95) !important;
+                box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15) !important;
+                border: 2px solid var(--accent-primary) !important;
+            }
+        }
+        
         .loading-spinner {
             width: 100px !important;
             height: 100px !important;
             border: 8px solid rgba(102, 126, 234, 0.2) !important;
-            border-top: 8px solid #667eea !important;
+            border-top: 8px solid var(--accent-primary) !important;
             border-radius: 50% !important;
             animation: spin 1s linear infinite !important;
             margin: 0 auto 40px !important;
@@ -344,6 +407,21 @@ class HTMLResearchAssistantUI:
             color: rgba(255, 255, 255, 0.7) !important;
             font-size: 16px !important;
             font-style: italic !important;
+        }
+        
+        /* Light theme loading text adjustments */
+        @media (prefers-color-scheme: light) {
+            .loading-text {
+                color: var(--text-primary) !important;
+            }
+            
+            .loading-subtext {
+                color: var(--text-secondary) !important;
+            }
+            
+            .loading-progress {
+                color: var(--text-muted) !important;
+            }
         }
         
         @keyframes spin {
@@ -724,7 +802,7 @@ Assistant Response:"""
                 search_mode_text = "ALL keywords" if search_mode_display == "all_keywords" else "AT LEAST ONE keyword"
                 
                 initial_message = {"role": "assistant", "content": f"""
-<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+<div style="background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px var(--shadow-primary);">
     <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px; font-weight: 600;">Analysis Report</h2>
     <div style="color: #f0f0f0; font-size: 16px; margin-bottom: 8px;">
         <strong>Keywords:</strong> {', '.join(selected_keywords) if selected_keywords else 'None selected'}
