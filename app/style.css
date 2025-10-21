@@ -24,7 +24,7 @@
 }
 
 /* Light theme colors */
-/* @media (prefers-color-scheme: light) {
+@media (prefers-color-scheme: light) {
     :root {
         --bg-primary: #ffffff;
         --bg-secondary: #f9fafb;
@@ -39,7 +39,7 @@
         --shadow-primary: rgba(0, 0, 0, 0.05);
         --shadow-secondary: rgba(0, 0, 0, 0.1);
     }
-} */
+}
 
 html, body {
     margin: 0;
