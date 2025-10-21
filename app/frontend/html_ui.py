@@ -347,6 +347,37 @@ class HTMLResearchAssistantUI:
             pointer-events: all !important;
         }
         
+        /* Sidebar toggle button - appears when sidebar is closed */
+        .sidebar-toggle-btn {
+            position: fixed !important;
+            top: 20px !important;
+            left: 20px !important;
+            z-index: 1000 !important;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 12px 16px !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3) !important;
+            transition: all 0.3s ease !important;
+            display: none !important;
+        }
+        
+        .sidebar-toggle-btn:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
+            transform: translateY(-2px) !important;
+        }
+        
+        /* Show toggle button when sidebar is collapsed */
+        .main .block-container[data-testid="stAppViewContainer"]:not(:has([data-testid="stSidebar"])) ~ .sidebar-toggle-btn,
+        .main:not(:has([data-testid="stSidebar"])) .sidebar-toggle-btn {
+            display: block !important;
+        }
+        
         .loading-content {
             background: rgba(20, 20, 20, 0.95) !important;
             border-radius: 20px !important;
@@ -525,6 +556,68 @@ class HTMLResearchAssistantUI:
         // Force overlay to show immediately when called
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
+        
+        // Sidebar toggle functionality
+        function toggleSidebar() {
+            // Try to find and click Streamlit's sidebar toggle button
+            const sidebarToggle = document.querySelector('[data-testid="stSidebar"] button[aria-label*="Close"], [data-testid="stSidebar"] button[aria-label*="Open"], [data-testid="stSidebar"] button[aria-label*="Toggle"]');
+            if (sidebarToggle) {
+                sidebarToggle.click();
+            } else {
+                // Fallback: try to find any button in the sidebar header
+                const sidebarHeader = document.querySelector('[data-testid="stSidebar"] > div:first-child');
+                if (sidebarHeader) {
+                    const toggleBtn = sidebarHeader.querySelector('button');
+                    if (toggleBtn) {
+                        toggleBtn.click();
+                    }
+                }
+            }
+        }
+        
+        // Add sidebar toggle button to the page
+        function addSidebarToggleButton() {
+            // Remove existing toggle button if any
+            const existingToggle = document.getElementById('sidebar-toggle-btn');
+            if (existingToggle) {
+                existingToggle.remove();
+            }
+            
+            // Create toggle button
+            const toggleBtn = document.createElement('button');
+            toggleBtn.id = 'sidebar-toggle-btn';
+            toggleBtn.className = 'sidebar-toggle-btn';
+            toggleBtn.innerHTML = '☰ Menu';
+            toggleBtn.onclick = toggleSidebar;
+            
+            // Add to body
+            document.body.appendChild(toggleBtn);
+        }
+        
+        // Add toggle button when page loads
+        setTimeout(addSidebarToggleButton, 1000);
+        
+        // Re-add toggle button when Streamlit reruns
+        const observer = new MutationObserver(function(mutations) {
+            let shouldAddToggle = false;
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeType === 1 && node.querySelector && node.querySelector('[data-testid="stAppViewContainer"]')) {
+                            shouldAddToggle = true;
+                        }
+                    });
+                }
+            });
+            if (shouldAddToggle) {
+                setTimeout(addSidebarToggleButton, 100);
+            }
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
         
         </script>
         """, unsafe_allow_html=True)
