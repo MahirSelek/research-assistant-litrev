@@ -138,14 +138,14 @@ class HTMLResearchAssistantUI:
                     # Always allow immediate syncs for conversations; throttle others to once per 5s
                     must_sync = key == 'conversations' or (now_ts - last_sync) >= 5.0
                     if must_sync:
-                        user_data = {
-                            'selected_keywords': self.get_user_session('selected_keywords', []),
-                            'search_mode': self.get_user_session('search_mode', 'all_keywords'),
-                            'uploaded_papers': self.get_user_session('uploaded_papers', []),
-                            'custom_summary_chat': self.get_user_session('custom_summary_chat', []),
-                            'active_conversation_id': self.get_user_session('active_conversation_id')
-                        }
-                        self.api.save_user_data(username, user_data)
+                    user_data = {
+                        'selected_keywords': self.get_user_session('selected_keywords', []),
+                        'search_mode': self.get_user_session('search_mode', 'all_keywords'),
+                        'uploaded_papers': self.get_user_session('uploaded_papers', []),
+                        'custom_summary_chat': self.get_user_session('custom_summary_chat', []),
+                        'active_conversation_id': self.get_user_session('active_conversation_id')
+                    }
+                    self.api.save_user_data(username, user_data)
                         st.session_state[rate_key] = now_ts
                 except Exception as e:
                     print(f"Failed to sync to backend: {e}")
@@ -347,39 +347,6 @@ class HTMLResearchAssistantUI:
             pointer-events: all !important;
         }
         
-        /* Sidebar toggle button - always visible for easy access */
-        .sidebar-toggle-btn {
-            position: fixed !important;
-            top: 20px !important;
-            left: 20px !important;
-            z-index: 10000 !important;
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 8px !important;
-            padding: 12px 16px !important;
-            font-size: 14px !important;
-            font-weight: 600 !important;
-            cursor: pointer !important;
-            box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3) !important;
-            transition: all 0.3s ease !important;
-            display: block !important;
-            opacity: 0.9 !important;
-        }
-        
-        .sidebar-toggle-btn:hover {
-            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
-            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
-            transform: translateY(-2px) !important;
-            opacity: 1 !important;
-        }
-        
-        /* Hide toggle button when sidebar is visible and wide */
-        @media (min-width: 768px) {
-            [data-testid="stSidebar"]:not([aria-hidden="true"]) ~ .sidebar-toggle-btn {
-                display: none !important;
-            }
-        }
         
         .loading-content {
             background: rgba(20, 20, 20, 0.95) !important;
@@ -478,7 +445,7 @@ class HTMLResearchAssistantUI:
         button[aria-label="View source on GitHub"] {
             display: none !important;
         }
-
+        
         </style>
         <script>
         // Button styling is now handled by CSS above
@@ -560,82 +527,6 @@ class HTMLResearchAssistantUI:
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
         
-        // Sidebar toggle functionality
-        function toggleSidebar() {
-            // Method 1: Try to find Streamlit's sidebar toggle button
-            const sidebarToggle = document.querySelector('button[aria-label*="Close"], button[aria-label*="Open"], button[aria-label*="Toggle"], button[aria-label*="sidebar"]');
-            if (sidebarToggle) {
-                sidebarToggle.click();
-                return;
-            }
-            
-            // Method 2: Try to find any button in the sidebar area
-            const sidebarButtons = document.querySelectorAll('[data-testid="stSidebar"] button, .stSidebar button, [data-testid="stSidebar"] [role="button"]');
-            if (sidebarButtons.length > 0) {
-                sidebarButtons[0].click();
-                return;
-            }
-            
-            // Method 3: Try to trigger sidebar via keyboard shortcut (Ctrl+Shift+S)
-            const event = new KeyboardEvent('keydown', {
-                key: 's',
-                ctrlKey: true,
-                shiftKey: true,
-                bubbles: true
-            });
-            document.dispatchEvent(event);
-            
-            // Method 4: Try to find and click the hamburger menu
-            const hamburgerMenu = document.querySelector('[data-testid="stSidebar"] > div:first-child button, .stSidebar > div:first-child button');
-            if (hamburgerMenu) {
-                hamburgerMenu.click();
-            }
-        }
-        
-        // Add sidebar toggle button to the page
-        function addSidebarToggleButton() {
-            // Remove existing toggle button if any
-            const existingToggle = document.getElementById('sidebar-toggle-btn');
-            if (existingToggle) {
-                existingToggle.remove();
-            }
-            
-            // Create toggle button
-            const toggleBtn = document.createElement('button');
-            toggleBtn.id = 'sidebar-toggle-btn';
-            toggleBtn.className = 'sidebar-toggle-btn';
-            toggleBtn.innerHTML = '☰ Menu';
-            toggleBtn.onclick = toggleSidebar;
-            
-            // Add to body
-            document.body.appendChild(toggleBtn);
-        }
-        
-        // Add toggle button when page loads
-        setTimeout(addSidebarToggleButton, 1000);
-        
-        // Re-add toggle button when Streamlit reruns
-        const observer = new MutationObserver(function(mutations) {
-            let shouldAddToggle = false;
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'childList') {
-                    mutation.addedNodes.forEach(function(node) {
-                        if (node.nodeType === 1 && node.querySelector && node.querySelector('[data-testid="stAppViewContainer"]')) {
-                            shouldAddToggle = true;
-                        }
-                    });
-                }
-            });
-            if (shouldAddToggle) {
-                setTimeout(addSidebarToggleButton, 100);
-            }
-        });
-        
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-        
         </script>
         """, unsafe_allow_html=True)
     
@@ -662,46 +553,6 @@ class HTMLResearchAssistantUI:
         
         # Main content area
         st.markdown("# 🧬 POLO-GGB RESEARCH ASSISTANT")
-        
-        # Sidebar toggle button for easy access
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col1:
-            if st.button("☰ Show Sidebar", help="Click to show/hide the sidebar"):
-                st.markdown("""
-                <script>
-                // Try multiple methods to toggle sidebar
-                function toggleSidebarMultiple() {
-                    // Method 1: Look for any toggle button
-                    const toggleButtons = document.querySelectorAll('button[aria-label*="Close"], button[aria-label*="Open"], button[aria-label*="Toggle"]');
-                    for (let btn of toggleButtons) {
-                        if (btn.offsetParent !== null) { // Check if visible
-                            btn.click();
-                            return;
-                        }
-                    }
-                    
-                    // Method 2: Look in sidebar header
-                    const sidebarHeader = document.querySelector('[data-testid="stSidebar"] > div:first-child');
-                    if (sidebarHeader) {
-                        const btn = sidebarHeader.querySelector('button');
-                        if (btn) {
-                            btn.click();
-                            return;
-                        }
-                    }
-                    
-                    // Method 3: Try keyboard shortcut
-                    const event = new KeyboardEvent('keydown', {
-                        key: 's',
-                        ctrlKey: true,
-                        shiftKey: true,
-                        bubbles: true
-                    });
-                    document.dispatchEvent(event);
-                }
-                toggleSidebarMultiple();
-                </script>
-                """, unsafe_allow_html=True)
         
         # Get current state
         active_conversation_id = self.get_user_session('active_conversation_id')
@@ -910,7 +761,7 @@ Assistant Response:"""
                 pass
         
         return current_title  # Return original if no improvement needed
-
+    
     def process_keyword_search(self, keywords: List[str], time_filter_type: str, search_mode: str = "all_keywords"):
         """Process keyword search via backend"""
         try:
@@ -1110,7 +961,7 @@ Assistant Response:"""
                     st.session_state['pending_time_filter'] = time_filter
                     st.session_state['pending_search_mode'] = search_mode
 
-                    st.rerun()
+                        st.rerun()
                 else:
                     st.error("Please select at least one keyword.")
             
@@ -1220,7 +1071,7 @@ Assistant Response:"""
                         """,
                         unsafe_allow_html=True,
                     )
-
+                    
                     success = self.generate_custom_summary(uploaded_papers)
 
                     # Hide overlay and refresh UI
@@ -1232,7 +1083,7 @@ Assistant Response:"""
                         """,
                         unsafe_allow_html=True,
                     )
-
+                    
                     if success:
                         st.rerun()
                     else:
@@ -1264,18 +1115,18 @@ Assistant Response:"""
                     </script>
                     """, unsafe_allow_html=True)
                     
-                    for uploaded_file in uploaded_pdfs:
-                        # Process PDF using backend API
-                        paper_data = self.api.process_uploaded_pdf(uploaded_file, uploaded_file.name)
-                        
-                        if paper_data:
-                            # Store in user-specific session state
-                            uploaded_papers = self.get_user_session('uploaded_papers', [])
-                            uploaded_papers.append(paper_data)
-                            self.set_user_session('uploaded_papers', uploaded_papers)
-                            st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_data['content'])} chars)")
-                        else:
-                            st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
+                        for uploaded_file in uploaded_pdfs:
+                            # Process PDF using backend API
+                            paper_data = self.api.process_uploaded_pdf(uploaded_file, uploaded_file.name)
+                            
+                            if paper_data:
+                                # Store in user-specific session state
+                                uploaded_papers = self.get_user_session('uploaded_papers', [])
+                                uploaded_papers.append(paper_data)
+                                self.set_user_session('uploaded_papers', uploaded_papers)
+                                st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_data['content'])} chars)")
+                            else:
+                                st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
                     
                     # Hide loading overlay
                     st.markdown("""
@@ -1284,7 +1135,7 @@ Assistant Response:"""
                     </script>
                     """, unsafe_allow_html=True)
                     
-                    st.rerun()
+                        st.rerun()
             
             # Logout
             if st.button("Logout", type="secondary", use_container_width=True):
@@ -1306,12 +1157,12 @@ Assistant Response:"""
                     active_conv["messages"].append({"role": "user", "content": prompt})
                     active_conv['last_interaction_time'] = time.time()
                     self.set_user_session('conversations', conversations)
-
+                    
                     # Save conversation to backend (no overlay)
                     username = st.session_state.get('username')
                     if username:
                         self.api.save_conversation(username, active_conversation_id, active_conv)
-
+                    
                     st.rerun()
     
     def generate_custom_summary(self, uploaded_papers: List[Dict]):
