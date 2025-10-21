@@ -347,7 +347,6 @@ class HTMLResearchAssistantUI:
             pointer-events: all !important;
         }
         
-        
         .loading-content {
             background: rgba(20, 20, 20, 0.95) !important;
             border-radius: 20px !important;
