@@ -475,6 +475,74 @@ class HTMLResearchAssistantUI:
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
         
+        // Auto-close multiselect dropdown after selection
+        function autoCloseMultiselect() {
+            // Wait for Streamlit to render the multiselect component
+            setTimeout(() => {
+                // Find all multiselect components
+                const multiselects = document.querySelectorAll('[data-testid="stMultiSelect"]');
+                
+                multiselects.forEach(multiselect => {
+                    // Find the dropdown container
+                    const dropdown = multiselect.querySelector('[role="listbox"]');
+                    if (dropdown) {
+                        // Listen for click events on option items
+                        const options = dropdown.querySelectorAll('[role="option"]');
+                        options.forEach(option => {
+                            option.addEventListener('click', function() {
+                                // Close the dropdown after a short delay to allow selection to register
+                                setTimeout(() => {
+                                    // Find the input element and blur it to close dropdown
+                                    const input = multiselect.querySelector('input');
+                                    if (input) {
+                                        input.blur();
+                                    }
+                                    
+                                    // Alternative method: trigger escape key
+                                    const escapeEvent = new KeyboardEvent('keydown', {
+                                        key: 'Escape',
+                                        code: 'Escape',
+                                        keyCode: 27,
+                                        which: 27,
+                                        bubbles: true
+                                    });
+                                    multiselect.dispatchEvent(escapeEvent);
+                                }, 100);
+                            });
+                        });
+                    }
+                });
+            }, 500);
+        }
+        
+        // Run auto-close function when page loads and after Streamlit reruns
+        autoCloseMultiselect();
+        
+        // Also run it after Streamlit reruns (when new content is added)
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    // Check if multiselect components were added
+                    const hasMultiselect = Array.from(mutation.addedNodes).some(node => 
+                        node.nodeType === 1 && (
+                            node.querySelector && node.querySelector('[data-testid="stMultiSelect"]') ||
+                            node.matches && node.matches('[data-testid="stMultiSelect"]')
+                        )
+                    );
+                    
+                    if (hasMultiselect) {
+                        setTimeout(autoCloseMultiselect, 100);
+                    }
+                }
+            });
+        });
+        
+        // Start observing
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        
         </script>
         """, unsafe_allow_html=True)
     
