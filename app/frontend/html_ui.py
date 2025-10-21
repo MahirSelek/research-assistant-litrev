@@ -283,8 +283,8 @@ class HTMLResearchAssistantUI:
             left: 0 !important;
             width: 100vw !important;
             height: 100vh !important;
-            background: rgba(0, 0, 0, 0.95) !important;
-            backdrop-filter: blur(10px) !important;
+            background: rgba(0, 0, 0, 0.35) !important;
+            backdrop-filter: blur(2px) !important;
             z-index: 999999 !important;
             display: none !important;
             justify-content: center !important;
@@ -301,11 +301,11 @@ class HTMLResearchAssistantUI:
         }
         
         .loading-content {
-            background: rgba(20, 20, 20, 0.95) !important;
+            background: rgba(20, 20, 20, 0.85) !important;
             border-radius: 20px !important;
             padding: 50px 60px !important;
             text-align: center !important;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.7) !important;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4) !important;
             border: 2px solid rgba(102, 126, 234, 0.4) !important;
             max-width: 600px !important;
             width: 90% !important;
