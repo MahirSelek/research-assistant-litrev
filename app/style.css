@@ -1,17 +1,178 @@
-/* Import a modern font */
+/* Import a modern font with fallbacks */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* --- Global Reset & Base Styles --- */
-* {
+/* --- Comprehensive CSS Reset & Normalization --- */
+/* Based on modern CSS reset principles for maximum cross-browser consistency */
+
+/* Box sizing reset */
+*, *::before, *::after {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
-html, body {
+/* HTML and body normalization */
+html {
+    line-height: 1.15; /* Prevent adjustments of font size after orientation changes in iOS */
+    -webkit-text-size-adjust: 100%; /* Prevent font size inflation in iOS */
+    -moz-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    font-size: 16px; /* Ensure consistent base font size */
+    scroll-behavior: smooth;
+}
+
+body {
     margin: 0;
     padding: 0;
     width: 100%;
-    height: 100%;
+    min-height: 100vh;
     overflow-x: hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #D1D5DB;
+    background-color: #0E1117;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+}
+
+/* Remove default margins and paddings from all elements */
+h1, h2, h3, h4, h5, h6, p, blockquote, pre, dl, dd, ol, ul, figure, hr, fieldset, legend {
+    margin: 0;
+    padding: 0;
+}
+
+/* Remove list styles */
+ol, ul {
+    list-style: none;
+}
+
+/* Remove default button styles */
+button, input, optgroup, select, textarea {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    outline: none;
+}
+
+/* Remove default button appearance */
+button {
+    cursor: pointer;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* Remove default input styles */
+input, textarea, select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border-radius: 0;
+}
+
+/* Remove default link styles */
+a {
+    color: inherit;
+    text-decoration: none;
+    background-color: transparent;
+}
+
+/* Remove default table styles */
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+/* Remove default form styles */
+fieldset {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Remove default image styles */
+img, picture, video, canvas, svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+/* Remove default iframe styles */
+iframe {
+    border: none;
+}
+
+/* Remove default details/summary styles */
+details, summary {
+    display: block;
+}
+
+summary {
+    cursor: pointer;
+}
+
+/* Remove default meter and progress styles */
+meter, progress {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* Remove default select arrow */
+select::-ms-expand {
+    display: none;
+}
+
+/* Remove default search input styles */
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Remove default number input spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* Remove default autofill styles */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px #262730 inset !important;
+    -webkit-text-fill-color: #D1D5DB !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Ensure consistent focus styles */
+:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
 }
 
 /* --- Streamlit App Container --- */
@@ -21,6 +182,19 @@ html, body {
     width: 100vw;
     margin: 0;
     padding: 0;
+    position: relative;
+    overflow-x: hidden;
+    /* Ensure consistent rendering across browsers */
+    -webkit-transform: translateZ(0);
+    -moz-transform: translateZ(0);
+    -ms-transform: translateZ(0);
+    -o-transform: translateZ(0);
+    transform: translateZ(0);
+    /* Force hardware acceleration for smooth rendering */
+    -webkit-backface-visibility: hidden;
+    -moz-backface-visibility: hidden;
+    -ms-backface-visibility: hidden;
+    backface-visibility: hidden;
 }
 
 /* --- Main Content Area --- */
@@ -113,27 +287,117 @@ h1, h2, h3, h4, h5, h6 {
     color: #FAFAFA !important;
 }
 
-/* --- Responsive Design --- */
-@media (max-width: 768px) {
+/* --- Comprehensive Responsive Design --- */
+/* Mobile First Approach - Consistent across all devices */
+
+/* Extra small devices (phones, 320px and up) */
+@media (min-width: 320px) {
     .main .block-container {
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
     }
     
-    [data-testid="stSidebar"] {
-        width: 100% !important;
+    h1 {
+        font-size: 1.5rem !important;
+        line-height: 1.2 !important;
     }
     
-    .stButton > button {
-        padding: 0.5rem 1rem !important;
-        font-size: 0.875rem !important;
+    h2 {
+        font-size: 1.25rem !important;
+        line-height: 1.3 !important;
+    }
+    
+    h3 {
+        font-size: 1.125rem !important;
+        line-height: 1.4 !important;
     }
 }
 
-@media (max-width: 480px) {
+/* Small devices (landscape phones, 576px and up) */
+@media (min-width: 576px) {
     .main .block-container {
-        padding-left: 0.25rem;
-        padding-right: 0.25rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    h1 {
+        font-size: 1.75rem !important;
+    }
+    
+    h2 {
+        font-size: 1.5rem !important;
+    }
+}
+
+/* Medium devices (tablets, 768px and up) */
+@media (min-width: 768px) {
+    .main .block-container {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+    
+    h1 {
+        font-size: 2rem !important;
+    }
+    
+    h2 {
+        font-size: 1.75rem !important;
+    }
+    
+    [data-testid="stSidebar"] {
+        width: 21rem !important;
+        min-width: 21rem !important;
+        max-width: 21rem !important;
+    }
+}
+
+/* Large devices (desktops, 992px and up) */
+@media (min-width: 992px) {
+    .main .block-container {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+    
+    h1 {
+        font-size: 2.25rem !important;
+    }
+    
+    h2 {
+        font-size: 2rem !important;
+    }
+}
+
+/* Extra large devices (large desktops, 1200px and up) */
+@media (min-width: 1200px) {
+    .main .block-container {
+        padding-left: 2.5rem;
+        padding-right: 2.5rem;
+    }
+    
+    h1 {
+        font-size: 2.5rem !important;
+    }
+    
+    h2 {
+        font-size: 2.25rem !important;
+    }
+}
+
+/* Ultra-wide screens (1400px and up) */
+@media (min-width: 1400px) {
+    .main .block-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding-left: 3rem;
+        padding-right: 3rem;
+    }
+}
+
+/* Landscape orientation adjustments */
+@media (orientation: landscape) and (max-height: 500px) {
+    .main .block-container {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
     }
     
     h1 {
@@ -142,6 +406,31 @@ h1, h2, h3, h4, h5, h6 {
     
     h2 {
         font-size: 1.25rem !important;
+    }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .stApp {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+}
+
+/* Print styles */
+@media print {
+    .stApp {
+        background-color: white !important;
+        color: black !important;
+    }
+    
+    [data-testid="stSidebar"] {
+        display: none !important;
+    }
+    
+    .main .block-container {
+        padding: 0 !important;
+        margin: 0 !important;
     }
 }
 
@@ -176,10 +465,254 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
-/* --- Fix for white bars and layout issues --- */
+/* --- Comprehensive Cross-Browser Compatibility --- */
+/* Ensure consistent appearance across Chrome, Firefox, Safari, Edge, and mobile browsers */
+
+/* Chrome/Chromium specific fixes */
+@supports (-webkit-appearance: none) {
+    .stApp {
+        -webkit-overflow-scrolling: touch;
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+    }
+    
+    /* Fix Chrome autofill styling */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 30px #262730 inset !important;
+        -webkit-text-fill-color: #D1D5DB !important;
+        transition: background-color 5000s ease-in-out 0s;
+    }
+    
+    /* Chrome scrollbar styling */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #1a1e29;
+        border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: #2c313a;
+        border-radius: 4px;
+        border: 1px solid #1a1e29;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: #374151;
+    }
+    
+    ::-webkit-scrollbar-corner {
+        background: #1a1e29;
+    }
+}
+
+/* Firefox specific fixes */
+@-moz-document url-prefix() {
+    .stApp {
+        scrollbar-width: thin;
+        scrollbar-color: #2c313a #1a1e29;
+    }
+    
+    .stButton > button {
+        -moz-appearance: none;
+        appearance: none;
+        background: none;
+        border: none;
+    }
+    
+    input, textarea, select {
+        -moz-appearance: none;
+        appearance: none;
+    }
+    
+    /* Firefox autofill fix */
+    input:-moz-autofill {
+        background-color: #262730 !important;
+        color: #D1D5DB !important;
+    }
+}
+
+/* Safari specific fixes */
+@supports (-webkit-appearance: none) and (not (-webkit-touch-callout: none)) {
+    .stApp {
+        -webkit-overflow-scrolling: touch;
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+    }
+    
+    /* Safari input styling */
+    input, textarea, select {
+        -webkit-appearance: none;
+        appearance: none;
+        border-radius: 0;
+    }
+    
+    /* Safari button styling */
+    button {
+        -webkit-appearance: none;
+        appearance: none;
+        border-radius: 0;
+    }
+}
+
+/* Edge specific fixes */
+@supports (-ms-ime-align: auto) {
+    .stApp {
+        -ms-overflow-style: -ms-autohiding-scrollbar;
+    }
+    
+    /* Edge autofill fix */
+    input:-ms-input-placeholder {
+        color: #9ca3af;
+    }
+}
+
+/* Internet Explorer 11 specific fixes */
+@media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {
+    .stApp {
+        -ms-overflow-style: -ms-autohiding-scrollbar;
+    }
+    
+    /* IE11 flexbox fixes */
+    .main .block-container {
+        display: -ms-flexbox;
+        display: flex;
+        -ms-flex-direction: column;
+        flex-direction: column;
+    }
+}
+
+/* Mobile browser specific fixes */
+@media (max-width: 768px) {
+    /* Prevent zoom on input focus in iOS Safari */
+    input, textarea, select {
+        font-size: 16px !important;
+    }
+    
+    /* Fix viewport issues on mobile */
+    .stApp {
+        -webkit-overflow-scrolling: touch;
+        overflow-x: hidden;
+    }
+    
+    /* Fix touch targets */
+    button, .stButton > button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Fix mobile sidebar */
+    [data-testid="stSidebar"] {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        z-index: 9999 !important;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+    }
+    
+    [data-testid="stSidebar"][aria-expanded="true"] {
+        transform: translateX(0);
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .stApp {
+        background-color: #000000 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-testid="stSidebar"] {
+        background-color: #000000 !important;
+        border-right: 2px solid #ffffff !important;
+    }
+    
+    [data-testid="stChatMessage"] {
+        background-color: #000000 !important;
+        border: 2px solid #ffffff !important;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .stApp {
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Force consistent font rendering */
+.stApp, .stApp * {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
+    font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+    font-variant-ligatures: common-ligatures;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure consistent line heights */
+h1, h2, h3, h4, h5, h6 {
+    line-height: 1.2 !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.025em !important;
+}
+
+p, .stMarkdown, .stText {
+    line-height: 1.6 !important;
+    font-weight: 400 !important;
+}
+
+/* Consistent spacing */
+.stButton > button {
+    padding: 0.75rem 1.5rem !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    line-height: 1.25 !important;
+    border-radius: 0.5rem !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+/* Consistent form elements */
+.stSelectbox > div > div,
+.stMultiselect > div > div,
+.stTextInput > div > div > input {
+    padding: 0.75rem !important;
+    font-size: 0.875rem !important;
+    line-height: 1.25 !important;
+    border-radius: 0.5rem !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+/* Consistent chat messages */
+[data-testid="stChatMessage"] {
+    padding: 1.25rem !important;
+    margin-bottom: 1rem !important;
+    border-radius: 0.75rem !important;
+    line-height: 1.6 !important;
+}
+
+/* Layout stability - prevent visual shifts */
 .stApp > div {
     width: 100% !important;
     max-width: 100% !important;
+    min-height: 100vh !important;
 }
 
 .stApp > div > div {
@@ -202,26 +735,6 @@ h1, h2, h3, h4, h5, h6 {
     max-width: 21rem !important;
 }
 
-/* --- Cross-browser compatibility --- */
-.stApp {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-/* Firefox specific fixes */
-@-moz-document url-prefix() {
-    .stButton > button {
-        -moz-appearance: none;
-    }
-}
-
-/* Safari specific fixes */
-@supports (-webkit-appearance: none) {
-    .stApp {
-        -webkit-overflow-scrolling: touch;
-    }
-}
-
 /* --- Loading and Error States --- */
 .stSpinner {
     color: #3b82f6 !important;
@@ -231,20 +744,58 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 0.5rem !important;
 }
 
-/* --- Custom scrollbar --- */
-::-webkit-scrollbar {
-    width: 8px;
+/* --- Performance Optimizations --- */
+/* Enable hardware acceleration for smooth animations */
+.stApp, .stApp * {
+    -webkit-transform: translateZ(0);
+    -moz-transform: translateZ(0);
+    -ms-transform: translateZ(0);
+    -o-transform: translateZ(0);
+    transform: translateZ(0);
 }
 
-::-webkit-scrollbar-track {
-    background: #1a1e29;
+/* Optimize repaints and reflows */
+.stApp {
+    contain: layout style paint;
 }
 
-::-webkit-scrollbar-thumb {
-    background: #2c313a;
-    border-radius: 4px;
+/* --- Accessibility Improvements --- */
+/* Ensure proper focus indicators */
+.stButton > button:focus,
+.stSelectbox > div > div:focus,
+.stMultiselect > div > div:focus,
+.stTextInput > div > div > input:focus {
+    outline: 2px solid #3b82f6 !important;
+    outline-offset: 2px !important;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: #374151;
+/* Improve color contrast for better accessibility */
+.stMarkdown a {
+    color: #60a5fa !important;
+    text-decoration: underline !important;
 }
+
+.stMarkdown a:hover {
+    color: #93c5fd !important;
+}
+
+/* --- Final Consistency Checks --- */
+/* Ensure all text is readable */
+.stApp, .stApp * {
+    color-scheme: dark;
+}
+
+/* Prevent text selection issues */
+.stButton > button {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Ensure consistent cursor behavior */
+.stButton > button:hover {
+    cursor: pointer !important;
+}
+
+/* --- End of Styles --- */

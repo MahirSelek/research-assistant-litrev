@@ -1265,9 +1265,25 @@ Assistant Response:"""
             return False
     
     def local_css(self, file_name):
-        """Load local CSS file"""
+        """Load local CSS file with viewport meta tag for consistent rendering"""
         try:
             with open(file_name) as f:
-                st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+                css_content = f.read()
+                # Add viewport meta tag and other HTML head optimizations
+                html_head = """
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                <meta name="theme-color" content="#0E1117">
+                <meta name="color-scheme" content="dark">
+                <meta name="format-detection" content="telephone=no">
+                <meta name="mobile-web-app-capable" content="yes">
+                <meta name="apple-mobile-web-app-capable" content="yes">
+                <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+                <meta name="msapplication-navbutton-color" content="#0E1117">
+                <meta name="apple-mobile-web-app-title" content="Research Assistant">
+                <style>
+                {css_content}
+                </style>
+                """.format(css_content=css_content)
+                st.markdown(html_head, unsafe_allow_html=True)
         except FileNotFoundError:
             st.warning(f"CSS file '{file_name}' not found. Using default styles.")
