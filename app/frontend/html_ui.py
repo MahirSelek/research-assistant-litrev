@@ -154,54 +154,13 @@ class HTMLResearchAssistantUI:
         """Inject minimal CSS for styling"""
         st.markdown("""
         <style>
-        /* Restore beautiful typography and custom styling */
+        /* Custom styling for better appearance */
         .stApp {
             background: #0e1117 !important;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
         }
         
-        /* Restore custom text styling */
-        h1, h2, h3, h4, h5, h6 {
-            color: #FAFAFA !important;
-            font-family: 'Inter', sans-serif !important;
-            font-weight: 600 !important;
-        }
-        
-        .stMarkdown, .stText, p, span, div {
-            color: #D1D5DB !important;
-            font-family: 'Inter', sans-serif !important;
-            font-weight: 400 !important;
-            line-height: 1.6 !important;
-        }
-        
-        /* Restore sidebar styling */
         .stSidebar {
             background: #1e1e1e !important;
-            font-family: 'Inter', sans-serif !important;
-        }
-        
-        /* Restore chat message styling */
-        [data-testid="stChatMessage"] {
-            background-color: #262730 !important;
-            border-radius: 0.75rem !important;
-            padding: 1rem !important;
-            margin-bottom: 1rem !important;
-            border: 1px solid #30333d !important;
-            font-family: 'Inter', sans-serif !important;
-        }
-        
-        /* Restore expander styling */
-        .stExpander {
-            border: 1px solid #2c313a !important;
-            border-radius: 0.5rem !important;
-            background-color: #1a1e29 !important;
-            font-family: 'Inter', sans-serif !important;
-        }
-        
-        .stExpander header {
-            background-color: #1a1e29 !important;
-            color: #FAFAFA !important;
-            font-family: 'Inter', sans-serif !important;
         }
         
         /* Force dark theme for all elements */
@@ -715,124 +674,6 @@ class HTMLResearchAssistantUI:
         // Force overlay to show immediately when called
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
-        
-        // SELECTIVE DARK THEME - Only force form elements, preserve custom styling
-        function forceDarkTheme() {
-            // Force dark color scheme only on document level
-            document.documentElement.style.colorScheme = 'dark';
-            document.body.style.colorScheme = 'dark';
-            
-            // Only override form elements, preserve button gradients and beautiful typography
-            const style = document.createElement('style');
-            style.textContent = `
-                /* Restore beautiful typography */
-                .stApp {
-                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-                }
-                
-                h1, h2, h3, h4, h5, h6 {
-                    color: #FAFAFA !important;
-                    font-family: 'Inter', sans-serif !important;
-                    font-weight: 600 !important;
-                }
-                
-                .stMarkdown, .stText, p, span, div {
-                    color: #D1D5DB !important;
-                    font-family: 'Inter', sans-serif !important;
-                    font-weight: 400 !important;
-                    line-height: 1.6 !important;
-                }
-                
-                /* Force dark theme on chat input - ULTRA SPECIFIC */
-                [data-testid="stBottomBlockContainer"], [data-testid="stBottomBlockContainer"] *,
-                [data-testid="stVerticalBlock"], [data-testid="stVerticalBlock"] *,
-                [data-testid="stElementContainer"], [data-testid="stElementContainer"] *,
-                [data-testid="stChatInput"], [data-testid="stChatInput"] *,
-                [data-testid="stChatInputTextArea"], [data-testid="stChatInputTextArea"] *,
-                [data-testid="stChatInputSubmitButton"], [data-testid="stChatInputSubmitButton"] *,
-                [data-testid="InputInstructions"], [data-testid="InputInstructions"] * {
-                    background-color: #1a1e29 !important;
-                    color: #D1D5DB !important;
-                    border-color: #2c313a !important;
-                    font-family: 'Inter', sans-serif !important;
-                }
-                
-                /* Force dark theme on textarea and base-input specifically */
-                textarea[data-testid="stChatInputTextArea"],
-                [data-baseweb="textarea"], [data-baseweb="textarea"] *,
-                [data-baseweb="base-input"], [data-baseweb="base-input"] * {
-                    background-color: #262730 !important;
-                    color: #D1D5DB !important;
-                    border-color: #2c313a !important;
-                    font-family: 'Inter', sans-serif !important;
-                }
-                
-                /* Target all emotion-cache classes in chat input */
-                .st-emotion-cache-1eeryuo, .st-emotion-cache-1eeryuo *,
-                .st-emotion-cache-yd4u6l, .st-emotion-cache-yd4u6l *,
-                .st-emotion-cache-12o5wl7, .st-emotion-cache-12o5wl7 *,
-                .st-emotion-cache-sey4o0, .st-emotion-cache-sey4o0 *,
-                .st-emotion-cache-o0516v, .st-emotion-cache-o0516v *,
-                .st-emotion-cache-1nzi1q1, .st-emotion-cache-1nzi1q1 * {
-                    background-color: #1a1e29 !important;
-                    color: #D1D5DB !important;
-                    border-color: #2c313a !important;
-                    font-family: 'Inter', sans-serif !important;
-                }
-                
-                /* Force dark theme on Streamlit header and toolbar */
-                header[data-testid="stHeader"], header[data-testid="stHeader"] *,
-                [data-testid="stToolbar"], [data-testid="stToolbar"] *,
-                [data-testid="stToolbarActions"], [data-testid="stToolbarActions"] *,
-                [data-testid="stToolbarActionButton"], [data-testid="stToolbarActionButton"] *,
-                [data-testid="stMainMenu"], [data-testid="stMainMenu"] * {
-                    background-color: #1a1e29 !important;
-                    color: #D1D5DB !important;
-                    border-color: #2c313a !important;
-                    font-family: 'Inter', sans-serif !important;
-                }
-                
-                /* Only force dark theme on form elements */
-                .stSelectbox, .stSelectbox * {
-                    background-color: #262730 !important;
-                    color: #D1D5DB !important;
-                    border-color: #2c313a !important;
-                    font-family: 'Inter', sans-serif !important;
-                }
-                [data-baseweb="select"], [data-baseweb="select"] * {
-                    background-color: #262730 !important;
-                    color: #D1D5DB !important;
-                    border-color: #2c313a !important;
-                    font-family: 'Inter', sans-serif !important;
-                }
-                [role="listbox"], [role="option"] {
-                    background-color: #262730 !important;
-                    color: #D1D5DB !important;
-                    font-family: 'Inter', sans-serif !important;
-                }
-                /* Preserve button gradients - don't override */
-                .stButton > button {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-                    font-family: 'Inter', sans-serif !important;
-                }
-            `;
-            document.head.appendChild(style);
-        }
-        
-        // Run immediately and on DOM changes
-        forceDarkTheme();
-        document.addEventListener('DOMContentLoaded', forceDarkTheme);
-        document.addEventListener('load', forceDarkTheme);
-        
-        // Override any new elements that get added
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'childList') {
-                    forceDarkTheme();
-                }
-            });
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
         
         </script>
         """, unsafe_allow_html=True)

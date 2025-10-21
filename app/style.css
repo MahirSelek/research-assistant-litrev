@@ -61,25 +61,14 @@ header[data-testid="stHeader"] {
     z-index: 1000;
 }
 
-/* --- Typography - RESTORED BEAUTIFUL STYLING --- */
+/* --- Typography --- */
 h1, h2, h3, h4, h5, h6 {
     color: #FAFAFA !important;
     font-family: 'Inter', sans-serif !important;
-    font-weight: 600 !important;
-    line-height: 1.4 !important;
 }
 
-.stMarkdown, .stText, p, span, div {
+.stMarkdown, .stText, .stSelectbox, .stMultiselect, .stTextInput {
     color: #D1D5DB !important;
-    font-family: 'Inter', sans-serif !important;
-    font-weight: 400 !important;
-    line-height: 1.6 !important;
-}
-
-/* Restore beautiful text in form elements */
-.stSelectbox, .stMultiselect, .stTextInput {
-    color: #D1D5DB !important;
-    font-family: 'Inter', sans-serif !important;
 }
 
 /* --- Button Styles (overridden by inline CSS in html_ui.py) --- */
@@ -94,20 +83,10 @@ h1, h2, h3, h4, h5, h6 {
     border: 1px solid #30333d !important;
 }
 
-/* --- Form Elements - FORCED DARK THEME --- */
+/* --- Form Elements --- */
 .stSelectbox > div > div {
     background-color: #262730 !important;
     border: 1px solid #2c313a !important;
-    color: #D1D5DB !important;
-}
-
-.stSelectbox > div > div > div {
-    background-color: #262730 !important;
-    color: #D1D5DB !important;
-}
-
-.stSelectbox > div > div > div > div {
-    background-color: #262730 !important;
     color: #D1D5DB !important;
 }
 
@@ -116,123 +95,10 @@ h1, h2, h3, h4, h5, h6 {
     border: 1px solid #2c313a !important;
 }
 
-.stMultiselect > div > div > div {
-    background-color: #262730 !important;
-    color: #D1D5DB !important;
-}
-
 .stTextInput > div > div > input {
     background-color: #262730 !important;
     border: 1px solid #2c313a !important;
     color: #D1D5DB !important;
-}
-
-/* Force all Streamlit form elements to dark theme */
-.stSelectbox,
-.stSelectbox *,
-.stMultiselect,
-.stMultiselect *,
-.stTextInput,
-.stTextInput *,
-.stNumberInput,
-.stNumberInput *,
-.stDateInput,
-.stDateInput *,
-.stTimeInput,
-.stTimeInput *,
-.stTextArea,
-.stTextArea *,
-.stFileUploader,
-.stFileUploader * {
-    background-color: #262730 !important;
-    color: #D1D5DB !important;
-    border-color: #2c313a !important;
-}
-
-/* Override any light theme styles for form elements */
-.stSelectbox > div,
-.stSelectbox > div > div,
-.stSelectbox > div > div > div,
-.stSelectbox > div > div > div > div,
-.stSelectbox > div > div > div > div > div {
-    background-color: #262730 !important;
-    color: #D1D5DB !important;
-    border-color: #2c313a !important;
-}
-
-/* ULTRA-AGGRESSIVE: Target ALL possible Streamlit selectbox internal elements */
-.stSelectbox [data-baseweb="select"],
-.stSelectbox [data-baseweb="select"] > div,
-.stSelectbox [data-baseweb="select"] > div > div,
-.stSelectbox [data-baseweb="select"] > div > div > div,
-.stSelectbox [data-baseweb="select"] > div > div > div > div,
-.stSelectbox [data-baseweb="select"] > div > div > div > div > div,
-.stSelectbox [data-baseweb="select"] > div > div > div > div > div > div,
-.stSelectbox [data-baseweb="select"] > div > div > div > div > div > div > div,
-.stSelectbox [data-baseweb="select"] > div > div > div > div > div > div > div > div,
-.stSelectbox [data-baseweb="select"] > div > div > div > div > div > div > div > div > div,
-.stSelectbox [data-baseweb="select"] > div > div > div > div > div > div > div > div > div > div {
-    background-color: #262730 !important;
-    color: #D1D5DB !important;
-    border-color: #2c313a !important;
-}
-
-/* Target dropdown listbox and options specifically */
-.stSelectbox [role="listbox"],
-.stSelectbox [role="listbox"] *,
-.stSelectbox [role="option"],
-.stSelectbox [role="option"] *,
-.stSelectbox [data-baseweb="menu"],
-.stSelectbox [data-baseweb="menu"] *,
-.stSelectbox [data-baseweb="menu"] > div,
-.stSelectbox [data-baseweb="menu"] > div *,
-.stSelectbox [data-baseweb="menu"] > div > div,
-.stSelectbox [data-baseweb="menu"] > div > div *,
-.stSelectbox [data-baseweb="menu"] > div > div > div,
-.stSelectbox [data-baseweb="menu"] > div > div > div *,
-.stSelectbox [data-baseweb="menu"] > div > div > div > div,
-.stSelectbox [data-baseweb="menu"] > div > div > div > div *,
-.stSelectbox [data-baseweb="menu"] > div > div > div > div > div,
-.stSelectbox [data-baseweb="menu"] > div > div > div > div > div * {
-    background-color: #262730 !important;
-    color: #D1D5DB !important;
-    border-color: #2c313a !important;
-}
-
-/* Target any remaining select elements */
-.stSelectbox select,
-.stSelectbox select *,
-.stSelectbox select option,
-.stSelectbox select option * {
-    background-color: #262730 !important;
-    color: #D1D5DB !important;
-    border-color: #2c313a !important;
-}
-
-/* NUCLEAR OPTION: Target ALL elements within selectbox containers */
-.stSelectbox *,
-.stSelectbox *:before,
-.stSelectbox *:after,
-.stSelectbox *:hover,
-.stSelectbox *:focus,
-.stSelectbox *:active {
-    background-color: #262730 !important;
-    color: #D1D5DB !important;
-    border-color: #2c313a !important;
-}
-
-/* Force dark theme on any dropdown that might be rendered outside the normal flow */
-[data-baseweb="menu"],
-[data-baseweb="menu"] *,
-[data-baseweb="select"],
-[data-baseweb="select"] *,
-[role="listbox"],
-[role="listbox"] *,
-[role="option"],
-[role="option"] * {
-    background-color: #262730 !important;
-    color: #D1D5DB !important;
-    border-color: #2c313a !important;
 }
 
 /* --- Expander Styling --- */
@@ -277,106 +143,6 @@ h1, h2, h3, h4, h5, h6 {
     h2 {
         font-size: 1.25rem !important;
     }
-}
-
-/* --- FORCE DARK THEME FOR ALL USERS - OVERRIDES BROWSER PREFERENCES --- */
-/* This ensures dark theme is ALWAYS applied regardless of user's browser preference */
-.stApp,
-.stApp *,
-[data-testid="stSidebar"],
-[data-testid="stSidebar"] *,
-header[data-testid="stHeader"],
-header[data-testid="stHeader"] *,
-[data-testid="stChatInput"],
-[data-testid="stChatInput"] *,
-[data-testid="stChatMessage"],
-[data-testid="stChatMessage"] *,
-.stSelectbox,
-.stSelectbox *,
-.stMultiselect,
-.stMultiselect *,
-.stTextInput,
-.stTextInput *,
-.stExpander,
-.stExpander *,
-h1, h2, h3, h4, h5, h6,
-.stMarkdown, .stText {
-    color-scheme: dark !important;
-}
-
-/* Force dark theme override for all elements */
-* {
-    color-scheme: dark !important;
-}
-
-/* SELECTIVE DARK THEME - Only force where needed, preserve custom styling */
-html, body {
-    color-scheme: dark !important;
-}
-
-/* Force dark theme on Streamlit header and toolbar */
-header[data-testid="stHeader"],
-header[data-testid="stHeader"] *,
-[data-testid="stToolbar"],
-[data-testid="stToolbar"] *,
-[data-testid="stToolbarActions"],
-[data-testid="stToolbarActions"] *,
-[data-testid="stToolbarActionButton"],
-[data-testid="stToolbarActionButton"] *,
-[data-testid="stMainMenu"],
-[data-testid="stMainMenu"] * {
-    background-color: #1a1e29 !important;
-    color: #D1D5DB !important;
-    border-color: #2c313a !important;
-}
-
-/* Force dark theme on chat input - ULTRA SPECIFIC */
-[data-testid="stBottomBlockContainer"],
-[data-testid="stBottomBlockContainer"] *,
-[data-testid="stVerticalBlock"],
-[data-testid="stVerticalBlock"] *,
-[data-testid="stElementContainer"],
-[data-testid="stElementContainer"] *,
-[data-testid="stChatInput"],
-[data-testid="stChatInput"] *,
-[data-testid="stChatInputTextArea"],
-[data-testid="stChatInputTextArea"] *,
-[data-testid="stChatInputSubmitButton"],
-[data-testid="stChatInputSubmitButton"] *,
-[data-testid="InputInstructions"],
-[data-testid="InputInstructions"] * {
-    background-color: #1a1e29 !important;
-    color: #D1D5DB !important;
-    border-color: #2c313a !important;
-}
-
-/* Force dark theme on textarea and base-input specifically */
-textarea[data-testid="stChatInputTextArea"],
-[data-baseweb="textarea"],
-[data-baseweb="textarea"] *,
-[data-baseweb="base-input"],
-[data-baseweb="base-input"] * {
-    background-color: #262730 !important;
-    color: #D1D5DB !important;
-    border-color: #2c313a !important;
-}
-
-/* Target all emotion-cache classes in chat input */
-.st-emotion-cache-1eeryuo,
-.st-emotion-cache-1eeryuo *,
-.st-emotion-cache-yd4u6l,
-.st-emotion-cache-yd4u6l *,
-.st-emotion-cache-12o5wl7,
-.st-emotion-cache-12o5wl7 *,
-.st-emotion-cache-sey4o0,
-.st-emotion-cache-sey4o0 *,
-.st-emotion-cache-o0516v,
-.st-emotion-cache-o0516v *,
-.st-emotion-cache-1nzi1q1,
-.st-emotion-cache-1nzi1q1 * {
-    background-color: #1a1e29 !important;
-    color: #D1D5DB !important;
-    border-color: #2c313a !important;
 }
 
 /* --- Fix for white bars and layout issues --- */
