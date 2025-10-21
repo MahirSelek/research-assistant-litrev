@@ -478,65 +478,107 @@ class HTMLResearchAssistantUI:
         </script>
         
         <script>
-        // Simple sidebar toggle - show button when sidebar is hidden
-        function checkSidebarAndShowButton() {
-            const sidebar = document.querySelector('[data-testid="stSidebar"]');
-            const existingBtn = document.getElementById('show-sidebar-btn');
+        // Force create show sidebar button - DEBUG VERSION
+        function forceCreateShowButton() {
+            console.log('Creating show sidebar button...');
             
-            // Remove existing button if it exists
+            // Remove any existing button
+            const existingBtn = document.getElementById('show-sidebar-btn');
             if (existingBtn) {
                 existingBtn.remove();
             }
             
-            // Check if sidebar is hidden
-            if (sidebar && (sidebar.style.display === 'none' || sidebar.offsetWidth === 0)) {
-                // Create show sidebar button
-                const showBtn = document.createElement('button');
-                showBtn.id = 'show-sidebar-btn';
-                showBtn.innerHTML = '>>';
-                showBtn.style.cssText = `
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    z-index: 999999;
-                    background: rgba(102, 126, 234, 0.9);
-                    border: none;
-                    border-radius: 8px;
-                    width: 50px;
-                    height: 50px;
-                    color: white;
-                    font-size: 20px;
-                    font-weight: bold;
-                    cursor: pointer;
-                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-                `;
-                
-                showBtn.onclick = function() {
-                    // Show sidebar
+            // Always create the button for now (for debugging)
+            const showBtn = document.createElement('button');
+            showBtn.id = 'show-sidebar-btn';
+            showBtn.innerHTML = '>>';
+            showBtn.title = 'Show Sidebar';
+            showBtn.style.cssText = `
+                position: fixed !important;
+                top: 20px !important;
+                right: 20px !important;
+                z-index: 999999 !important;
+                background: rgba(102, 126, 234, 0.9) !important;
+                border: none !important;
+                border-radius: 8px !important;
+                width: 50px !important;
+                height: 50px !important;
+                color: white !important;
+                font-size: 20px !important;
+                font-weight: bold !important;
+                cursor: pointer !important;
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            `;
+            
+            showBtn.onclick = function() {
+                console.log('Show sidebar button clicked!');
+                const sidebar = document.querySelector('[data-testid="stSidebar"]');
+                if (sidebar) {
+                    console.log('Found sidebar, showing it...');
                     sidebar.style.display = 'block';
                     sidebar.style.visibility = 'visible';
                     sidebar.style.width = '21rem';
                     sidebar.style.minWidth = '21rem';
+                    sidebar.style.opacity = '1';
                     // Remove the button
                     showBtn.remove();
-                };
-                
-                document.body.appendChild(showBtn);
-            }
+                } else {
+                    console.log('Sidebar not found!');
+                }
+            };
+            
+            document.body.appendChild(showBtn);
+            console.log('Show sidebar button created and added to DOM');
         }
         
-        // Check immediately and on page load
-        checkSidebarAndShowButton();
-        document.addEventListener('DOMContentLoaded', checkSidebarAndShowButton);
-        window.addEventListener('load', checkSidebarAndShowButton);
+        // Run immediately
+        forceCreateShowButton();
         
-        // Check periodically in case sidebar gets hidden
-        setInterval(checkSidebarAndShowButton, 1000);
+        // Also run when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, creating button...');
+            setTimeout(forceCreateShowButton, 100);
+        });
+        
+        // Also run when page loads
+        window.addEventListener('load', function() {
+            console.log('Window loaded, creating button...');
+            setTimeout(forceCreateShowButton, 200);
+        });
+        
+        // Run every 2 seconds to ensure button stays
+        setInterval(function() {
+            const btn = document.getElementById('show-sidebar-btn');
+            if (!btn) {
+                console.log('Button missing, recreating...');
+                forceCreateShowButton();
+            }
+        }, 2000);
         </script>
         """, unsafe_allow_html=True)
     
     def render_main_interface(self):
         """Render the main interface using Streamlit components"""
+        
+        # Add a native Streamlit button to show sidebar (backup method)
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col3:
+            if st.button(">> Show Sidebar", key="native_show_sidebar", help="Click to show the sidebar"):
+                st.markdown("""
+                <script>
+                const sidebar = document.querySelector('[data-testid="stSidebar"]');
+                if (sidebar) {
+                    sidebar.style.display = 'block';
+                    sidebar.style.visibility = 'visible';
+                    sidebar.style.width = '21rem';
+                    sidebar.style.minWidth = '21rem';
+                }
+                </script>
+                """, unsafe_allow_html=True)
+                st.rerun()
         
         # Show full-screen loading overlay if loading (do NOT return; allow processing to continue)
         if st.session_state.get('is_loading', False):
