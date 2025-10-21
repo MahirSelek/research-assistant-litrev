@@ -163,12 +163,18 @@ class HTMLResearchAssistantUI:
             background: #1e1e1e !important;
         }
         
-        /* Ensure sidebar is always visible and cannot be collapsed */
+        /* Ensure sidebar is always visible and cannot be collapsed - Enhanced */
         .stSidebar {
             display: block !important;
             visibility: visible !important;
             width: 21rem !important;
             min-width: 21rem !important;
+            max-width: 21rem !important;
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            height: 100vh !important;
+            z-index: 1000 !important;
         }
         
         /* Force sidebar visibility with higher specificity */
@@ -177,19 +183,45 @@ class HTMLResearchAssistantUI:
             visibility: visible !important;
             width: 21rem !important;
             min-width: 21rem !important;
+            max-width: 21rem !important;
             transform: translateX(0) !important;
             opacity: 1 !important;
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            height: 100vh !important;
+            z-index: 1000 !important;
         }
         
-        /* Override any collapsed states */
+        /* Override ALL possible collapsed states */
         .stApp.sidebar-collapsed [data-testid="stSidebar"],
-        [data-testid="stSidebar"].collapsed {
+        .stApp.sidebar-hidden [data-testid="stSidebar"],
+        .stApp.sidebar-closed [data-testid="stSidebar"],
+        [data-testid="stSidebar"].collapsed,
+        [data-testid="stSidebar"].hidden,
+        [data-testid="stSidebar"].closed,
+        [data-testid="stSidebar"][data-sidebar-state="collapsed"],
+        [data-testid="stSidebar"][data-sidebar-state="hidden"],
+        [data-testid="stSidebar"][data-sidebar-state="closed"] {
             display: block !important;
             visibility: visible !important;
             width: 21rem !important;
             min-width: 21rem !important;
+            max-width: 21rem !important;
             transform: translateX(0) !important;
             opacity: 1 !important;
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            height: 100vh !important;
+            z-index: 1000 !important;
+        }
+        
+        /* Prevent any animation or transition that might hide sidebar */
+        [data-testid="stSidebar"],
+        .stSidebar {
+            transition: none !important;
+            animation: none !important;
         }
         
         /* Ensure main content area adjusts when sidebar is visible */
@@ -202,7 +234,7 @@ class HTMLResearchAssistantUI:
             margin-left: 21rem !important;
         }
         
-        /* Hide the sidebar collapse functionality completely */
+        /* Hide the sidebar collapse functionality completely - Enhanced */
         [data-testid="stSidebar"] [aria-label*="sidebar"],
         [data-testid="stSidebar"] button[aria-label*="sidebar"],
         [data-testid="stSidebar"] button[title*="sidebar"],
@@ -210,14 +242,60 @@ class HTMLResearchAssistantUI:
         [data-testid="stSidebar"] button[aria-label*="expand"],
         [data-testid="stSidebar"] button[title*="collapse"],
         [data-testid="stSidebar"] button[title*="expand"],
+        [data-testid="stSidebar"] button[aria-label*="close"],
+        [data-testid="stSidebar"] button[title*="close"],
+        [data-testid="stSidebar"] button[aria-label*="hide"],
+        [data-testid="stSidebar"] button[title*="hide"],
+        [data-testid="stSidebar"] button[aria-label*="toggle"],
+        [data-testid="stSidebar"] button[title*="toggle"],
         button[aria-label*="sidebar"],
         button[title*="sidebar"],
         button[aria-label*="collapse"],
+        button[title*="collapse"],
+        button[aria-label*="expand"],
         button[title*="expand"],
+        button[aria-label*="close"],
+        button[title*="close"],
+        button[aria-label*="hide"],
+        button[title*="hide"],
+        button[aria-label*="toggle"],
+        button[title*="toggle"],
         .stActionButton[aria-label*="sidebar"],
         .stActionButton[title*="sidebar"],
+        .stActionButton[aria-label*="collapse"],
+        .stActionButton[title*="collapse"],
+        .stActionButton[aria-label*="expand"],
+        .stActionButton[title*="expand"],
+        .stActionButton[aria-label*="close"],
+        .stActionButton[title*="close"],
+        .stActionButton[aria-label*="hide"],
+        .stActionButton[title*="hide"],
+        .stActionButton[aria-label*="toggle"],
+        .stActionButton[title*="toggle"],
         header button[aria-label*="sidebar"],
-        header button[title*="sidebar"] {
+        header button[title*="sidebar"],
+        header button[aria-label*="collapse"],
+        header button[title*="collapse"],
+        header button[aria-label*="expand"],
+        header button[title*="expand"],
+        header button[aria-label*="close"],
+        header button[title*="close"],
+        header button[aria-label*="hide"],
+        header button[title*="hide"],
+        header button[aria-label*="toggle"],
+        header button[title*="toggle"],
+        /* Additional selectors for any sidebar control buttons */
+        button[class*="sidebar"],
+        button[class*="collapse"],
+        button[class*="expand"],
+        button[class*="close"],
+        button[class*="hide"],
+        button[class*="toggle"],
+        [class*="sidebar-toggle"],
+        [class*="sidebar-collapse"],
+        [class*="sidebar-expand"],
+        [class*="sidebar-close"],
+        [class*="sidebar-hide"] {
             display: none !important;
             visibility: hidden !important;
             opacity: 0 !important;
@@ -535,12 +613,29 @@ class HTMLResearchAssistantUI:
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
         
-        // Force sidebar to be visible and override browser storage
+        // Force sidebar to be visible and override browser storage - Enhanced
         function forceSidebarVisible() {
             // Clear any stored sidebar state
             if (typeof(Storage) !== "undefined") {
                 localStorage.removeItem('streamlit-sidebar-state');
                 sessionStorage.removeItem('streamlit-sidebar-state');
+                localStorage.removeItem('sidebar-collapsed');
+                sessionStorage.removeItem('sidebar-collapsed');
+                localStorage.removeItem('sidebar-hidden');
+                sessionStorage.removeItem('sidebar-hidden');
+                // Clear any other potential sidebar state keys
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.toLowerCase().includes('sidebar')) {
+                        localStorage.removeItem(key);
+                    }
+                }
+                for (let i = 0; i < sessionStorage.length; i++) {
+                    const key = sessionStorage.key(i);
+                    if (key && key.toLowerCase().includes('sidebar')) {
+                        sessionStorage.removeItem(key);
+                    }
+                }
             }
             
             // Force sidebar to be visible
@@ -550,43 +645,52 @@ class HTMLResearchAssistantUI:
                 sidebar.style.visibility = 'visible';
                 sidebar.style.width = '21rem';
                 sidebar.style.minWidth = '21rem';
-                sidebar.classList.remove('collapsed');
-                sidebar.classList.add('expanded');
+                sidebar.style.maxWidth = '21rem';
+                sidebar.classList.remove('collapsed', 'hidden', 'closed');
+                sidebar.classList.add('expanded', 'visible');
+                
+                // Set data attributes to prevent collapse
+                sidebar.setAttribute('data-sidebar-state', 'expanded');
+                sidebar.setAttribute('data-sidebar-locked', 'true');
             }
             
             // Adjust main content margin
             const mainContent = document.querySelector('.main .block-container');
             if (mainContent) {
                 mainContent.style.marginLeft = '21rem';
+                mainContent.style.maxWidth = 'calc(100% - 21rem)';
             }
             
             // Remove any collapse classes from the app
             const app = document.querySelector('.stApp');
             if (app) {
-                app.classList.remove('sidebar-collapsed');
-                app.classList.add('sidebar-expanded');
+                app.classList.remove('sidebar-collapsed', 'sidebar-hidden', 'sidebar-closed');
+                app.classList.add('sidebar-expanded', 'sidebar-visible');
+                app.setAttribute('data-sidebar-state', 'expanded');
             }
             
-            // Remove any sidebar toggle buttons
-            const toggleButtons = document.querySelectorAll(
-                'button[aria-label*="sidebar"], button[title*="sidebar"], button[aria-label*="collapse"], button[title*="collapse"], button[aria-label*="expand"], button[title*="expand"]'
-            );
-            toggleButtons.forEach(button => {
-                button.style.display = 'none';
-                button.style.visibility = 'hidden';
-                button.style.opacity = '0';
-                button.style.pointerEvents = 'none';
-                button.remove();
-            });
-            
-            // Also remove any action buttons that might be sidebar toggles
-            const actionButtons = document.querySelectorAll('.stActionButton, [data-testid="stActionButton"]');
-            actionButtons.forEach(button => {
-                const ariaLabel = button.getAttribute('aria-label') || '';
-                const title = button.getAttribute('title') || '';
+            // Comprehensive removal of ALL possible sidebar control buttons
+            const allButtons = document.querySelectorAll('button');
+            allButtons.forEach(button => {
+                const ariaLabel = (button.getAttribute('aria-label') || '').toLowerCase();
+                const title = (button.getAttribute('title') || '').toLowerCase();
+                const className = (button.className || '').toLowerCase();
+                const id = (button.id || '').toLowerCase();
+                
+                // Check for any sidebar-related attributes
                 if (ariaLabel.includes('sidebar') || title.includes('sidebar') || 
                     ariaLabel.includes('collapse') || title.includes('collapse') ||
-                    ariaLabel.includes('expand') || title.includes('expand')) {
+                    ariaLabel.includes('expand') || title.includes('expand') ||
+                    ariaLabel.includes('close') || title.includes('close') ||
+                    ariaLabel.includes('hide') || title.includes('hide') ||
+                    ariaLabel.includes('toggle') || title.includes('toggle') ||
+                    className.includes('sidebar') || className.includes('collapse') ||
+                    className.includes('expand') || className.includes('close') ||
+                    className.includes('hide') || className.includes('toggle') ||
+                    id.includes('sidebar') || id.includes('collapse') ||
+                    id.includes('expand') || id.includes('close') ||
+                    id.includes('hide') || id.includes('toggle')) {
+                    
                     button.style.display = 'none';
                     button.style.visibility = 'hidden';
                     button.style.opacity = '0';
@@ -594,10 +698,94 @@ class HTMLResearchAssistantUI:
                     button.remove();
                 }
             });
+            
+            // Remove any elements with sidebar-related classes
+            const sidebarElements = document.querySelectorAll('[class*="sidebar"], [class*="collapse"], [class*="expand"], [class*="close"], [class*="hide"], [class*="toggle"]');
+            sidebarElements.forEach(element => {
+                const className = (element.className || '').toLowerCase();
+                if (className.includes('sidebar') || className.includes('collapse') || 
+                    className.includes('expand') || className.includes('close') ||
+                    className.includes('hide') || className.includes('toggle')) {
+                    element.style.display = 'none';
+                    element.style.visibility = 'hidden';
+                    element.style.opacity = '0';
+                    element.style.pointerEvents = 'none';
+                    element.remove();
+                }
+            });
+            
+            // Prevent any click events on sidebar area that might collapse it
+            if (sidebar) {
+                sidebar.addEventListener('click', function(e) {
+                    // Allow clicks within sidebar content but prevent collapse
+                    e.stopPropagation();
+                });
+                
+                // Prevent any keyboard shortcuts that might collapse sidebar
+                sidebar.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' || (e.ctrlKey && e.key === 'b')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return false;
+                    }
+                });
+            }
+        }
+        
+        // Global event listener to prevent sidebar collapse
+        function preventSidebarCollapse() {
+            // Prevent any clicks that might collapse sidebar
+            document.addEventListener('click', function(e) {
+                const target = e.target;
+                if (target && (
+                    target.getAttribute('aria-label')?.toLowerCase().includes('sidebar') ||
+                    target.getAttribute('title')?.toLowerCase().includes('sidebar') ||
+                    target.getAttribute('aria-label')?.toLowerCase().includes('collapse') ||
+                    target.getAttribute('title')?.toLowerCase().includes('collapse') ||
+                    target.getAttribute('aria-label')?.toLowerCase().includes('close') ||
+                    target.getAttribute('title')?.toLowerCase().includes('close') ||
+                    target.getAttribute('aria-label')?.toLowerCase().includes('hide') ||
+                    target.getAttribute('title')?.toLowerCase().includes('hide') ||
+                    target.getAttribute('aria-label')?.toLowerCase().includes('toggle') ||
+                    target.getAttribute('title')?.toLowerCase().includes('toggle')
+                )) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+            }, true);
+            
+            // Prevent keyboard shortcuts that might collapse sidebar
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' || 
+                    (e.ctrlKey && e.key === 'b') ||
+                    (e.ctrlKey && e.key === '\\') ||
+                    (e.metaKey && e.key === 'b')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+            }, true);
+            
+            // Prevent any programmatic sidebar state changes
+            const originalSetAttribute = Element.prototype.setAttribute;
+            Element.prototype.setAttribute = function(name, value) {
+                if (name === 'class' && value && 
+                    (value.includes('collapsed') || value.includes('hidden') || value.includes('closed'))) {
+                    // Remove collapse-related classes
+                    value = value.replace(/\b(collapsed|hidden|closed)\b/g, 'expanded');
+                }
+                return originalSetAttribute.call(this, name, value);
+            };
         }
         
         // Run immediately when page loads
-        document.addEventListener('DOMContentLoaded', forceSidebarVisible);
+        document.addEventListener('DOMContentLoaded', function() {
+            forceSidebarVisible();
+            preventSidebarCollapse();
+        });
         
         // Also run after a short delay to catch any dynamic changes
         setTimeout(forceSidebarVisible, 100);
@@ -609,6 +797,24 @@ class HTMLResearchAssistantUI:
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'childList') {
                     setTimeout(forceSidebarVisible, 50);
+                    // Check for any new buttons that might control sidebar
+                    mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeType === 1) { // Element node
+                            const buttons = node.querySelectorAll ? node.querySelectorAll('button') : [];
+                            buttons.forEach(function(button) {
+                                const ariaLabel = (button.getAttribute('aria-label') || '').toLowerCase();
+                                const title = (button.getAttribute('title') || '').toLowerCase();
+                                if (ariaLabel.includes('sidebar') || title.includes('sidebar') || 
+                                    ariaLabel.includes('collapse') || title.includes('collapse') ||
+                                    ariaLabel.includes('expand') || title.includes('expand') ||
+                                    ariaLabel.includes('close') || title.includes('close') ||
+                                    ariaLabel.includes('hide') || title.includes('hide') ||
+                                    ariaLabel.includes('toggle') || title.includes('toggle')) {
+                                    button.remove();
+                                }
+                            });
+                        }
+                    });
                 }
             });
         });
