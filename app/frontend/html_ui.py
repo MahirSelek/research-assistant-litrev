@@ -202,9 +202,26 @@ class HTMLResearchAssistantUI:
             margin-left: 21rem !important;
         }
         
-        /* Hide the sidebar collapse functionality */
-        [data-testid="stSidebar"] [aria-label*="sidebar"] {
+        /* Hide the sidebar collapse functionality completely */
+        [data-testid="stSidebar"] [aria-label*="sidebar"],
+        [data-testid="stSidebar"] button[aria-label*="sidebar"],
+        [data-testid="stSidebar"] button[title*="sidebar"],
+        [data-testid="stSidebar"] button[aria-label*="collapse"],
+        [data-testid="stSidebar"] button[aria-label*="expand"],
+        [data-testid="stSidebar"] button[title*="collapse"],
+        [data-testid="stSidebar"] button[title*="expand"],
+        button[aria-label*="sidebar"],
+        button[title*="sidebar"],
+        button[aria-label*="collapse"],
+        button[title*="expand"],
+        .stActionButton[aria-label*="sidebar"],
+        .stActionButton[title*="sidebar"],
+        header button[aria-label*="sidebar"],
+        header button[title*="sidebar"] {
             display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
         }
         
         /* Primary buttons - Modern blue gradient with enhanced styling */
@@ -549,6 +566,34 @@ class HTMLResearchAssistantUI:
                 app.classList.remove('sidebar-collapsed');
                 app.classList.add('sidebar-expanded');
             }
+            
+            // Remove any sidebar toggle buttons
+            const toggleButtons = document.querySelectorAll(
+                'button[aria-label*="sidebar"], button[title*="sidebar"], button[aria-label*="collapse"], button[title*="collapse"], button[aria-label*="expand"], button[title*="expand"]'
+            );
+            toggleButtons.forEach(button => {
+                button.style.display = 'none';
+                button.style.visibility = 'hidden';
+                button.style.opacity = '0';
+                button.style.pointerEvents = 'none';
+                button.remove();
+            });
+            
+            // Also remove any action buttons that might be sidebar toggles
+            const actionButtons = document.querySelectorAll('.stActionButton, [data-testid="stActionButton"]');
+            actionButtons.forEach(button => {
+                const ariaLabel = button.getAttribute('aria-label') || '';
+                const title = button.getAttribute('title') || '';
+                if (ariaLabel.includes('sidebar') || title.includes('sidebar') || 
+                    ariaLabel.includes('collapse') || title.includes('collapse') ||
+                    ariaLabel.includes('expand') || title.includes('expand')) {
+                    button.style.display = 'none';
+                    button.style.visibility = 'hidden';
+                    button.style.opacity = '0';
+                    button.style.pointerEvents = 'none';
+                    button.remove();
+                }
+            });
         }
         
         // Run immediately when page loads
