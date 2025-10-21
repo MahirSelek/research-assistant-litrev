@@ -276,22 +276,22 @@ class HTMLResearchAssistantUI:
             box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
         }
         
-        /* Full-Screen Dark Loading Overlay - Covers Entire Page */
+        /* Full-Screen Transparent Loading Overlay - Background Fully Visible */
         .loading-overlay {
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             width: 100vw !important;
             height: 100vh !important;
-            background: rgba(0, 0, 0, 0.35) !important;
-            backdrop-filter: blur(10px) !important;
+            background: transparent !important;
+            backdrop-filter: none !important;
             z-index: 999999 !important;
             display: none !important;
             justify-content: center !important;
             align-items: center !important;
             flex-direction: column !important;
-            pointer-events: all !important;
-            cursor: not-allowed !important;
+            pointer-events: none !important;
+            cursor: default !important;
             margin: 0 !important;
             padding: 0 !important;
         }
@@ -301,12 +301,12 @@ class HTMLResearchAssistantUI:
         }
         
         .loading-content {
-            background: rgba(20, 20, 20, 0.35) !important;
+            background: rgba(20, 20, 20, 0.85) !important;
             border-radius: 20px !important;
             padding: 50px 60px !important;
             text-align: center !important;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4) !important;
-            border: 2px solid rgba(102, 126, 234, 0.4) !important;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6) !important;
+            border: 2px solid rgba(102, 126, 234, 0.6) !important;
             max-width: 600px !important;
             width: 90% !important;
             position: relative !important;
@@ -361,7 +361,7 @@ class HTMLResearchAssistantUI:
             overflow: hidden !important;
         }
         
-        /* Block all interactions */
+        /* Allow interactions with background content */
         .loading-overlay * {
             pointer-events: none !important;
         }
