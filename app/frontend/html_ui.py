@@ -375,9 +375,7 @@ class HTMLResearchAssistantUI:
         [data-testid="stMainMenu"],
         [data-testid="stStatusWidget"],
         [data-testid="stActionButton"],
-        /* START OF FIX: Modified the line below */
-        header [data-testid^="baseButton"]:not([data-testid="stSidebarNavExpandButton"]),
-        /* END OF FIX */
+        header [data-testid^="baseButton"],
         .stDeployButton,
         .viewerBadge_link,
         .viewerBadge_container__,
