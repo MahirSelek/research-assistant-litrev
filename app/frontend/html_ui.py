@@ -245,8 +245,30 @@ class HTMLResearchAssistantUI:
             max-width: 21rem !important;
         }
         
-        /* Override any hiding rules */
-        div[data-testid="stSidebar"].css-1d391kg {
+        /* Override any hiding rules - target all possible Streamlit sidebar classes */
+        div[data-testid="stSidebar"],
+        div[data-testid="stSidebar"].css-1d391kg,
+        div[data-testid="stSidebar"].css-1cypcdb,
+        div[data-testid="stSidebar"].css-1v0mbdj,
+        .stSidebar,
+        .css-1d391kg,
+        .css-1cypcdb,
+        .css-1v0mbdj {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            background-color: var(--bg-secondary) !important;
+            width: 21rem !important;
+            min-width: 21rem !important;
+            max-width: 21rem !important;
+        }
+        
+        /* Force sidebar container to be visible */
+        .stApp > div:first-child {
+            display: flex !important;
+        }
+        
+        .stApp > div:first-child > div:first-child {
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
@@ -606,6 +628,53 @@ class HTMLResearchAssistantUI:
         // Force overlay to show immediately when called
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
+        
+        // Force sidebar visibility function
+        function forceSidebarVisibility() {
+            // Target all possible sidebar selectors
+            const sidebarSelectors = [
+                '[data-testid="stSidebar"]',
+                '.stSidebar',
+                '.css-1d391kg',
+                '.css-1cypcdb', 
+                '.css-1v0mbdj',
+                'div[data-testid="stSidebar"]'
+            ];
+            
+            sidebarSelectors.forEach(selector => {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(element => {
+                    if (element) {
+                        element.style.display = 'block';
+                        element.style.visibility = 'visible';
+                        element.style.opacity = '1';
+                        element.style.width = '21rem';
+                        element.style.minWidth = '21rem';
+                        element.style.maxWidth = '21rem';
+                        element.style.backgroundColor = 'var(--bg-secondary, #f9fafb)';
+                        console.log('Forced sidebar visibility for:', selector);
+                    }
+                });
+            });
+            
+            // Also force the main app container to use flex layout
+            const appContainer = document.querySelector('.stApp > div:first-child');
+            if (appContainer) {
+                appContainer.style.display = 'flex';
+                console.log('Forced app container to flex layout');
+            }
+        }
+        
+        // Run on page load and periodically
+        document.addEventListener('DOMContentLoaded', forceSidebarVisibility);
+        setTimeout(forceSidebarVisibility, 1000);
+        setTimeout(forceSidebarVisibility, 3000);
+        
+        // Also run when window loads
+        window.addEventListener('load', forceSidebarVisibility);
+        
+        // Make function globally available
+        window.forceSidebarVisibility = forceSidebarVisibility;
         
         </script>
         """, unsafe_allow_html=True)
