@@ -93,6 +93,8 @@ class HTMLResearchAssistantUI:
             st.session_state.is_loading_analysis = False
         if 'loading_message' not in st.session_state:
             st.session_state.loading_message = ""
+        if 'sidebar_visible' not in st.session_state:
+            st.session_state.sidebar_visible = True
     
     def _initialize_empty_user_data(self):
         """Initialize empty user data"""
@@ -370,6 +372,17 @@ class HTMLResearchAssistantUI:
             pointer-events: auto !important;
         }
         
+        /* Sidebar toggle functionality */
+        .sidebar-hidden [data-testid="stSidebar"] {
+            display: none !important;
+        }
+        
+        .sidebar-hidden .main .block-container {
+            margin-left: 0 !important;
+            padding-left: 1rem !important;
+        }
+        
+        
         /* Hide Streamlit toolbar/menu/icons (top-right) and footer badges */
         [data-testid="stToolbar"],
         [data-testid="stMainMenu"],
@@ -475,6 +488,12 @@ class HTMLResearchAssistantUI:
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
         
+        // Initialize sidebar state based on session state
+        const sidebarVisible = """ + str(st.session_state.get('sidebar_visible', True)).lower() + """;
+        if (!sidebarVisible) {
+            document.body.classList.add('sidebar-hidden');
+        }
+        
         </script>
         """, unsafe_allow_html=True)
     
@@ -501,6 +520,14 @@ class HTMLResearchAssistantUI:
         
         # Main content area
         st.markdown("# 🧬 POLO-GGB RESEARCH ASSISTANT")
+        
+        # Add sidebar toggle button if sidebar is hidden
+        if not st.session_state.get('sidebar_visible', True):
+            col1, col2, col3 = st.columns([1, 1, 8])
+            with col1:
+                if st.button("☰ Show Sidebar", key="show_sidebar", type="primary"):
+                    st.session_state.sidebar_visible = True
+                    st.rerun()
         
         # Get current state
         active_conversation_id = self.get_user_session('active_conversation_id')
@@ -813,285 +840,295 @@ Assistant Response:"""
         """Handle form submissions using Streamlit components"""
         # Use regular Streamlit components instead of complex form handling
         
-        # Create a sidebar for controls
-        with st.sidebar:
-            # Get analysis lock status
-            analysis_locked = self.get_user_session('analysis_locked', False)
-            
-            # Show analysis status
-            if analysis_locked:
-                st.info("🔒 Analysis Active - Controls Locked")
-            else:
-                st.success("🔓 Ready for New Analysis")
-            
-            st.markdown("---")
-            
-            # New Analysis button
-            if st.button("➕ New Analysis", type="primary", use_container_width=True):
-                # Clear ALL session state for fresh start
-                self.set_user_session('active_conversation_id', None)
-                self.set_user_session('selected_keywords', [])
-                self.set_user_session('search_mode', "all_keywords")
-                self.set_user_session('time_filter', "Current year")
-                self.set_user_session('custom_summary_chat', [])
-                self.set_user_session('analysis_locked', False)  # Unlock for new analysis
+        # Create a sidebar for controls (only if visible)
+        if st.session_state.get('sidebar_visible', True):
+            with st.sidebar:
+                # Add close sidebar button at the top
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.markdown("### Controls")
+                with col2:
+                    if st.button("✕", key="close_sidebar", help="Hide sidebar", type="secondary"):
+                        st.session_state.sidebar_visible = False
+                        st.rerun()
                 
-                # Force clear the multiselect by updating session state
-                if 'html_keywords' in st.session_state:
-                    st.session_state['html_keywords'] = []
-                if 'html_search_mode' in st.session_state:
-                    st.session_state['html_search_mode'] = "all_keywords"
-                if 'html_time_filter' in st.session_state:
-                    st.session_state['html_time_filter'] = "Current year"
+                # Get analysis lock status
+                analysis_locked = self.get_user_session('analysis_locked', False)
                 
-                st.rerun()
-            
-            # Keyword selection
-            # Initialize keywords in session state if not exists
-            if 'html_keywords' not in st.session_state:
-                st.session_state['html_keywords'] = self.get_user_session('selected_keywords', [])
-            
-            selected_keywords = st.multiselect(
-                "Select Keywords",
-                self.GENETICS_KEYWORDS,
-                key="html_keywords",
-                help="Select keywords for your research analysis" if not analysis_locked else "Keywords are locked for current analysis. Click 'New Analysis' to modify.",
-                disabled=analysis_locked
-            )
-            
-            # Update session state with selected keywords
-            self.set_user_session('selected_keywords', selected_keywords)
-            
-            # Search mode
-            # Initialize search mode in session state if not exists
-            if 'html_search_mode' not in st.session_state:
-                st.session_state['html_search_mode'] = self.get_user_session('search_mode', 'all_keywords')
-            
-            search_mode = st.selectbox(
-                "Search Mode",
-                ["all_keywords", "any_keyword"],
-                format_func=lambda x: "Find papers containing ALL keywords" if x == "all_keywords" else "Find papers containing AT LEAST ONE keyword",
-                key="html_search_mode",
-                disabled=analysis_locked
-            )
-            
-            # Update session state with search mode
-            self.set_user_session('search_mode', search_mode)
-            
-            # Time filter
-            # Initialize time filter in session state if not exists
-            if 'html_time_filter' not in st.session_state:
-                st.session_state['html_time_filter'] = self.get_user_session('time_filter', 'Current year')
-            
-            time_filter = st.selectbox(
-                "Filter by Time Window",
-                ["Current year", "Last 3 months", "Last 6 months", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
-                key="html_time_filter",
-                disabled=analysis_locked
-            )
-            
-            # Update session state with time filter
-            self.set_user_session('time_filter', time_filter)
-            
-            # Search button
-            if st.button("Search & Analyze", type="primary", use_container_width=True, disabled=analysis_locked):
-                if selected_keywords:
-                    # Set loading state and lock immediately, then schedule analysis and rerun
-                    st.session_state['is_loading'] = True
-                    st.session_state['loading_message'] = "Analyzing Research Papers"
-                    st.session_state['loading_subtext'] = "Searching for highly relevant papers and generating comprehensive report..."
-                    st.session_state['loading_progress'] = "This may take a few moments..."
-                    self.set_user_session('analysis_locked', True)
-
-                    # Stash pending action parameters to run on next script run
-                    st.session_state['do_keyword_search'] = True
-                    st.session_state['pending_keywords'] = list(selected_keywords)
-                    st.session_state['pending_time_filter'] = time_filter
-                    st.session_state['pending_search_mode'] = search_mode
-
-                    st.rerun()
+                # Show analysis status
+                if analysis_locked:
+                    st.info("🔒 Analysis Active - Controls Locked")
                 else:
-                    st.error("Please select at least one keyword.")
-            
-            # Chat history
-            st.markdown("### Chat History")
-            conversations = self.get_user_session('conversations', {})
-            if conversations:
-                # Sort conversations by creation time (most recent first) - like ChatGPT
-                def get_creation_time(conv_id, conv_data):
-                    # Use last_interaction_time if available, otherwise fall back to creation time
-                    if 'last_interaction_time' in conv_data:
-                        return conv_data['last_interaction_time']
-                    
-                    # Extract timestamp from conversation ID
-                    try:
-                        if conv_id.startswith('custom_summary_'):
-                            timestamp_str = conv_id.split('_', 2)[2]
-                        else:
-                            timestamp_str = conv_id.split('_')[1]
-                        return float(timestamp_str)
-                    except (IndexError, ValueError):
-                        return 0
+                    st.success("🔓 Ready for New Analysis")
                 
-                sorted_conversations = sorted(
-                    conversations.items(), 
-                    key=lambda x: get_creation_time(x[0], x[1]), 
-                    reverse=True
+                st.markdown("---")
+            
+                # New Analysis button
+                if st.button("➕ New Analysis", type="primary", use_container_width=True):
+                    # Clear ALL session state for fresh start
+                    self.set_user_session('active_conversation_id', None)
+                    self.set_user_session('selected_keywords', [])
+                    self.set_user_session('search_mode', "all_keywords")
+                    self.set_user_session('time_filter', "Current year")
+                    self.set_user_session('custom_summary_chat', [])
+                    self.set_user_session('analysis_locked', False)  # Unlock for new analysis
+                    
+                    # Force clear the multiselect by updating session state
+                    if 'html_keywords' in st.session_state:
+                        st.session_state['html_keywords'] = []
+                    if 'html_search_mode' in st.session_state:
+                        st.session_state['html_search_mode'] = "all_keywords"
+                    if 'html_time_filter' in st.session_state:
+                        st.session_state['html_time_filter'] = "Current year"
+                    
+                    st.rerun()
+            
+                # Keyword selection
+                # Initialize keywords in session state if not exists
+                if 'html_keywords' not in st.session_state:
+                    st.session_state['html_keywords'] = self.get_user_session('selected_keywords', [])
+                
+                selected_keywords = st.multiselect(
+                    "Select Keywords",
+                    self.GENETICS_KEYWORDS,
+                    key="html_keywords",
+                    help="Select keywords for your research analysis" if not analysis_locked else "Keywords are locked for current analysis. Click 'New Analysis' to modify.",
+                    disabled=analysis_locked
                 )
                 
-                for conv_id, conv_data in sorted_conversations:
-                    # Get and potentially improve the title
-                    title = conv_data.get("title", "Chat...")
-                    
-                    # Check if title needs improvement (too generic)
-                    if (title in ["Research Analysis", "Analysis", "Research", "Chat..."] or 
-                        len(title.split()) < 3 or 
-                        "Genetics via" in title or 
-                        ("Medical" in title and len(title.split()) < 4)):
+                # Update session state with selected keywords
+                self.set_user_session('selected_keywords', selected_keywords)
+            
+                # Search mode
+                # Initialize search mode in session state if not exists
+                if 'html_search_mode' not in st.session_state:
+                    st.session_state['html_search_mode'] = self.get_user_session('search_mode', 'all_keywords')
+                
+                search_mode = st.selectbox(
+                    "Search Mode",
+                    ["all_keywords", "any_keyword"],
+                    format_func=lambda x: "Find papers containing ALL keywords" if x == "all_keywords" else "Find papers containing AT LEAST ONE keyword",
+                    key="html_search_mode",
+                    disabled=analysis_locked
+                )
+                
+                # Update session state with search mode
+                self.set_user_session('search_mode', search_mode)
+            
+                # Time filter
+                # Initialize time filter in session state if not exists
+                if 'html_time_filter' not in st.session_state:
+                    st.session_state['html_time_filter'] = self.get_user_session('time_filter', 'Current year')
+                
+                time_filter = st.selectbox(
+                    "Filter by Time Window",
+                    ["Current year", "Last 3 months", "Last 6 months", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+                    key="html_time_filter",
+                    disabled=analysis_locked
+                )
+                
+                # Update session state with time filter
+                self.set_user_session('time_filter', time_filter)
+            
+                # Search button
+                if st.button("Search & Analyze", type="primary", use_container_width=True, disabled=analysis_locked):
+                    if selected_keywords:
+                        # Set loading state and lock immediately, then schedule analysis and rerun
+                        st.session_state['is_loading'] = True
+                        st.session_state['loading_message'] = "Analyzing Research Papers"
+                        st.session_state['loading_subtext'] = "Searching for highly relevant papers and generating comprehensive report..."
+                        st.session_state['loading_progress'] = "This may take a few moments..."
+                        self.set_user_session('analysis_locked', True)
+
+                        # Stash pending action parameters to run on next script run
+                        st.session_state['do_keyword_search'] = True
+                        st.session_state['pending_keywords'] = list(selected_keywords)
+                        st.session_state['pending_time_filter'] = time_filter
+                        st.session_state['pending_search_mode'] = search_mode
+
+                        st.rerun()
+                    else:
+                        st.error("Please select at least one keyword.")
+            
+                # Chat history
+                st.markdown("### Chat History")
+                conversations = self.get_user_session('conversations', {})
+                if conversations:
+                    # Sort conversations by creation time (most recent first) - like ChatGPT
+                    def get_creation_time(conv_id, conv_data):
+                        # Use last_interaction_time if available, otherwise fall back to creation time
+                        if 'last_interaction_time' in conv_data:
+                            return conv_data['last_interaction_time']
                         
-                        # Try to improve the title
-                        improved_title = self.improve_conversation_title(conv_data, conv_id)
-                        if improved_title != title:
-                            # Update the conversation with improved title
-                            conversations = self.get_user_session('conversations', {})
-                            if conv_id in conversations:
-                                conversations[conv_id]['title'] = improved_title
+                        # Extract timestamp from conversation ID
+                        try:
+                            if conv_id.startswith('custom_summary_'):
+                                timestamp_str = conv_id.split('_', 2)[2]
+                            else:
+                                timestamp_str = conv_id.split('_')[1]
+                            return float(timestamp_str)
+                        except (IndexError, ValueError):
+                            return 0
+                    
+                    sorted_conversations = sorted(
+                        conversations.items(), 
+                        key=lambda x: get_creation_time(x[0], x[1]), 
+                        reverse=True
+                    )
+                    
+                    for conv_id, conv_data in sorted_conversations:
+                        # Get and potentially improve the title
+                        title = conv_data.get("title", "Chat...")
+                        
+                        # Check if title needs improvement (too generic)
+                        if (title in ["Research Analysis", "Analysis", "Research", "Chat..."] or 
+                            len(title.split()) < 3 or 
+                            "Genetics via" in title or 
+                            ("Medical" in title and len(title.split()) < 4)):
+                            
+                            # Try to improve the title
+                            improved_title = self.improve_conversation_title(conv_data, conv_id)
+                            if improved_title != title:
+                                # Update the conversation with improved title
+                                conversations = self.get_user_session('conversations', {})
+                                if conv_id in conversations:
+                                    conversations[conv_id]['title'] = improved_title
+                                    self.set_user_session('conversations', conversations)
+                                    
+                                    # Save to backend
+                                    username = st.session_state.get('username')
+                                    if username:
+                                        self.api.save_conversation(username, conv_id, conversations[conv_id])
+                                    
+                                    title = improved_title
+                        
+                        # Create columns for chat title and delete button
+                        col1, col2 = st.columns([4, 1])
+                        
+                        with col1:
+                            if st.button(title, key=f"chat_{conv_id}", use_container_width=True):
+                                self.set_user_session('active_conversation_id', conv_id)
+                                self.set_user_session('analysis_locked', True)  # Lock when viewing past analysis
+                                st.rerun()
+                        
+                        with col2:
+                            if st.button("×", key=f"delete_{conv_id}", help="Delete this analysis", type="secondary"):
+                                # Delete conversation from session
+                                del conversations[conv_id]
                                 self.set_user_session('conversations', conversations)
                                 
-                                # Save to backend
+                                # Delete from GCS
                                 username = st.session_state.get('username')
                                 if username:
-                                    self.api.save_conversation(username, conv_id, conversations[conv_id])
+                                    try:
+                                        self.api.delete_conversation(username, conv_id)
+                                        st.success("Analysis deleted!")
+                                    except Exception as e:
+                                        st.error(f"Failed to delete from storage: {e}")
                                 
-                                title = improved_title
-                    
-                    # Create columns for chat title and delete button
-                    col1, col2 = st.columns([4, 1])
-                    
-                    with col1:
-                        if st.button(title, key=f"chat_{conv_id}", use_container_width=True):
-                            self.set_user_session('active_conversation_id', conv_id)
-                            self.set_user_session('analysis_locked', True)  # Lock when viewing past analysis
-                            st.rerun()
-                    
-                    with col2:
-                        if st.button("×", key=f"delete_{conv_id}", help="Delete this analysis", type="secondary"):
-                            # Delete conversation from session
-                            del conversations[conv_id]
-                            self.set_user_session('conversations', conversations)
-                            
-                            # Delete from GCS
-                            username = st.session_state.get('username')
-                            if username:
-                                try:
-                                    self.api.delete_conversation(username, conv_id)
-                                    st.success("Analysis deleted!")
-                                except Exception as e:
-                                    st.error(f"Failed to delete from storage: {e}")
-                            
-                            # Clear active conversation if it was deleted
-                            if self.get_user_session('active_conversation_id') == conv_id:
-                                self.set_user_session('active_conversation_id', None)
-                            
-                            st.rerun()
-            else:
-                st.caption("No past analyses found.")
-            
-            # Uploaded papers section
-            st.markdown("### Uploaded Papers")
-            uploaded_papers = self.get_user_session('uploaded_papers', [])
-            
-            if uploaded_papers:
-                st.info(f"{len(uploaded_papers)} papers uploaded")
-                with st.expander("View uploaded papers"):
-                    for i, paper in enumerate(uploaded_papers):
-                        title = paper['metadata'].get('title', 'Unknown title')
-                        st.write(f"{i+1}. {title}")
+                                # Clear active conversation if it was deleted
+                                if self.get_user_session('active_conversation_id') == conv_id:
+                                    self.set_user_session('active_conversation_id', None)
+                                
+                                st.rerun()
+                else:
+                    st.caption("No past analyses found.")
                 
-                # Custom summary button
-                if st.button("Generate Custom Summary", type="primary", use_container_width=True):
-                    # Show full-screen overlay immediately via JS (no pre-rerun)
-                    st.markdown(
-                        """
-                        <script>
-                        showLoadingOverlay("📄 Generating Custom Summary", "Analyzing your uploaded papers and creating comprehensive summary...", "Processing PDF content and generating AI summary...");
-                        </script>
-                        """,
-                        unsafe_allow_html=True,
+                # Uploaded papers section
+                st.markdown("### Uploaded Papers")
+                uploaded_papers = self.get_user_session('uploaded_papers', [])
+                
+                if uploaded_papers:
+                    st.info(f"{len(uploaded_papers)} papers uploaded")
+                    with st.expander("View uploaded papers"):
+                        for i, paper in enumerate(uploaded_papers):
+                            title = paper['metadata'].get('title', 'Unknown title')
+                            st.write(f"{i+1}. {title}")
+                    
+                    # Custom summary button
+                    if st.button("Generate Custom Summary", type="primary", use_container_width=True):
+                        # Show full-screen overlay immediately via JS (no pre-rerun)
+                        st.markdown(
+                            """
+                            <script>
+                            showLoadingOverlay("📄 Generating Custom Summary", "Analyzing your uploaded papers and creating comprehensive summary...", "Processing PDF content and generating AI summary...");
+                            </script>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+
+                        success = self.generate_custom_summary(uploaded_papers)
+
+                        # Hide overlay and refresh UI
+                        st.markdown(
+                            """
+                            <script>
+                            hideLoadingOverlay();
+                            </script>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+
+                        if success:
+                            st.rerun()
+                        else:
+                            st.error("Custom summary generation failed. Please try again.")
+                    
+                    # Clear uploaded papers button
+                    if st.button("Clear uploaded papers", type="secondary", use_container_width=True):
+                        self.set_user_session('uploaded_papers', [])
+                        st.rerun()
+                else:
+                    st.caption("No papers uploaded yet")
+                
+                # PDF upload section
+                with st.expander("Upload PDF Files"):
+                    st.info("Upload PDF files to generate custom summary of your documents.")
+                    
+                    uploaded_pdfs = st.file_uploader(
+                        "Choose PDF files", 
+                        accept_multiple_files=True, 
+                        type=['pdf'], 
+                        key="pdf_uploader_html"
                     )
-
-                    success = self.generate_custom_summary(uploaded_papers)
-
-                    # Hide overlay and refresh UI
-                    st.markdown(
-                        """
+                    
+                    if uploaded_pdfs and st.button("Add PDFs", type="primary"):
+                        # Show full-screen loading overlay for PDF processing
+                        st.markdown("""
+                        <script>
+                        showLoadingOverlay("📄 Processing PDF Files", "Extracting text and metadata from uploaded papers...", "Reading PDF content and generating summaries...");
+                        </script>
+                        """, unsafe_allow_html=True)
+                        
+                        for uploaded_file in uploaded_pdfs:
+                            # Process PDF using backend API
+                            paper_data = self.api.process_uploaded_pdf(uploaded_file, uploaded_file.name)
+                            
+                            if paper_data:
+                                # Store in user-specific session state
+                                uploaded_papers = self.get_user_session('uploaded_papers', [])
+                                uploaded_papers.append(paper_data)
+                                self.set_user_session('uploaded_papers', uploaded_papers)
+                                st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_data['content'])} chars)")
+                            else:
+                                st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
+                        
+                        # Hide loading overlay
+                        st.markdown("""
                         <script>
                         hideLoadingOverlay();
                         </script>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-
-                    if success:
-                        st.rerun()
-                    else:
-                        st.error("Custom summary generation failed. Please try again.")
-                
-                # Clear uploaded papers button
-                if st.button("Clear uploaded papers", type="secondary", use_container_width=True):
-                    self.set_user_session('uploaded_papers', [])
-                    st.rerun()
-            else:
-                st.caption("No papers uploaded yet")
-            
-            # PDF upload section
-            with st.expander("Upload PDF Files"):
-                st.info("Upload PDF files to generate custom summary of your documents.")
-                
-                uploaded_pdfs = st.file_uploader(
-                    "Choose PDF files", 
-                    accept_multiple_files=True, 
-                    type=['pdf'], 
-                    key="pdf_uploader_html"
-                )
-                
-                if uploaded_pdfs and st.button("Add PDFs", type="primary"):
-                    # Show full-screen loading overlay for PDF processing
-                    st.markdown("""
-                    <script>
-                    showLoadingOverlay("📄 Processing PDF Files", "Extracting text and metadata from uploaded papers...", "Reading PDF content and generating summaries...");
-                    </script>
-                    """, unsafe_allow_html=True)
-                    
-                    for uploaded_file in uploaded_pdfs:
-                        # Process PDF using backend API
-                        paper_data = self.api.process_uploaded_pdf(uploaded_file, uploaded_file.name)
+                        """, unsafe_allow_html=True)
                         
-                        if paper_data:
-                            # Store in user-specific session state
-                            uploaded_papers = self.get_user_session('uploaded_papers', [])
-                            uploaded_papers.append(paper_data)
-                            self.set_user_session('uploaded_papers', uploaded_papers)
-                            st.success(f"Successfully processed '{uploaded_file.name}' (Content length: {len(paper_data['content'])} chars)")
-                        else:
-                            st.error(f"Could not read content from '{uploaded_file.name}'. The PDF might be corrupted or password-protected.")
-                    
-                    # Hide loading overlay
-                    st.markdown("""
-                    <script>
-                    hideLoadingOverlay();
-                    </script>
-                    """, unsafe_allow_html=True)
-                    
+                        st.rerun()
+                
+                # Logout
+                if st.button("Logout", type="secondary", use_container_width=True):
+                    # Clear session state
+                    for key in list(st.session_state.keys()):
+                        if not key.startswith('_'):
+                            del st.session_state[key]
                     st.rerun()
-            
-            # Logout
-            if st.button("Logout", type="secondary", use_container_width=True):
-                # Clear session state
-                for key in list(st.session_state.keys()):
-                    if not key.startswith('_'):
-                        del st.session_state[key]
-                st.rerun()
         
         # Handle chat input
         active_conversation_id = self.get_user_session('active_conversation_id')
