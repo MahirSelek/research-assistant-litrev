@@ -851,35 +851,21 @@ Assistant Response:"""
             if 'html_keywords' not in st.session_state:
                 st.session_state['html_keywords'] = self.get_user_session('selected_keywords', [])
             
-            # Custom keyword selection with individual selection behavior
+            # Custom keyword selection that closes dropdown after each selection
             current_selected = self.get_user_session('selected_keywords', [])
             
-            # Display selected keywords as removable tags
-            if current_selected:
-                st.markdown("**Selected Keywords:**")
-                cols = st.columns(min(len(current_selected), 4))  # Max 4 columns
-                for i, keyword in enumerate(current_selected):
-                    with cols[i % 4]:
-                        if st.button(f"× {keyword}", key=f"remove_keyword_{i}", disabled=analysis_locked):
-                            # Remove keyword from selection
-                            updated_keywords = [k for k in current_selected if k != keyword]
-                            self.set_user_session('selected_keywords', updated_keywords)
-                            st.session_state['html_keywords'] = updated_keywords
-                            st.rerun()
-                st.markdown("---")
-            
-            # Keyword selection dropdown (only if not locked)
+            # Use selectbox for individual keyword selection (closes after each selection)
             if not analysis_locked:
                 # Filter out already selected keywords
                 available_keywords = [kw for kw in self.GENETICS_KEYWORDS if kw not in current_selected]
                 
                 if available_keywords:
-                    st.markdown("**Add a keyword:**")
                     new_keyword = st.selectbox(
                         "Select Keywords",
                         [""] + available_keywords,  # Empty string as default
                         key="html_keyword_selector",
-                        help="Select a keyword to add to your analysis"
+                        help="Select keywords for your research analysis. Choose one at a time - dropdown will close after selection.",
+                        disabled=analysis_locked
                     )
                     
                     # Add keyword if one is selected
@@ -888,11 +874,19 @@ Assistant Response:"""
                         self.set_user_session('selected_keywords', updated_keywords)
                         st.session_state['html_keywords'] = updated_keywords
                         st.rerun()
-                else:
-                    st.info("All available keywords have been selected.")
+            
+            # Display current selection using multiselect for visual consistency (read-only)
+            selected_keywords = st.multiselect(
+                "Selected Keywords",
+                self.GENETICS_KEYWORDS,
+                default=current_selected,
+                key="html_keywords_display",
+                help="Currently selected keywords" if not analysis_locked else "Keywords are locked for current analysis. Click 'New Analysis' to modify.",
+                disabled=True  # Always disabled - just for display
+            )
             
             # Update session state with selected keywords
-            selected_keywords = self.get_user_session('selected_keywords', [])
+            self.set_user_session('selected_keywords', current_selected)
             
             # Search mode
             # Initialize search mode in session state if not exists
