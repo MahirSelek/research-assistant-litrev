@@ -171,8 +171,34 @@ class HTMLResearchAssistantUI:
             min-width: 21rem !important;
         }
         
+        /* Force sidebar visibility with higher specificity */
+        [data-testid="stSidebar"] {
+            display: block !important;
+            visibility: visible !important;
+            width: 21rem !important;
+            min-width: 21rem !important;
+            transform: translateX(0) !important;
+            opacity: 1 !important;
+        }
+        
+        /* Override any collapsed states */
+        .stApp.sidebar-collapsed [data-testid="stSidebar"],
+        [data-testid="stSidebar"].collapsed {
+            display: block !important;
+            visibility: visible !important;
+            width: 21rem !important;
+            min-width: 21rem !important;
+            transform: translateX(0) !important;
+            opacity: 1 !important;
+        }
+        
         /* Ensure main content area adjusts when sidebar is visible */
         .main .block-container {
+            margin-left: 21rem !important;
+        }
+        
+        /* Force main content margin even when sidebar appears collapsed */
+        .stApp.sidebar-collapsed .main .block-container {
             margin-left: 21rem !important;
         }
         
@@ -491,6 +517,61 @@ class HTMLResearchAssistantUI:
         // Force overlay to show immediately when called
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
+        
+        // Force sidebar to be visible and override browser storage
+        function forceSidebarVisible() {
+            // Clear any stored sidebar state
+            if (typeof(Storage) !== "undefined") {
+                localStorage.removeItem('streamlit-sidebar-state');
+                sessionStorage.removeItem('streamlit-sidebar-state');
+            }
+            
+            // Force sidebar to be visible
+            const sidebar = document.querySelector('[data-testid="stSidebar"]');
+            if (sidebar) {
+                sidebar.style.display = 'block';
+                sidebar.style.visibility = 'visible';
+                sidebar.style.width = '21rem';
+                sidebar.style.minWidth = '21rem';
+                sidebar.classList.remove('collapsed');
+                sidebar.classList.add('expanded');
+            }
+            
+            // Adjust main content margin
+            const mainContent = document.querySelector('.main .block-container');
+            if (mainContent) {
+                mainContent.style.marginLeft = '21rem';
+            }
+            
+            // Remove any collapse classes from the app
+            const app = document.querySelector('.stApp');
+            if (app) {
+                app.classList.remove('sidebar-collapsed');
+                app.classList.add('sidebar-expanded');
+            }
+        }
+        
+        // Run immediately when page loads
+        document.addEventListener('DOMContentLoaded', forceSidebarVisible);
+        
+        // Also run after a short delay to catch any dynamic changes
+        setTimeout(forceSidebarVisible, 100);
+        setTimeout(forceSidebarVisible, 500);
+        setTimeout(forceSidebarVisible, 1000);
+        
+        // Run whenever the page content changes (Streamlit reruns)
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList') {
+                    setTimeout(forceSidebarVisible, 50);
+                }
+            });
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
         
         </script>
         """, unsafe_allow_html=True)
