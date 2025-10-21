@@ -61,14 +61,25 @@ header[data-testid="stHeader"] {
     z-index: 1000;
 }
 
-/* --- Typography --- */
+/* --- Typography - RESTORED BEAUTIFUL STYLING --- */
 h1, h2, h3, h4, h5, h6 {
     color: #FAFAFA !important;
     font-family: 'Inter', sans-serif !important;
+    font-weight: 600 !important;
+    line-height: 1.4 !important;
 }
 
-.stMarkdown, .stText, .stSelectbox, .stMultiselect, .stTextInput {
+.stMarkdown, .stText, p, span, div {
     color: #D1D5DB !important;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 400 !important;
+    line-height: 1.6 !important;
+}
+
+/* Restore beautiful text in form elements */
+.stSelectbox, .stMultiselect, .stTextInput {
+    color: #D1D5DB !important;
+    font-family: 'Inter', sans-serif !important;
 }
 
 /* --- Button Styles (overridden by inline CSS in html_ui.py) --- */

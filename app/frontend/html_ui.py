@@ -154,13 +154,54 @@ class HTMLResearchAssistantUI:
         """Inject minimal CSS for styling"""
         st.markdown("""
         <style>
-        /* Custom styling for better appearance - FORCED DARK THEME */
+        /* Restore beautiful typography and custom styling */
         .stApp {
             background: #0e1117 !important;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
         }
         
+        /* Restore custom text styling */
+        h1, h2, h3, h4, h5, h6 {
+            color: #FAFAFA !important;
+            font-family: 'Inter', sans-serif !important;
+            font-weight: 600 !important;
+        }
+        
+        .stMarkdown, .stText, p, span, div {
+            color: #D1D5DB !important;
+            font-family: 'Inter', sans-serif !important;
+            font-weight: 400 !important;
+            line-height: 1.6 !important;
+        }
+        
+        /* Restore sidebar styling */
         .stSidebar {
             background: #1e1e1e !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+        
+        /* Restore chat message styling */
+        [data-testid="stChatMessage"] {
+            background-color: #262730 !important;
+            border-radius: 0.75rem !important;
+            padding: 1rem !important;
+            margin-bottom: 1rem !important;
+            border: 1px solid #30333d !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+        
+        /* Restore expander styling */
+        .stExpander {
+            border: 1px solid #2c313a !important;
+            border-radius: 0.5rem !important;
+            background-color: #1a1e29 !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+        
+        .stExpander header {
+            background-color: #1a1e29 !important;
+            color: #FAFAFA !important;
+            font-family: 'Inter', sans-serif !important;
         }
         
         /* Force dark theme for all elements */
@@ -681,9 +722,27 @@ class HTMLResearchAssistantUI:
             document.documentElement.style.colorScheme = 'dark';
             document.body.style.colorScheme = 'dark';
             
-            // Only override form elements, preserve button gradients and custom styling
+            // Only override form elements, preserve button gradients and beautiful typography
             const style = document.createElement('style');
             style.textContent = `
+                /* Restore beautiful typography */
+                .stApp {
+                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+                }
+                
+                h1, h2, h3, h4, h5, h6 {
+                    color: #FAFAFA !important;
+                    font-family: 'Inter', sans-serif !important;
+                    font-weight: 600 !important;
+                }
+                
+                .stMarkdown, .stText, p, span, div {
+                    color: #D1D5DB !important;
+                    font-family: 'Inter', sans-serif !important;
+                    font-weight: 400 !important;
+                    line-height: 1.6 !important;
+                }
+                
                 /* Force dark theme on chat input - ULTRA SPECIFIC */
                 [data-testid="stBottomBlockContainer"], [data-testid="stBottomBlockContainer"] *,
                 [data-testid="stVerticalBlock"], [data-testid="stVerticalBlock"] *,
@@ -695,6 +754,7 @@ class HTMLResearchAssistantUI:
                     background-color: #1a1e29 !important;
                     color: #D1D5DB !important;
                     border-color: #2c313a !important;
+                    font-family: 'Inter', sans-serif !important;
                 }
                 
                 /* Force dark theme on textarea and base-input specifically */
@@ -704,6 +764,7 @@ class HTMLResearchAssistantUI:
                     background-color: #262730 !important;
                     color: #D1D5DB !important;
                     border-color: #2c313a !important;
+                    font-family: 'Inter', sans-serif !important;
                 }
                 
                 /* Target all emotion-cache classes in chat input */
@@ -716,6 +777,7 @@ class HTMLResearchAssistantUI:
                     background-color: #1a1e29 !important;
                     color: #D1D5DB !important;
                     border-color: #2c313a !important;
+                    font-family: 'Inter', sans-serif !important;
                 }
                 
                 /* Force dark theme on Streamlit header and toolbar */
@@ -727,6 +789,7 @@ class HTMLResearchAssistantUI:
                     background-color: #1a1e29 !important;
                     color: #D1D5DB !important;
                     border-color: #2c313a !important;
+                    font-family: 'Inter', sans-serif !important;
                 }
                 
                 /* Only force dark theme on form elements */
@@ -734,19 +797,23 @@ class HTMLResearchAssistantUI:
                     background-color: #262730 !important;
                     color: #D1D5DB !important;
                     border-color: #2c313a !important;
+                    font-family: 'Inter', sans-serif !important;
                 }
                 [data-baseweb="select"], [data-baseweb="select"] * {
                     background-color: #262730 !important;
                     color: #D1D5DB !important;
                     border-color: #2c313a !important;
+                    font-family: 'Inter', sans-serif !important;
                 }
                 [role="listbox"], [role="option"] {
                     background-color: #262730 !important;
                     color: #D1D5DB !important;
+                    font-family: 'Inter', sans-serif !important;
                 }
                 /* Preserve button gradients - don't override */
                 .stButton > button {
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+                    font-family: 'Inter', sans-serif !important;
                 }
             `;
             document.head.appendChild(style);
