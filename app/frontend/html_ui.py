@@ -385,8 +385,8 @@ class HTMLResearchAssistantUI:
             visibility: hidden !important;
         }
         
-        /* Sidebar toggle button styling */
-        button[data-testid="baseButton-secondary"][key="sidebar_toggle"] {
+        /* Controls toggle button styling */
+        button[data-testid="baseButton-secondary"][key="show_controls"] {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
             color: white !important;
             border: none !important;
@@ -398,7 +398,7 @@ class HTMLResearchAssistantUI:
             box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
         }
         
-        button[data-testid="baseButton-secondary"][key="sidebar_toggle"]:hover {
+        button[data-testid="baseButton-secondary"][key="show_controls"]:hover {
             background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%) !important;
             transform: translateY(-2px) !important;
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
@@ -531,43 +531,27 @@ class HTMLResearchAssistantUI:
         # Main content area
         st.markdown("# 🧬 POLO-GGB RESEARCH ASSISTANT")
         
-        # Add sidebar toggle button - always visible in main content
+        # Add controls interface - always visible in main content
         col1, col2, col3 = st.columns([1, 2, 1])
         with col1:
-            if st.button("☰ Open Sidebar", key="sidebar_toggle", help="Click to open the sidebar with controls"):
-                # Force sidebar to be visible using CSS class and JavaScript
-                st.markdown("""
-                <script>
-                // Force sidebar visibility using multiple methods
-                setTimeout(() => {
-                    const sidebar = document.querySelector('[data-testid="stSidebar"]');
-                    if (sidebar) {
-                        // Add CSS class for forced visibility
-                        sidebar.classList.add('force-visible');
-                        
-                        // Direct style manipulation as backup
-                        sidebar.style.display = 'block';
-                        sidebar.style.visibility = 'visible';
-                        sidebar.style.transform = 'translateX(0)';
-                        sidebar.style.width = '21rem';
-                        sidebar.style.minWidth = '21rem';
-                        sidebar.style.maxWidth = '21rem';
-                        sidebar.style.position = 'fixed';
-                        sidebar.style.left = '0';
-                        sidebar.style.top = '0';
-                        sidebar.style.height = '100vh';
-                        sidebar.style.zIndex = '999';
-                    }
-                    
-                    // Also try to trigger Streamlit's internal sidebar toggle
-                    const toggleButton = document.querySelector('[data-testid="stSidebar"] button[aria-label*="Close"], [data-testid="stSidebar"] button[aria-label*="Open"]');
-                    if (toggleButton) {
-                        toggleButton.click();
-                    }
-                }, 100);
-                </script>
-                """, unsafe_allow_html=True)
+            if st.button("☰ Show Controls", key="show_controls", help="Click to show analysis controls"):
+                st.session_state['show_controls_panel'] = not st.session_state.get('show_controls_panel', False)
                 st.rerun()
+        
+        # Show controls panel if sidebar is not visible or if user clicked the button
+        show_controls = st.session_state.get('show_controls_panel', False)
+        
+        # Check if sidebar is visible by trying to detect it
+        sidebar_visible = True  # Assume visible by default
+        try:
+            # This will only work if sidebar is actually rendered
+            st.sidebar.markdown("")  # This will fail if sidebar is not visible
+        except:
+            sidebar_visible = False
+        
+        # Show controls panel if sidebar is not visible or if explicitly requested
+        if not sidebar_visible or show_controls:
+            self.render_controls_panel()
         
         # Get current state
         active_conversation_id = self.get_user_session('active_conversation_id')
@@ -604,7 +588,7 @@ class HTMLResearchAssistantUI:
         
         # Show default message if no active conversation
         if active_conversation_id is None:
-            st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar. Use the 'Open Sidebar' button above if the sidebar is not visible.")
+            st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar. Use the 'Show Controls' button above if the sidebar is not visible.")
         elif active_conversation_id is not None and active_conversation_id in conversations:
             active_conv = conversations[active_conversation_id]
             
@@ -691,6 +675,193 @@ Assistant Response:"""
     def render_sidebar(self):
         """Sidebar is now part of the main HTML interface"""
         pass
+    
+    def render_controls_panel(self):
+        """Render controls panel in main content area when sidebar is not available"""
+        st.markdown("---")
+        st.markdown("### Analysis Controls")
+        
+        # Get analysis lock status
+        analysis_locked = self.get_user_session('analysis_locked', False)
+        
+        # Show analysis status
+        if analysis_locked:
+            st.info("🔒 Analysis Active - Controls Locked")
+        else:
+            st.success("🔓 Ready for New Analysis")
+        
+        # New Analysis button
+        if st.button("➕ New Analysis", type="primary", use_container_width=True):
+            # Clear ALL session state for fresh start
+            self.set_user_session('active_conversation_id', None)
+            self.set_user_session('selected_keywords', [])
+            self.set_user_session('search_mode', "all_keywords")
+            self.set_user_session('time_filter', "Current year")
+            self.set_user_session('custom_summary_chat', [])
+            self.set_user_session('analysis_locked', False)  # Unlock for new analysis
+            
+            # Force clear the multiselect by updating session state
+            if 'html_keywords' in st.session_state:
+                st.session_state['html_keywords'] = []
+            if 'html_search_mode' in st.session_state:
+                st.session_state['html_search_mode'] = "all_keywords"
+            if 'html_time_filter' in st.session_state:
+                st.session_state['html_time_filter'] = "Current year"
+            
+            st.rerun()
+        
+        # Keyword selection
+        # Initialize keywords in session state if not exists
+        if 'html_keywords' not in st.session_state:
+            st.session_state['html_keywords'] = self.get_user_session('selected_keywords', [])
+        
+        selected_keywords = st.multiselect(
+            "Select Keywords",
+            self.GENETICS_KEYWORDS,
+            key="html_keywords_main",
+            help="Select keywords for your research analysis" if not analysis_locked else "Keywords are locked for current analysis. Click 'New Analysis' to modify.",
+            disabled=analysis_locked
+        )
+        
+        # Update session state with selected keywords
+        self.set_user_session('selected_keywords', selected_keywords)
+        
+        # Search mode
+        # Initialize search mode in session state if not exists
+        if 'html_search_mode' not in st.session_state:
+            st.session_state['html_search_mode'] = self.get_user_session('search_mode', 'all_keywords')
+        
+        search_mode = st.selectbox(
+            "Search Mode",
+            ["all_keywords", "any_keyword"],
+            format_func=lambda x: "Find papers containing ALL keywords" if x == "all_keywords" else "Find papers containing AT LEAST ONE keyword",
+            key="html_search_mode_main",
+            disabled=analysis_locked
+        )
+        
+        # Update session state with search mode
+        self.set_user_session('search_mode', search_mode)
+        
+        # Time filter
+        # Initialize time filter in session state if not exists
+        if 'html_time_filter' not in st.session_state:
+            st.session_state['html_time_filter'] = self.get_user_session('time_filter', 'Current year')
+        
+        time_filter = st.selectbox(
+            "Filter by Time Window",
+            ["Current year", "Last 3 months", "Last 6 months", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+            key="html_time_filter_main",
+            disabled=analysis_locked
+        )
+        
+        # Update session state with time filter
+        self.set_user_session('time_filter', time_filter)
+        
+        # Search button
+        if st.button("Search & Analyze", type="primary", use_container_width=True, disabled=analysis_locked):
+            if selected_keywords:
+                # Set loading state and lock immediately, then schedule analysis and rerun
+                st.session_state['is_loading'] = True
+                st.session_state['loading_message'] = "Analyzing Research Papers"
+                st.session_state['loading_subtext'] = "Searching for highly relevant papers and generating comprehensive report..."
+                st.session_state['loading_progress'] = "This may take a few moments..."
+                self.set_user_session('analysis_locked', True)
+
+                # Stash pending action parameters to run on next script run
+                st.session_state['do_keyword_search'] = True
+                st.session_state['pending_keywords'] = list(selected_keywords)
+                st.session_state['pending_time_filter'] = time_filter
+                st.session_state['pending_search_mode'] = search_mode
+
+                st.rerun()
+            else:
+                st.error("Please select at least one keyword.")
+        
+        # Chat history
+        st.markdown("### Chat History")
+        conversations = self.get_user_session('conversations', {})
+        if conversations:
+            # Sort conversations by creation time (most recent first) - like ChatGPT
+            def get_creation_time(conv_id, conv_data):
+                # Use last_interaction_time if available, otherwise fall back to creation time
+                if 'last_interaction_time' in conv_data:
+                    return conv_data['last_interaction_time']
+                
+                # Extract timestamp from conversation ID
+                try:
+                    if conv_id.startswith('custom_summary_'):
+                        timestamp_str = conv_id.split('_', 2)[2]
+                    else:
+                        timestamp_str = conv_id.split('_')[1]
+                    return float(timestamp_str)
+                except (IndexError, ValueError):
+                    return 0
+            
+            sorted_conversations = sorted(
+                conversations.items(), 
+                key=lambda x: get_creation_time(x[0], x[1]), 
+                reverse=True
+            )
+            
+            for conv_id, conv_data in sorted_conversations:
+                # Get and potentially improve the title
+                title = conv_data.get("title", "Chat...")
+                
+                # Check if title needs improvement (too generic)
+                if (title in ["Research Analysis", "Analysis", "Research", "Chat..."] or 
+                    len(title.split()) < 3 or 
+                    "Genetics via" in title or 
+                    ("Medical" in title and len(title.split()) < 4)):
+                    
+                    # Try to improve the title
+                    improved_title = self.improve_conversation_title(conv_data, conv_id)
+                    if improved_title != title:
+                        # Update the conversation with improved title
+                        conversations = self.get_user_session('conversations', {})
+                        if conv_id in conversations:
+                            conversations[conv_id]['title'] = improved_title
+                            self.set_user_session('conversations', conversations)
+                            
+                            # Save to backend
+                            username = st.session_state.get('username')
+                            if username:
+                                self.api.save_conversation(username, conv_id, conversations[conv_id])
+                            
+                            title = improved_title
+                
+                # Create columns for chat title and delete button
+                col1, col2 = st.columns([4, 1])
+                
+                with col1:
+                    if st.button(title, key=f"chat_main_{conv_id}", use_container_width=True):
+                        self.set_user_session('active_conversation_id', conv_id)
+                        self.set_user_session('analysis_locked', True)  # Lock when viewing past analysis
+                        st.rerun()
+                
+                with col2:
+                    if st.button("×", key=f"delete_main_{conv_id}", help="Delete this analysis", type="secondary"):
+                        # Delete conversation from session
+                        del conversations[conv_id]
+                        self.set_user_session('conversations', conversations)
+                        
+                        # Delete from GCS
+                        username = st.session_state.get('username')
+                        if username:
+                            try:
+                                self.api.delete_conversation(username, conv_id)
+                                st.success("Analysis deleted!")
+                            except Exception as e:
+                                st.error(f"Failed to delete from storage: {e}")
+                        
+                        # Clear active conversation if it was deleted
+                        if self.get_user_session('active_conversation_id') == conv_id:
+                            self.set_user_session('active_conversation_id', None)
+                        
+                        st.rerun()
+        else:
+            st.caption("No past analyses found.")
+        
+        st.markdown("---")
     
     def improve_conversation_title(self, conv_data: Dict, conv_id: str) -> str:
         """Improve existing conversation titles that are too generic"""
