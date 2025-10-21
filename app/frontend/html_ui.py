@@ -565,8 +565,8 @@ class HTMLResearchAssistantUI:
         function checkBrowserCompatibility() {
             var userAgent = navigator.userAgent;
             var isIE = userAgent.indexOf('MSIE') !== -1 || userAgent.indexOf('Trident') !== -1;
-            var isOldSafari = userAgent.indexOf('Safari') !== -1 && userAgent.indexOf('Chrome') === -1 && parseFloat(userAgent.match(/Version\/(\d+)/)[1]) < 6;
-            var isOldFirefox = userAgent.indexOf('Firefox') !== -1 && parseFloat(userAgent.match(/Firefox\/(\d+)/)[1]) < 20;
+            var isOldSafari = userAgent.indexOf('Safari') !== -1 && userAgent.indexOf('Chrome') === -1 && parseFloat(userAgent.match(/Version\\/(\\d+)/)[1]) < 6;
+            var isOldFirefox = userAgent.indexOf('Firefox') !== -1 && parseFloat(userAgent.match(/Firefox\\/(\\d+)/)[1]) < 20;
             
             // Add browser-specific classes for CSS targeting
             if (isIE) {
