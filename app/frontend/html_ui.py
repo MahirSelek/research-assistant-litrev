@@ -398,15 +398,33 @@ class HTMLResearchAssistantUI:
             display: none !important;
         }
 
-        /* Keyword Selection Dropdown Control */
-        /* Hide multiselect dropdown by default */
-        [data-testid="stMultiSelect"] .stSelectbox > div > div {
+        /* Keyword Selection Dropdown Control - More Comprehensive */
+        /* Hide ALL multiselect dropdown options by default */
+        [data-testid="stMultiSelect"] div[role="listbox"],
+        [data-testid="stMultiSelect"] .stSelectbox > div > div,
+        [data-testid="stMultiSelect"] div[data-baseweb="select"],
+        [data-testid="stMultiSelect"] ul[role="listbox"],
+        [data-testid="stMultiSelect"] div[aria-expanded="true"],
+        [data-testid="stMultiSelect"] .stSelectbox > div > div[style*="display"],
+        [data-testid="stMultiSelect"] .stSelectbox > div > div[style*="block"],
+        [data-testid="stMultiSelect"] .stSelectbox > div > div[style*="flex"] {
             display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
         }
         
         /* Show dropdown when active */
-        [data-testid="stMultiSelect"].dropdown-active .stSelectbox > div > div {
+        [data-testid="stMultiSelect"].dropdown-active div[role="listbox"],
+        [data-testid="stMultiSelect"].dropdown-active .stSelectbox > div > div,
+        [data-testid="stMultiSelect"].dropdown-active div[data-baseweb="select"],
+        [data-testid="stMultiSelect"].dropdown-active ul[role="listbox"] {
             display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            height: auto !important;
+            overflow: visible !important;
         }
         
         /* Style the input field to look clickable */
@@ -510,11 +528,26 @@ class HTMLResearchAssistantUI:
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
         
-        // Keyword Selection Dropdown Control
+        // Keyword Selection Dropdown Control - Enhanced
         function initializeKeywordDropdown() {
             // Find the multiselect component
             const multiselect = document.querySelector('[data-testid="stMultiSelect"]');
             if (!multiselect) return;
+            
+            // Force hide dropdown immediately
+            multiselect.classList.remove('dropdown-active');
+            
+            // Find all possible dropdown elements and hide them
+            const dropdownElements = multiselect.querySelectorAll(
+                'div[role="listbox"], .stSelectbox > div > div, div[data-baseweb="select"], ul[role="listbox"]'
+            );
+            dropdownElements.forEach(el => {
+                el.style.display = 'none';
+                el.style.visibility = 'hidden';
+                el.style.opacity = '0';
+                el.style.height = '0';
+                el.style.overflow = 'hidden';
+            });
             
             // Find the input field
             const inputField = multiselect.querySelector('.stSelectbox > div');
@@ -528,10 +561,28 @@ class HTMLResearchAssistantUI:
                 // Toggle dropdown visibility
                 if (multiselect.classList.contains('dropdown-active')) {
                     multiselect.classList.remove('dropdown-active');
+                    // Force hide all dropdown elements
+                    dropdownElements.forEach(el => {
+                        el.style.display = 'none';
+                        el.style.visibility = 'hidden';
+                        el.style.opacity = '0';
+                        el.style.height = '0';
+                        el.style.overflow = 'hidden';
+                    });
                 } else {
                     // Close any other open dropdowns first
                     document.querySelectorAll('[data-testid="stMultiSelect"].dropdown-active').forEach(el => {
                         el.classList.remove('dropdown-active');
+                        const otherDropdowns = el.querySelectorAll(
+                            'div[role="listbox"], .stSelectbox > div > div, div[data-baseweb="select"], ul[role="listbox"]'
+                        );
+                        otherDropdowns.forEach(dropdown => {
+                            dropdown.style.display = 'none';
+                            dropdown.style.visibility = 'hidden';
+                            dropdown.style.opacity = '0';
+                            dropdown.style.height = '0';
+                            dropdown.style.overflow = 'hidden';
+                        });
                     });
                     multiselect.classList.add('dropdown-active');
                 }
@@ -541,6 +592,13 @@ class HTMLResearchAssistantUI:
             document.addEventListener('click', function(e) {
                 if (!multiselect.contains(e.target)) {
                     multiselect.classList.remove('dropdown-active');
+                    dropdownElements.forEach(el => {
+                        el.style.display = 'none';
+                        el.style.visibility = 'hidden';
+                        el.style.opacity = '0';
+                        el.style.height = '0';
+                        el.style.overflow = 'hidden';
+                    });
                 }
             });
             
@@ -553,7 +611,14 @@ class HTMLResearchAssistantUI:
                             // Small delay to allow selection to complete
                             setTimeout(() => {
                                 multiselect.classList.remove('dropdown-active');
-                            }, 100);
+                                dropdownElements.forEach(el => {
+                                    el.style.display = 'none';
+                                    el.style.visibility = 'hidden';
+                                    el.style.opacity = '0';
+                                    el.style.height = '0';
+                                    el.style.overflow = 'hidden';
+                                });
+                            }, 200);
                         }
                     }
                 });
@@ -571,6 +636,28 @@ class HTMLResearchAssistantUI:
         
         // Re-initialize after Streamlit reruns
         setTimeout(initializeKeywordDropdown, 100);
+        
+        // Continuous monitoring to ensure dropdown stays hidden
+        function forceHideDropdown() {
+            const multiselect = document.querySelector('[data-testid="stMultiSelect"]');
+            if (multiselect) {
+                const dropdownElements = multiselect.querySelectorAll(
+                    'div[role="listbox"], .stSelectbox > div > div, div[data-baseweb="select"], ul[role="listbox"]'
+                );
+                dropdownElements.forEach(el => {
+                    if (el.style.display !== 'none') {
+                        el.style.display = 'none';
+                        el.style.visibility = 'hidden';
+                        el.style.opacity = '0';
+                        el.style.height = '0';
+                        el.style.overflow = 'hidden';
+                    }
+                });
+            }
+        }
+        
+        // Run force hide every 500ms to ensure dropdown stays hidden
+        setInterval(forceHideDropdown, 500);
         
         </script>
         """, unsafe_allow_html=True)
