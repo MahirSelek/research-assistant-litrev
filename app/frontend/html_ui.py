@@ -227,11 +227,76 @@ class HTMLResearchAssistantUI:
         /* Ensure main content area adjusts when sidebar is visible */
         .main .block-container {
             margin-left: 21rem !important;
+            padding-left: 2rem !important;
+            padding-right: 2rem !important;
+            max-width: calc(100% - 21rem) !important;
+            width: calc(100% - 21rem) !important;
         }
         
         /* Force main content margin even when sidebar appears collapsed */
-        .stApp.sidebar-collapsed .main .block-container {
+        .stApp.sidebar-collapsed .main .block-container,
+        .stApp.sidebar-hidden .main .block-container,
+        .stApp.sidebar-closed .main .block-container {
             margin-left: 21rem !important;
+            padding-left: 2rem !important;
+            padding-right: 2rem !important;
+            max-width: calc(100% - 21rem) !important;
+            width: calc(100% - 21rem) !important;
+        }
+        
+        /* Ensure the main content area itself is properly positioned */
+        .main {
+            margin-left: 21rem !important;
+            width: calc(100% - 21rem) !important;
+            max-width: calc(100% - 21rem) !important;
+        }
+        
+        /* Force main area positioning even when sidebar appears collapsed */
+        .stApp.sidebar-collapsed .main,
+        .stApp.sidebar-hidden .main,
+        .stApp.sidebar-closed .main {
+            margin-left: 21rem !important;
+            width: calc(100% - 21rem) !important;
+            max-width: calc(100% - 21rem) !important;
+        }
+        
+        /* Ensure the entire app layout accounts for sidebar */
+        .stApp {
+            padding-left: 0 !important;
+        }
+        
+        /* Force app layout even when sidebar appears collapsed */
+        .stApp.sidebar-collapsed,
+        .stApp.sidebar-hidden,
+        .stApp.sidebar-closed {
+            padding-left: 0 !important;
+        }
+        
+        /* Ensure all Streamlit elements respect the layout */
+        .stApp > div:not([data-testid="stSidebar"]) {
+            margin-left: 21rem !important;
+            width: calc(100% - 21rem) !important;
+            max-width: calc(100% - 21rem) !important;
+        }
+        
+        /* Force layout for all main content elements */
+        .stApp .main,
+        .stApp [data-testid="stMain"],
+        .stApp [data-testid="stAppViewContainer"] {
+            margin-left: 21rem !important;
+            width: calc(100% - 21rem) !important;
+            max-width: calc(100% - 21rem) !important;
+        }
+        
+        /* Ensure proper spacing for all content */
+        .stApp .main .block-container,
+        .stApp [data-testid="stMain"] .block-container,
+        .stApp [data-testid="stAppViewContainer"] .block-container {
+            margin-left: 0 !important;
+            padding-left: 2rem !important;
+            padding-right: 2rem !important;
+            width: 100% !important;
+            max-width: 100% !important;
         }
         
         /* Hide the sidebar collapse functionality completely - Enhanced */
@@ -654,12 +719,39 @@ class HTMLResearchAssistantUI:
                 sidebar.setAttribute('data-sidebar-locked', 'true');
             }
             
-            // Adjust main content margin
+            // Adjust main content margin and positioning
             const mainContent = document.querySelector('.main .block-container');
             if (mainContent) {
                 mainContent.style.marginLeft = '21rem';
                 mainContent.style.maxWidth = 'calc(100% - 21rem)';
+                mainContent.style.width = 'calc(100% - 21rem)';
+                mainContent.style.paddingLeft = '2rem';
+                mainContent.style.paddingRight = '2rem';
             }
+            
+            // Also adjust the main container itself
+            const mainContainer = document.querySelector('.main');
+            if (mainContainer) {
+                mainContainer.style.marginLeft = '21rem';
+                mainContainer.style.width = 'calc(100% - 21rem)';
+                mainContainer.style.maxWidth = 'calc(100% - 21rem)';
+            }
+            
+            // Adjust all other main content elements
+            const mainElements = document.querySelectorAll('[data-testid="stMain"], [data-testid="stAppViewContainer"]');
+            mainElements.forEach(element => {
+                element.style.marginLeft = '21rem';
+                element.style.width = 'calc(100% - 21rem)';
+                element.style.maxWidth = 'calc(100% - 21rem)';
+            });
+            
+            // Adjust all direct children of stApp except sidebar
+            const appChildren = document.querySelectorAll('.stApp > div:not([data-testid="stSidebar"])');
+            appChildren.forEach(element => {
+                element.style.marginLeft = '21rem';
+                element.style.width = 'calc(100% - 21rem)';
+                element.style.maxWidth = 'calc(100% - 21rem)';
+            });
             
             // Remove any collapse classes from the app
             const app = document.querySelector('.stApp');
