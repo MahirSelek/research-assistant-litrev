@@ -250,3 +250,27 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar-thumb:hover {
     background: #374151;
 }
+
+
+/* === FINAL OVERRIDES: force dark background + dark header everywhere === */
+:root { color-scheme: only dark; }
+html { background: #0E1117 !important; }
+body { background: transparent !important; margin: 0; min-height: 100dvh; }
+
+/* Header sits outside .stApp → force it dark */
+header[data-testid="stHeader"],
+header[data-testid="stHeader"] * {
+  background-color: #1a1e29 !important;
+  color: #e5e7eb !important;
+  box-shadow: none !important;
+}
+header[data-testid="stHeader"] {
+  border-bottom: 1px solid #2c313a !important;
+}
+
+/* Make sure core surfaces stay dark */
+.stApp,
+[data-testid="stSidebar"],
+[data-testid="stChatInput"] {
+  background-color: #0E1117 !important;
+}
