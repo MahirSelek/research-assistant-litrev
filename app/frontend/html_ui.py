@@ -292,14 +292,114 @@ class HTMLResearchAssistantUI:
         if st.session_state.get('is_loading_analysis', False):
             loading_message = st.session_state.loading_message
             st.markdown(f"""
-            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; font-size: 18px;">
-                <div style="text-align: center;">
-                    <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite; margin: 0 auto 20px;"></div>
-                    <p>{loading_message}</p>
+            <div class="loading-overlay">
+                <div class="loading-container">
+                    <div class="loading-spinner">
+                        <div class="spinner-inner"></div>
+                        <div class="spinner-outer"></div>
+                    </div>
+                    <h2 class="loading-title">Analyzing Research Papers</h2>
+                    <p class="loading-description">{loading_message}</p>
+                    <p class="loading-hint">This may take a few moments...</p>
                 </div>
             </div>
             <style>
-            @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
+            .loading-overlay {{
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 9999;
+                backdrop-filter: none;
+            }}
+            
+            .loading-container {{
+                background: rgba(26, 30, 41, 0.95);
+                border-radius: 12px;
+                padding: 40px;
+                text-align: center;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+                border: 1px solid rgba(44, 49, 58, 0.5);
+                min-width: 400px;
+                max-width: 500px;
+            }}
+            
+            .loading-spinner {{
+                position: relative;
+                width: 60px;
+                height: 60px;
+                margin: 0 auto 24px;
+            }}
+            
+            .spinner-inner {{
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 20px;
+                height: 20px;
+                background: #1a1e29;
+                border-radius: 50%;
+                z-index: 2;
+            }}
+            
+            .spinner-outer {{
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 60px;
+                height: 60px;
+                border: 3px solid transparent;
+                border-top: 3px solid #3b82f6;
+                border-radius: 50%;
+                animation: spin 1.5s linear infinite;
+            }}
+            
+            .loading-title {{
+                color: #ffffff;
+                font-size: 24px;
+                font-weight: 700;
+                margin: 0 0 12px 0;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            }}
+            
+            .loading-description {{
+                color: #ffffff;
+                font-size: 16px;
+                margin: 0 0 16px 0;
+                line-height: 1.5;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            }}
+            
+            .loading-hint {{
+                color: #d1d5db;
+                font-size: 14px;
+                font-style: italic;
+                margin: 0;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            }}
+            
+            @keyframes spin {{
+                0% {{ transform: rotate(0deg); }}
+                100% {{ transform: rotate(360deg); }}
+            }}
+            
+            /* Ensure background content remains visible and readable */
+            .loading-overlay::before {{
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: transparent;
+                pointer-events: none;
+            }}
             </style>
             """, unsafe_allow_html=True)
             return
