@@ -93,6 +93,8 @@ class HTMLResearchAssistantUI:
             st.session_state.is_loading_analysis = False
         if 'loading_message' not in st.session_state:
             st.session_state.loading_message = ""
+        if 'sidebar_visible' not in st.session_state:
+            st.session_state.sidebar_visible = True
     
     def _initialize_empty_user_data(self):
         """Initialize empty user data"""
@@ -398,6 +400,49 @@ class HTMLResearchAssistantUI:
             display: none !important;
         }
 
+        /* Custom Sidebar Toggle Button */
+        .sidebar-toggle-btn {
+            position: fixed !important;
+            top: 20px !important;
+            right: 20px !important;
+            z-index: 999999 !important;
+            background: rgba(102, 126, 234, 0.9) !important;
+            border: none !important;
+            border-radius: 8px !important;
+            width: 50px !important;
+            height: 50px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+            backdrop-filter: blur(10px) !important;
+        }
+
+        .sidebar-toggle-btn:hover {
+            background: rgba(102, 126, 234, 1) !important;
+            transform: scale(1.05) !important;
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4) !important;
+        }
+
+        .sidebar-toggle-btn svg {
+            width: 24px !important;
+            height: 24px !important;
+            fill: white !important;
+        }
+
+        /* Hide sidebar when sidebar_visible is false */
+        .sidebar-hidden [data-testid="stSidebar"] {
+            display: none !important;
+        }
+
+        /* Adjust main content when sidebar is hidden */
+        .sidebar-hidden .main .block-container {
+            margin-left: 0 !important;
+            max-width: 100% !important;
+        }
+
         </style>
         <script>
         // Button styling is now handled by CSS above
@@ -475,11 +520,150 @@ class HTMLResearchAssistantUI:
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
         
+        // Sidebar Toggle Functionality
+        function createSidebarToggleButton() {
+            // Remove existing toggle button if it exists
+            const existingBtn = document.getElementById('sidebar-toggle-btn');
+            if (existingBtn) {
+                existingBtn.remove();
+            }
+            
+            // Check if sidebar should be visible
+            const sidebarVisible = window.sidebarVisible || true;
+            
+            // Create toggle button
+            const toggleBtn = document.createElement('button');
+            toggleBtn.id = 'sidebar-toggle-btn';
+            toggleBtn.className = 'sidebar-toggle-btn';
+            toggleBtn.title = sidebarVisible ? 'Hide Sidebar' : 'Show Sidebar';
+            
+            // Create SVG icon based on sidebar state
+            const svgIcon = sidebarVisible ? 
+                '<svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>' : // Left arrow (hide)
+                '<svg viewBox="0 0 24 24"><path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/></svg>'; // Right arrow (show)
+            
+            toggleBtn.innerHTML = svgIcon;
+            
+            // Add click handler
+            toggleBtn.addEventListener('click', function() {
+                toggleSidebar();
+            });
+            
+            // Add to body
+            document.body.appendChild(toggleBtn);
+            
+            // Apply sidebar visibility state
+            updateSidebarVisibility(sidebarVisible);
+        }
+        
+        function toggleSidebar() {
+            const currentState = window.sidebarVisible || true;
+            const newState = !currentState;
+            
+            // Update global state
+            window.sidebarVisible = newState;
+            
+            // Update sidebar visibility
+            updateSidebarVisibility(newState);
+            
+            // Update button icon
+            const toggleBtn = document.getElementById('sidebar-toggle-btn');
+            if (toggleBtn) {
+                const svgIcon = newState ? 
+                    '<svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>' : // Left arrow (hide)
+                    '<svg viewBox="0 0 24 24"><path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/></svg>'; // Right arrow (show)
+                
+                toggleBtn.innerHTML = svgIcon;
+                toggleBtn.title = newState ? 'Hide Sidebar' : 'Show Sidebar';
+            }
+            
+            // Send state to Streamlit
+            window.parent.postMessage({
+                type: 'streamlit:setComponentValue',
+                value: newState
+            }, '*');
+        }
+        
+        function updateSidebarVisibility(visible) {
+            const body = document.body;
+            const sidebar = document.querySelector('[data-testid="stSidebar"]');
+            
+            if (visible) {
+                body.classList.remove('sidebar-hidden');
+                if (sidebar) {
+                    sidebar.style.display = '';
+                }
+            } else {
+                body.classList.add('sidebar-hidden');
+                if (sidebar) {
+                    sidebar.style.display = 'none';
+                }
+            }
+        }
+        
+        // Initialize sidebar toggle when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Small delay to ensure Streamlit has rendered
+            setTimeout(createSidebarToggleButton, 100);
+        });
+        
+        // Also initialize when Streamlit reruns
+        window.addEventListener('load', function() {
+            setTimeout(createSidebarToggleButton, 100);
+        });
+        
+        // Reinitialize on Streamlit reruns
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    // Check if Streamlit has rerendered
+                    const hasStreamlitContent = Array.from(mutation.addedNodes).some(node => 
+                        node.nodeType === 1 && (
+                            node.querySelector('[data-testid="stSidebar"]') || 
+                            node.querySelector('.main') ||
+                            node.classList.contains('stApp')
+                        )
+                    );
+                    
+                    if (hasStreamlitContent) {
+                        setTimeout(createSidebarToggleButton, 200);
+                    }
+                }
+            });
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        
+        // Listen for messages from Streamlit
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'streamlit:sidebarState') {
+                window.sidebarVisible = event.data.visible;
+                updateSidebarVisibility(event.data.visible);
+            }
+        });
+        
         </script>
         """, unsafe_allow_html=True)
     
     def render_main_interface(self):
         """Render the main interface using Streamlit components"""
+        
+        # Handle sidebar toggle state
+        sidebar_visible = st.session_state.get('sidebar_visible', True)
+        
+        # Create a hidden component to communicate sidebar state
+        st.components.v1.html("""
+        <script>
+        // Send sidebar state to parent window
+        window.parent.postMessage({
+            type: 'streamlit:sidebarState',
+            visible: """ + str(sidebar_visible).lower() + """
+        }, '*');
+        </script>
+        """, height=0)
         
         # Show full-screen loading overlay if loading (do NOT return; allow processing to continue)
         if st.session_state.get('is_loading', False):
