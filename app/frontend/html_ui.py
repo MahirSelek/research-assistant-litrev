@@ -601,15 +601,47 @@ class HTMLResearchAssistantUI:
             }
         }
         
-        // Initialize sidebar toggle when page loads
+        // Initialize sidebar toggle immediately and on page loads
+        function initializeSidebarToggle() {
+            // Check if sidebar is currently visible
+            const sidebar = document.querySelector('[data-testid="stSidebar"]');
+            let isSidebarVisible = true; // Default to true
+            
+            if (sidebar) {
+                // Check multiple ways to determine if sidebar is visible
+                isSidebarVisible = sidebar.style.display !== 'none' && 
+                                 sidebar.offsetWidth > 0 && 
+                                 sidebar.offsetHeight > 0 &&
+                                 !sidebar.classList.contains('hidden');
+            }
+            
+            // Set initial state
+            window.sidebarVisible = isSidebarVisible;
+            
+            // Create the toggle button immediately
+            createSidebarToggleButton();
+            
+            // Force show the button if sidebar is hidden
+            if (!isSidebarVisible) {
+                const toggleBtn = document.getElementById('sidebar-toggle-btn');
+                if (toggleBtn) {
+                    toggleBtn.style.display = 'flex';
+                    toggleBtn.style.visibility = 'visible';
+                }
+            }
+        }
+        
+        // Run immediately
+        initializeSidebarToggle();
+        
+        // Also run when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
-            // Small delay to ensure Streamlit has rendered
-            setTimeout(createSidebarToggleButton, 100);
+            setTimeout(initializeSidebarToggle, 50);
         });
         
-        // Also initialize when Streamlit reruns
+        // Also run when page loads
         window.addEventListener('load', function() {
-            setTimeout(createSidebarToggleButton, 100);
+            setTimeout(initializeSidebarToggle, 50);
         });
         
         // Reinitialize on Streamlit reruns
@@ -654,14 +686,31 @@ class HTMLResearchAssistantUI:
         # Handle sidebar toggle state
         sidebar_visible = st.session_state.get('sidebar_visible', True)
         
-        # Create a hidden component to communicate sidebar state
+        # Create a component to communicate sidebar state and ensure toggle button is visible
         st.components.v1.html("""
+        <div id="sidebar-toggle-container" style="position: fixed; top: 20px; right: 20px; z-index: 999999;">
+            <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" title="Show Sidebar" style="display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; background: rgba(102, 126, 234, 0.9); border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); backdrop-filter: blur(10px);">
+                <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;">
+                    <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+                </svg>
+            </button>
+        </div>
         <script>
         // Send sidebar state to parent window
         window.parent.postMessage({
             type: 'streamlit:sidebarState',
             visible: """ + str(sidebar_visible).lower() + """
         }, '*');
+        
+        // Ensure button is visible and functional
+        document.addEventListener('DOMContentLoaded', function() {
+            const btn = document.getElementById('sidebar-toggle-btn');
+            if (btn) {
+                btn.style.display = 'flex';
+                btn.style.visibility = 'visible';
+                btn.style.opacity = '1';
+            }
+        });
         </script>
         """, height=0)
         
