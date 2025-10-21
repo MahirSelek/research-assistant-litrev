@@ -384,6 +384,18 @@ class HTMLResearchAssistantUI:
             display: none !important;
             visibility: hidden !important;
         }
+        
+        /* Force close multiselect dropdowns after selection */
+        [data-testid="stMultiSelect"] [role="listbox"] {
+            transition: opacity 0.1s ease-out !important;
+        }
+        
+        /* Hide dropdown when it should be closed */
+        [data-testid="stMultiSelect"].dropdown-closed [role="listbox"] {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+        }
 
         /* Fallback selectors for older/newer Streamlit/classnames */
         header .stActionButton,
@@ -475,70 +487,184 @@ class HTMLResearchAssistantUI:
         window.showLoadingOverlay = showLoadingOverlay;
         window.hideLoadingOverlay = hideLoadingOverlay;
         
-        // Auto-close multiselect dropdown after selection
-        function autoCloseMultiselect() {
-            // Wait for Streamlit to render the multiselect component
-            setTimeout(() => {
-                // Find all multiselect components
-                const multiselects = document.querySelectorAll('[data-testid="stMultiSelect"]');
+        // Auto-close multiselect dropdown after selection - Enhanced version
+        function setupMultiselectAutoClose() {
+            // Find all multiselect components
+            const multiselects = document.querySelectorAll('[data-testid="stMultiSelect"]');
+            
+            multiselects.forEach(multiselect => {
+                // Skip if already processed
+                if (multiselect.dataset.autoCloseSetup === 'true') {
+                    return;
+                }
                 
-                multiselects.forEach(multiselect => {
-                    // Find the dropdown container
-                    const dropdown = multiselect.querySelector('[role="listbox"]');
-                    if (dropdown) {
-                        // Listen for click events on option items
-                        const options = dropdown.querySelectorAll('[role="option"]');
-                        options.forEach(option => {
-                            option.addEventListener('click', function() {
-                                // Close the dropdown after a short delay to allow selection to register
-                                setTimeout(() => {
-                                    // Find the input element and blur it to close dropdown
-                                    const input = multiselect.querySelector('input');
-                                    if (input) {
-                                        input.blur();
-                                    }
-                                    
-                                    // Alternative method: trigger escape key
-                                    const escapeEvent = new KeyboardEvent('keydown', {
-                                        key: 'Escape',
-                                        code: 'Escape',
-                                        keyCode: 27,
-                                        which: 27,
-                                        bubbles: true
-                                    });
-                                    multiselect.dispatchEvent(escapeEvent);
-                                }, 100);
-                            });
-                        });
+                // Mark as processed
+                multiselect.dataset.autoCloseSetup = 'true';
+                
+                // Find the input element
+                const input = multiselect.querySelector('input');
+                if (!input) return;
+                
+                // Method 1: Listen for input changes (when selection is made)
+                input.addEventListener('input', function() {
+                    setTimeout(() => {
+                        closeDropdown(multiselect);
+                    }, 50);
+                });
+                
+                // Method 1.5: Listen for change events (more reliable for selections)
+                input.addEventListener('change', function() {
+                    setTimeout(() => {
+                        closeDropdown(multiselect);
+                    }, 30);
+                });
+                
+                // Method 2: Listen for clicks on the multiselect container
+                multiselect.addEventListener('click', function(e) {
+                    // Check if click was on an option
+                    if (e.target.closest('[role="option"]')) {
+                        setTimeout(() => {
+                            closeDropdown(multiselect);
+                        }, 100);
                     }
                 });
-            }, 500);
+                
+                // Method 3: Listen for focus events and close after selection
+                input.addEventListener('blur', function() {
+                    setTimeout(() => {
+                        closeDropdown(multiselect);
+                    }, 50);
+                });
+                
+                // Method 4: Listen for Streamlit's internal events
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'childList') {
+                            // Check if options were added/removed (indicating selection)
+                            const addedNodes = Array.from(mutation.addedNodes);
+                            const hasOptions = addedNodes.some(node => 
+                                node.nodeType === 1 && node.querySelector && node.querySelector('[role="option"]')
+                            );
+                            
+                            if (hasOptions) {
+                                setTimeout(() => {
+                                    closeDropdown(multiselect);
+                                }, 100);
+                            }
+                        }
+                    });
+                });
+                
+                observer.observe(multiselect, {
+                    childList: true,
+                    subtree: true
+                });
+                
+                // Method 5: Direct option click interception
+                const optionObserver = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'childList') {
+                            mutation.addedNodes.forEach(function(node) {
+                                if (node.nodeType === 1) {
+                                    const options = node.querySelectorAll ? node.querySelectorAll('[role="option"]') : [];
+                                    options.forEach(function(option) {
+                                        option.addEventListener('click', function(e) {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setTimeout(() => {
+                                                closeDropdown(multiselect);
+                                            }, 10);
+                                        }, true);
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
+                
+                optionObserver.observe(multiselect, {
+                    childList: true,
+                    subtree: true
+                });
+            });
         }
         
-        // Run auto-close function when page loads and after Streamlit reruns
-        autoCloseMultiselect();
+        function closeDropdown(multiselect) {
+            // Multiple methods to ensure dropdown closes
+            
+            // Method 1: Add CSS class to force close
+            multiselect.classList.add('dropdown-closed');
+            
+            // Method 2: Blur the input
+            const input = multiselect.querySelector('input');
+            if (input) {
+                input.blur();
+            }
+            
+            // Method 3: Trigger escape key
+            const escapeEvent = new KeyboardEvent('keydown', {
+                key: 'Escape',
+                code: 'Escape',
+                keyCode: 27,
+                which: 27,
+                bubbles: true,
+                cancelable: true
+            });
+            multiselect.dispatchEvent(escapeEvent);
+            
+            // Method 4: Click outside the multiselect
+            const clickOutsideEvent = new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true
+            });
+            document.body.dispatchEvent(clickOutsideEvent);
+            
+            // Method 5: Remove focus from any focused element
+            if (document.activeElement) {
+                document.activeElement.blur();
+            }
+            
+            // Method 6: Force close by manipulating DOM
+            const dropdown = multiselect.querySelector('[role="listbox"]');
+            if (dropdown) {
+                dropdown.style.display = 'none';
+                dropdown.style.opacity = '0';
+                dropdown.style.visibility = 'hidden';
+            }
+            
+            // Remove the CSS class after a delay to allow for future opens
+            setTimeout(() => {
+                multiselect.classList.remove('dropdown-closed');
+            }, 300);
+        }
         
-        // Also run it after Streamlit reruns (when new content is added)
-        const observer = new MutationObserver(function(mutations) {
+        // Run setup function
+        setupMultiselectAutoClose();
+        
+        // Also run it after Streamlit reruns
+        const globalObserver = new MutationObserver(function(mutations) {
+            let shouldSetup = false;
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                    // Check if multiselect components were added
                     const hasMultiselect = Array.from(mutation.addedNodes).some(node => 
                         node.nodeType === 1 && (
-                            node.querySelector && node.querySelector('[data-testid="stMultiSelect"]') ||
-                            node.matches && node.matches('[data-testid="stMultiSelect"]')
+                            (node.querySelector && node.querySelector('[data-testid="stMultiSelect"]')) ||
+                            (node.matches && node.matches('[data-testid="stMultiSelect"]'))
                         )
                     );
-                    
                     if (hasMultiselect) {
-                        setTimeout(autoCloseMultiselect, 100);
+                        shouldSetup = true;
                     }
                 }
             });
+            
+            if (shouldSetup) {
+                setTimeout(setupMultiselectAutoClose, 100);
+            }
         });
         
         // Start observing
-        observer.observe(document.body, {
+        globalObserver.observe(document.body, {
             childList: true,
             subtree: true
         });
