@@ -163,6 +163,24 @@ class HTMLResearchAssistantUI:
             background: #1e1e1e !important;
         }
         
+        /* Ensure sidebar is always visible and cannot be collapsed */
+        .stSidebar {
+            display: block !important;
+            visibility: visible !important;
+            width: 21rem !important;
+            min-width: 21rem !important;
+        }
+        
+        /* Ensure main content area adjusts when sidebar is visible */
+        .main .block-container {
+            margin-left: 21rem !important;
+        }
+        
+        /* Hide the sidebar collapse functionality */
+        [data-testid="stSidebar"] [aria-label*="sidebar"] {
+            display: none !important;
+        }
+        
         /* Primary buttons - Modern blue gradient with enhanced styling */
         .stButton > button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
@@ -374,8 +392,7 @@ class HTMLResearchAssistantUI:
         [data-testid="stToolbar"],
         [data-testid="stMainMenu"],
         [data-testid="stStatusWidget"],
-        [data-testid="stActionButton"],
-        header [data-testid^="baseButton"],
+        header [data-testid^="baseButton"]:not([aria-label*="sidebar"]),
         .stDeployButton,
         .viewerBadge_link,
         .viewerBadge_container__,
@@ -386,7 +403,7 @@ class HTMLResearchAssistantUI:
         }
 
         /* Fallback selectors for older/newer Streamlit/classnames */
-        header .stActionButton,
+        header .stActionButton:not([aria-label*="sidebar"]),
         a[class*="viewerBadge"],
         div[class*="viewerBadge"],
         button[title="View source on GitHub"],
