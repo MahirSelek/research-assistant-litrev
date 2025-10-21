@@ -145,35 +145,34 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
-/* --- Dark Mode Compatibility --- */
-@media (prefers-color-scheme: dark) {
-    .stApp {
-        background-color: #0E1117 !important;
-    }
+/* --- FORCE DARK THEME FOR ALL USERS - OVERRIDES BROWSER PREFERENCES --- */
+/* This ensures dark theme is ALWAYS applied regardless of user's browser preference */
+.stApp,
+.stApp *,
+[data-testid="stSidebar"],
+[data-testid="stSidebar"] *,
+header[data-testid="stHeader"],
+header[data-testid="stHeader"] *,
+[data-testid="stChatInput"],
+[data-testid="stChatInput"] *,
+[data-testid="stChatMessage"],
+[data-testid="stChatMessage"] *,
+.stSelectbox,
+.stSelectbox *,
+.stMultiselect,
+.stMultiselect *,
+.stTextInput,
+.stTextInput *,
+.stExpander,
+.stExpander *,
+h1, h2, h3, h4, h5, h6,
+.stMarkdown, .stText {
+    color-scheme: dark !important;
 }
 
-@media (prefers-color-scheme: light) {
-    .stApp {
-        background-color: #ffffff !important;
-    }
-    
-    h1, h2, h3, h4, h5, h6 {
-        color: #1f2937 !important;
-    }
-    
-    .stMarkdown, .stText, .stSelectbox, .stMultiselect, .stTextInput {
-        color: #374151 !important;
-    }
-    
-    [data-testid="stSidebar"] {
-        background-color: #f9fafb !important;
-        border-right: 1px solid #e5e7eb !important;
-    }
-    
-    [data-testid="stChatMessage"] {
-        background-color: #f9fafb !important;
-        border: 1px solid #e5e7eb !important;
-    }
+/* Force dark theme override for all elements */
+* {
+    color-scheme: dark !important;
 }
 
 /* --- Fix for white bars and layout issues --- */

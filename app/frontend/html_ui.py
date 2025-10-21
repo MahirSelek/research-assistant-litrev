@@ -154,13 +154,18 @@ class HTMLResearchAssistantUI:
         """Inject minimal CSS for styling"""
         st.markdown("""
         <style>
-        /* Custom styling for better appearance */
+        /* Custom styling for better appearance - FORCED DARK THEME */
         .stApp {
             background: #0e1117 !important;
         }
         
         .stSidebar {
             background: #1e1e1e !important;
+        }
+        
+        /* Force dark theme for all elements */
+        * {
+            color-scheme: dark !important;
         }
         
         /* Primary buttons - Modern blue gradient with enhanced styling */
