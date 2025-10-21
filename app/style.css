@@ -149,6 +149,81 @@ h1, h2, h3, h4, h5, h6 {
     border-color: #2c313a !important;
 }
 
+/* ULTRA-AGGRESSIVE: Target ALL possible Streamlit selectbox internal elements */
+.stSelectbox [data-baseweb="select"],
+.stSelectbox [data-baseweb="select"] > div,
+.stSelectbox [data-baseweb="select"] > div > div,
+.stSelectbox [data-baseweb="select"] > div > div > div,
+.stSelectbox [data-baseweb="select"] > div > div > div > div,
+.stSelectbox [data-baseweb="select"] > div > div > div > div > div,
+.stSelectbox [data-baseweb="select"] > div > div > div > div > div > div,
+.stSelectbox [data-baseweb="select"] > div > div > div > div > div > div > div,
+.stSelectbox [data-baseweb="select"] > div > div > div > div > div > div > div > div,
+.stSelectbox [data-baseweb="select"] > div > div > div > div > div > div > div > div > div,
+.stSelectbox [data-baseweb="select"] > div > div > div > div > div > div > div > div > div > div {
+    background-color: #262730 !important;
+    color: #D1D5DB !important;
+    border-color: #2c313a !important;
+}
+
+/* Target dropdown listbox and options specifically */
+.stSelectbox [role="listbox"],
+.stSelectbox [role="listbox"] *,
+.stSelectbox [role="option"],
+.stSelectbox [role="option"] *,
+.stSelectbox [data-baseweb="menu"],
+.stSelectbox [data-baseweb="menu"] *,
+.stSelectbox [data-baseweb="menu"] > div,
+.stSelectbox [data-baseweb="menu"] > div *,
+.stSelectbox [data-baseweb="menu"] > div > div,
+.stSelectbox [data-baseweb="menu"] > div > div *,
+.stSelectbox [data-baseweb="menu"] > div > div > div,
+.stSelectbox [data-baseweb="menu"] > div > div > div *,
+.stSelectbox [data-baseweb="menu"] > div > div > div > div,
+.stSelectbox [data-baseweb="menu"] > div > div > div > div *,
+.stSelectbox [data-baseweb="menu"] > div > div > div > div > div,
+.stSelectbox [data-baseweb="menu"] > div > div > div > div > div * {
+    background-color: #262730 !important;
+    color: #D1D5DB !important;
+    border-color: #2c313a !important;
+}
+
+/* Target any remaining select elements */
+.stSelectbox select,
+.stSelectbox select *,
+.stSelectbox select option,
+.stSelectbox select option * {
+    background-color: #262730 !important;
+    color: #D1D5DB !important;
+    border-color: #2c313a !important;
+}
+
+/* NUCLEAR OPTION: Target ALL elements within selectbox containers */
+.stSelectbox *,
+.stSelectbox *:before,
+.stSelectbox *:after,
+.stSelectbox *:hover,
+.stSelectbox *:focus,
+.stSelectbox *:active {
+    background-color: #262730 !important;
+    color: #D1D5DB !important;
+    border-color: #2c313a !important;
+}
+
+/* Force dark theme on any dropdown that might be rendered outside the normal flow */
+[data-baseweb="menu"],
+[data-baseweb="menu"] *,
+[data-baseweb="select"],
+[data-baseweb="select"] *,
+[role="listbox"],
+[role="listbox"] *,
+[role="option"],
+[role="option"] * {
+    background-color: #262730 !important;
+    color: #D1D5DB !important;
+    border-color: #2c313a !important;
+}
+
 /* --- Expander Styling --- */
 .stExpander {
     border: 1px solid #2c313a !important;
