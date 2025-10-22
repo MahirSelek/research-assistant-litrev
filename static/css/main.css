@@ -194,9 +194,9 @@ header[data-testid="stHeader"] {
 
 /* --- Chat Input Styling - Under conversation content --- */
 [data-testid="stChatInput"] {
-    background-color: #ffffff !important; /* WHITE background */
-    border-top: 1px solid #e5e7eb !important; /* Light border */
-    position: relative !important; /* Dynamic positioning - scrolls with content */
+    background-color: #1a1e29 !important;
+    border-top: 1px solid #2c313a !important;
+    position: relative !important; /* Changed from fixed to relative */
     width: 100% !important;
     padding: 1rem !important;
     margin-top: 2rem !important;
@@ -212,10 +212,10 @@ header[data-testid="stHeader"] {
 [data-testid="stChatInput"] textarea {
     width: 100% !important;
     min-height: 60px !important;
-    background-color: #ffffff !important; /* WHITE background */
-    border: 1px solid #d1d5db !important; /* Light border */
+    background-color: #262730 !important;
+    border: 1px solid #2c313a !important;
     border-radius: 12px !important;
-    color: #1f2937 !important; /* Dark text */
+    color: #ffffff !important;
     font-size: 16px !important;
     padding: 12px 16px !important;
     resize: vertical !important;
@@ -223,7 +223,7 @@ header[data-testid="stHeader"] {
 
 /* --- Chat input placeholder --- */
 [data-testid="stChatInput"] textarea::placeholder {
-    color: #6b7280 !important; /* Darker placeholder text */
+    color: #9ca3af !important;
     opacity: 0.8 !important;
 }
 
@@ -1082,17 +1082,6 @@ button[aria-label="View source on GitHub"] {
     }
 }
 
-/* --- Download Papers Section Text - DARK MODE #cdcdcd --- */
-.main div:contains("View and Download Retrieved Papers") *,
-.main div:contains("Download Retrieved Papers") *,
-.main div[class*="download"] *,
-.main div[class*="papers"] *,
-.main div[class*="retrieved"] *,
-.main .stExpander:contains("View and Download Retrieved Papers") *,
-.main .stExpander:contains("Download Retrieved Papers") * {
-    color: #cdcdcd !important; /* Light gray text for dark mode */
-}
-
 /* --- Dark Mode Compatibility --- */
 @media (prefers-color-scheme: dark) {
     .stApp {
@@ -1290,22 +1279,6 @@ button[aria-label="View source on GitHub"] {
         color: #ffffff !important;
         border: 1px solid #667eea !important;
     }
-    
-    /* --- Chat Input - LIGHT MODE (keep white) --- */
-    [data-testid="stChatInput"] {
-        background-color: #ffffff !important; /* WHITE background */
-        border-top: 1px solid #e5e7eb !important; /* Light border */
-    }
-    
-    [data-testid="stChatInput"] textarea {
-        background-color: #ffffff !important; /* WHITE background */
-        border: 1px solid #d1d5db !important; /* Light border */
-        color: #1f2937 !important; /* Dark text */
-    }
-    
-    [data-testid="stChatInput"] textarea::placeholder {
-        color: #6b7280 !important; /* Darker placeholder text */
-    }
 }
 
 /* --- Fix for white bars and layout issues --- */
@@ -1371,4 +1344,9 @@ button[aria-label="View source on GitHub"] {
 
 ::-webkit-scrollbar-thumb:hover {
     background: #374151;
+}
+
+
+[data-testid="stExpanderDetails"] p {
+    color: #cdcdcd !important;
 }
