@@ -1363,6 +1363,30 @@ button[aria-label="View source on GitHub"] {
     font-weight: 600 !important;
 }
 
+/* --- Upload Papers Alert Content - Force White Text --- */
+[data-testid="stAlert"] p:contains("Upload PDF files to generate custom summary of your documents") {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+[data-testid="stAlertContentInfo"] p {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+[data-testid="stMarkdownContainer"] p {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+/* --- Force all alert content in upload section to be white --- */
+[data-testid="stExpanderDetails"] [data-testid="stAlert"] p,
+[data-testid="stExpanderDetails"] [data-testid="stAlertContentInfo"] p,
+[data-testid="stExpanderDetails"] [data-testid="stMarkdownContainer"] p {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
 /* --- Drag and Drop Area - Dark Background with White Text --- */
 [data-testid="stFileUploaderDropzone"] {
     background-color: #1a1e29 !important;
