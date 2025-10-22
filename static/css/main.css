@@ -1376,7 +1376,7 @@ button[aria-label="View source on GitHub"] {
 
 /* Upload area text */
 [data-testid="stFileUploaderDropzoneInstructions"] span {
-    color: #ffffff !important; /* White text */
+    color: #1d1b1b !important; /* White text */
 }
 
 /* Browse files button */
