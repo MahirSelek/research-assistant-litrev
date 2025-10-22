@@ -1,15 +1,85 @@
-/* Polo GGB Research Assistant - Main Styles */
+/* Polo GGB Research Assistant - Unified Styles */
+/* This file combines all styling from both app/style.css and static/css/main.css */
 
-/* Custom styling for better appearance */
+/* Import a modern font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* --- Global Reset & Base Styles --- */
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+}
+
+/* --- Streamlit App Container --- */
 .stApp {
-    background: #0e1117 !important;
+    background-color: #0E1117 !important;
+    min-height: 100vh;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-.stSidebar {
-    background: #1e1e1e !important;
+/* --- Main Content Area --- */
+.main .block-container {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    max-width: 100%;
+    width: 100%;
 }
 
-/* Primary buttons - Modern blue gradient with enhanced styling */
+/* --- Sidebar Styling --- */
+[data-testid="stSidebar"] {
+    background-color: #1a1e29 !important;
+    border-right: 1px solid #2c313a !important;
+    min-height: 100vh;
+    width: 21rem !important;
+    min-width: 21rem !important;
+    max-width: 21rem !important;
+}
+
+[data-testid="stSidebar"] > div {
+    background-color: #1a1e29 !important;
+}
+
+/* --- Header Styling --- */
+header[data-testid="stHeader"] {
+    background-color: #1a1e29 !important;
+    border-bottom: 1px solid #2c313a !important;
+}
+
+/* --- Footer/Chat Input Area --- */
+[data-testid="stChatInput"] {
+    background-color: #1a1e29 !important;
+    border-top: 1px solid #2c313a !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+/* --- Typography --- */
+h1, h2, h3, h4, h5, h6 {
+    color: #FAFAFA !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+.stMarkdown, .stText, .stSelectbox, .stMultiselect, .stTextInput {
+    color: #D1D5DB !important;
+}
+
+/* --- Primary buttons - Modern blue gradient with enhanced styling --- */
 .stButton > button {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
     color: white !important;
@@ -51,7 +121,7 @@
     box-shadow: 0 4px 14px rgba(102, 126, 234, 0.25) !important;
 }
 
-/* Secondary buttons - Subtle gray */
+/* --- Secondary buttons - Subtle gray --- */
 [data-testid="stSecondaryButton"] > button {
     background: rgba(255, 255, 255, 0.1) !important;
     color: #e2e8f0 !important;
@@ -70,7 +140,7 @@
     transform: translateY(-1px) !important;
 }
 
-/* Delete buttons in chat history - Red accent */
+/* --- Delete buttons in chat history - Red accent --- */
 div[data-testid="stButton"]:has(button:contains("×")) button {
     background: rgba(239, 68, 68, 0.1) !important;
     color: #f87171 !important;
@@ -90,7 +160,7 @@ div[data-testid="stButton"]:has(button:contains("×")) button:hover {
     transform: translateY(-1px) !important;
 }
 
-/* Special button types with enhanced styling */
+/* --- Special button types with enhanced styling --- */
 button:contains("New Analysis") {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
     box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
@@ -111,7 +181,6 @@ button:contains("Logout"):hover {
     box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4) !important;
 }
 
-/* Search & Analyze button - Special styling */
 button:contains("Search & Analyze") {
     background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
     box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3) !important;
@@ -122,7 +191,46 @@ button:contains("Search & Analyze"):hover {
     box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
 }
 
-/* Full-Screen Transparent Loading Overlay - Background Fully Visible but Interactions Blocked */
+/* --- Chat Interface --- */
+[data-testid="stChatMessage"] {
+    background-color: #262730 !important;
+    border-radius: 0.75rem !important;
+    padding: 1rem !important;
+    margin-bottom: 1rem !important;
+    border: 1px solid #30333d !important;
+}
+
+/* --- Form Elements --- */
+.stSelectbox > div > div {
+    background-color: #262730 !important;
+    border: 1px solid #2c313a !important;
+    color: #D1D5DB !important;
+}
+
+.stMultiselect > div > div {
+    background-color: #262730 !important;
+    border: 1px solid #2c313a !important;
+}
+
+.stTextInput > div > div > input {
+    background-color: #262730 !important;
+    border: 1px solid #2c313a !important;
+    color: #D1D5DB !important;
+}
+
+/* --- Expander Styling --- */
+.stExpander {
+    border: 1px solid #2c313a !important;
+    border-radius: 0.5rem !important;
+    background-color: #1a1e29 !important;
+}
+
+.stExpander header {
+    background-color: #1a1e29 !important;
+    color: #FAFAFA !important;
+}
+
+/* --- Full-Screen Transparent Loading Overlay --- */
 .loading-overlay {
     position: fixed !important;
     top: 0 !important;
@@ -242,4 +350,132 @@ button[aria-label="Settings"],
 button[aria-label="Share"],
 button[aria-label="View source on GitHub"] {
     display: none !important;
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 768px) {
+    .main .block-container {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    [data-testid="stSidebar"] {
+        width: 100% !important;
+    }
+    
+    .stButton > button {
+        padding: 0.5rem 1rem !important;
+        font-size: 0.875rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .main .block-container {
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
+    }
+    
+    h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    h2 {
+        font-size: 1.25rem !important;
+    }
+}
+
+/* --- Dark Mode Compatibility --- */
+@media (prefers-color-scheme: dark) {
+    .stApp {
+        background-color: #0E1117 !important;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    .stApp {
+        background-color: #ffffff !important;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+        color: #1f2937 !important;
+    }
+    
+    .stMarkdown, .stText, .stSelectbox, .stMultiselect, .stTextInput {
+        color: #374151 !important;
+    }
+    
+    [data-testid="stSidebar"] {
+        background-color: #f9fafb !important;
+        border-right: 1px solid #e5e7eb !important;
+    }
+    
+    [data-testid="stChatMessage"] {
+        background-color: #f9fafb !important;
+        border: 1px solid #e5e7eb !important;
+    }
+}
+
+/* --- Fix for white bars and layout issues --- */
+.stApp > div {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.stApp > div > div {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* Ensure full width for main content */
+.main .block-container {
+    width: 100% !important;
+    max-width: none !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+}
+
+/* --- Cross-browser compatibility --- */
+.stApp {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Firefox specific fixes */
+@-moz-document url-prefix() {
+    .stButton > button {
+        -moz-appearance: none;
+    }
+}
+
+/* Safari specific fixes */
+@supports (-webkit-appearance: none) {
+    .stApp {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* --- Loading and Error States --- */
+.stSpinner {
+    color: #3b82f6 !important;
+}
+
+.stAlert {
+    border-radius: 0.5rem !important;
+}
+
+/* --- Custom scrollbar --- */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1e29;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #2c313a;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #374151;
 }
