@@ -1351,37 +1351,67 @@ button[aria-label="View source on GitHub"] {
     color: #cdcdcd !important;
 }
 
-/* --- Chat Input - White Background and Dynamic --- */
+/* --- Chat Input - Remove Outer Rectangle and Center Button --- */
 [data-testid="stChatInput"] {
+    background-color: transparent !important; /* Remove background */
+    border: none !important; /* Remove outer border */
+    position: relative !important;
+    margin-top: 2rem !important;
+    padding: 0 !important; /* Remove padding */
+}
+
+/* --- Chat Input Container - White Background Only for Input Area --- */
+[data-testid="stChatInput"] > div:first-child {
     background-color: #ffffff !important;
     border: 1px solid #e5e7eb !important;
     border-radius: 12px !important;
-    position: relative !important;
-    margin-top: 2rem !important;
-    padding: 1rem !important;
+    padding: 0.75rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
 }
 
 [data-testid="stChatInput"] textarea {
-    background-color: #ffffff !important;
-    border: 1px solid #d1d5db !important;
+    background-color: transparent !important; /* Transparent since container has background */
+    border: none !important; /* Remove textarea border */
     color: #1f2937 !important;
-    border-radius: 8px !important;
+    flex: 1 !important; /* Take remaining space */
+    resize: none !important;
+    outline: none !important;
 }
 
 [data-testid="stChatInput"] textarea::placeholder {
     color: #6b7280 !important;
 }
 
-/* --- Light Mode Chat Input Override --- */
+/* --- Submit Button - Center and Style --- */
+[data-testid="stChatInputSubmitButton"] {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    cursor: pointer !important;
+}
+
+[data-testid="stChatInputSubmitButton"] svg {
+    color: #ffffff !important;
+    width: 20px !important;
+    height: 20px !important;
+}
+
+/* --- Light Mode Override --- */
 @media (prefers-color-scheme: light) {
-    [data-testid="stChatInput"] {
+    [data-testid="stChatInput"] > div:first-child {
         background-color: #ffffff !important;
         border: 1px solid #e5e7eb !important;
     }
     
     [data-testid="stChatInput"] textarea {
-        background-color: #ffffff !important;
-        border: 1px solid #d1d5db !important;
         color: #1f2937 !important;
     }
     
