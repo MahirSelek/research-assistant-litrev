@@ -1351,6 +1351,60 @@ button[aria-label="View source on GitHub"] {
     color: #cdcdcd !important;
 }
 
+/* --- Upload Papers Section - Force White Text --- */
+[data-testid="stExpanderDetails"] p:contains("Upload PDF files to generate custom summary of your documents") {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+/* --- Upload Papers Section - Force White Text for All Paragraphs --- */
+[data-testid="stExpanderDetails"] p {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+/* --- Drag and Drop Area - Dark Background with White Text --- */
+[data-testid="stFileUploaderDropzone"] {
+    background-color: #1a1e29 !important;
+    border: 2px solid #2c313a !important;
+    border-radius: 8px !important;
+}
+
+/* --- Drag and Drop Instructions - White Text --- */
+[data-testid="stFileUploaderDropzoneInstructions"] {
+    color: #ffffff !important;
+}
+
+[data-testid="stFileUploaderDropzoneInstructions"] span {
+    color: #ffffff !important;
+}
+
+[data-testid="stFileUploaderDropzoneInstructions"] div {
+    color: #ffffff !important;
+}
+
+/* --- Specific drag and drop text elements --- */
+.st-emotion-cache-ycmcfb {
+    color: #ffffff !important;
+}
+
+.st-emotion-cache-1sct1q3 {
+    color: #ffffff !important;
+}
+
+/* --- Browse Files Button - Dark Theme --- */
+[data-testid="stFileUploaderDropzone"] button {
+    background-color: #262730 !important;
+    color: #ffffff !important;
+    border: 1px solid #2c313a !important;
+    border-radius: 6px !important;
+}
+
+[data-testid="stFileUploaderDropzone"] button:hover {
+    background-color: #2c313a !important;
+    color: #ffffff !important;
+}
+
 /* --- Chat Input - Remove Outer Rectangle and Center Button --- */
 [data-testid="stChatInput"] {
     background-color: transparent !important; /* Remove background */
