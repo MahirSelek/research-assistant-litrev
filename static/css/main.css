@@ -118,19 +118,71 @@ div[data-testid="stTextInput"] label {
     font-size: 14px !important;
 }
 
-/* --- Sidebar labels specifically --- */
+/* --- ALL SIDEBAR TEXT - WHITE AND BOLD --- */
+[data-testid="stSidebar"] * {
+    color: #FFFFFF !important; /* WHITE */
+    font-weight: 700 !important; /* BOLD */
+}
+
+/* --- Sidebar form labels specifically --- */
 [data-testid="stSidebar"] .stSelectbox label,
 [data-testid="stSidebar"] .stMultiselect label,
 [data-testid="stSidebar"] .stTextInput label,
 [data-testid="stSidebar"] .stSelectbox > label,
 [data-testid="stSidebar"] .stMultiselect > label,
 [data-testid="stSidebar"] .stTextInput > label {
-    color: #FFFFFF !important;
-    font-weight: 600 !important;
+    color: #FFFFFF !important; /* WHITE */
+    font-weight: 700 !important; /* BOLD */
     font-size: 14px !important;
     margin-bottom: 8px !important;
     display: block !important;
     opacity: 1 !important;
+}
+
+/* --- Sidebar headings --- */
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3,
+[data-testid="stSidebar"] h4,
+[data-testid="stSidebar"] h5,
+[data-testid="stSidebar"] h6 {
+    color: #FFFFFF !important; /* WHITE */
+    font-weight: 700 !important; /* BOLD */
+}
+
+/* --- Sidebar markdown and text --- */
+[data-testid="stSidebar"] .stMarkdown,
+[data-testid="stSidebar"] .stText,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] div,
+[data-testid="stSidebar"] span {
+    color: #FFFFFF !important; /* WHITE */
+    font-weight: 700 !important; /* BOLD */
+}
+
+/* --- But keep form input text normal weight for readability --- */
+[data-testid="stSidebar"] input,
+[data-testid="stSidebar"] select,
+[data-testid="stSidebar"] textarea {
+    font-weight: normal !important;
+}
+
+/* --- Specific styling for status messages and sections --- */
+[data-testid="stSidebar"] .stAlert,
+[data-testid="stSidebar"] .stSuccess,
+[data-testid="stSidebar"] .stInfo,
+[data-testid="stSidebar"] .stWarning,
+[data-testid="stSidebar"] .stError {
+    color: #FFFFFF !important; /* WHITE */
+    font-weight: 700 !important; /* BOLD */
+}
+
+/* --- File upload sections --- */
+[data-testid="stSidebar"] .stFileUploader,
+[data-testid="stSidebar"] .stFileUploader label,
+[data-testid="stSidebar"] .stFileUploader div {
+    color: #FFFFFF !important; /* WHITE */
+    font-weight: 700 !important; /* BOLD */
 }
 
 /* --- Additional comprehensive label selectors --- */
@@ -516,32 +568,15 @@ button[aria-label="View source on GitHub"] {
         font-weight: 700 !important; /* BOLD */
     }
     
-    /* --- Chat History heading specifically --- */
-    [data-testid="stSidebar"] h3,
-    [data-testid="stSidebar"] h4,
-    [data-testid="stSidebar"] h5,
-    [data-testid="stSidebar"] h6,
-    [data-testid="stSidebar"] .stMarkdown h3,
-    [data-testid="stSidebar"] .stMarkdown h4,
-    [data-testid="stSidebar"] .stMarkdown h5,
-    [data-testid="stSidebar"] .stMarkdown h6 {
-        color: #000000 !important; /* BLACK */
-        font-weight: 700 !important; /* BOLD */
-        font-size: 16px !important;
+    /* --- Sidebar stays dark with white bold text in light mode too --- */
+    [data-testid="stSidebar"] {
+        background-color: #1a1e29 !important;
+        border-right: 1px solid #2c313a !important;
     }
     
-    /* --- Additional heading selectors for light mode --- */
-    [data-testid="stSidebar"] .stMarkdown,
-    [data-testid="stSidebar"] .stText,
-    [data-testid="stSidebar"] div[class*="markdown"],
-    [data-testid="stSidebar"] div[class*="text"] {
-        color: #000000 !important; /* BLACK */
-        font-weight: 700 !important; /* BOLD */
-    }
-    
-    /* --- Force all sidebar text to be black and bold in light mode --- */
+    /* --- All sidebar text stays white and bold in light mode --- */
     [data-testid="stSidebar"] * {
-        color: #000000 !important; /* BLACK */
+        color: #FFFFFF !important; /* WHITE */
         font-weight: 700 !important; /* BOLD */
     }
     
