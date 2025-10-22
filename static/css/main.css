@@ -516,54 +516,40 @@ button[aria-label="View source on GitHub"] {
         font-weight: 700 !important; /* BOLD */
     }
     
-    
-    /* --- Main content area labels - BLACK AND BOLD (not sidebar) --- */
-    .main .stSelectbox label,
-    .main .stMultiselect label,
-    .main .stTextInput label,
-    .main .stSelectbox > label,
-    .main .stMultiselect > label,
-    .main .stTextInput > label,
-    .main h3,
-    .main h4,
-    .main h5,
-    .main h6,
-    .main .stMarkdown,
-    .main .stText {
-        color: #000000 !important; /* BLACK */
-        font-weight: 700 !important; /* BOLD */
-    }
-    
-    /* --- Keep sidebar dark in light mode (don't change sidebar colors) --- */
-    [data-testid="stSidebar"] {
-        background-color: #1a1e29 !important;
-        border-right: 1px solid #2c313a !important;
-    }
-    
-    /* --- Sidebar labels stay white in light mode --- */
-    [data-testid="stSidebar"] .stSelectbox label,
-    [data-testid="stSidebar"] .stMultiselect label,
-    [data-testid="stSidebar"] .stTextInput label,
-    [data-testid="stSidebar"] .stSelectbox > label,
-    [data-testid="stSidebar"] .stMultiselect > label,
-    [data-testid="stSidebar"] .stTextInput > label,
+    /* --- Chat History heading specifically --- */
     [data-testid="stSidebar"] h3,
     [data-testid="stSidebar"] h4,
     [data-testid="stSidebar"] h5,
     [data-testid="stSidebar"] h6,
-    [data-testid="stSidebar"] .stMarkdown,
-    [data-testid="stSidebar"] .stText {
-        color: #FFFFFF !important; /* WHITE for sidebar */
-        font-weight: 600 !important;
+    [data-testid="stSidebar"] .stMarkdown h3,
+    [data-testid="stSidebar"] .stMarkdown h4,
+    [data-testid="stSidebar"] .stMarkdown h5,
+    [data-testid="stSidebar"] .stMarkdown h6 {
+        color: #000000 !important; /* BLACK */
+        font-weight: 700 !important; /* BOLD */
+        font-size: 16px !important;
     }
     
-    /* --- Sidebar form elements stay dark --- */
-    [data-testid="stSidebar"] .stSelectbox > div > div,
-    [data-testid="stSidebar"] .stMultiselect > div > div,
-    [data-testid="stSidebar"] .stTextInput > div > div > input {
-        background-color: #262730 !important;
-        border: 1px solid #2c313a !important;
-        color: #FFFFFF !important;
+    /* --- Additional heading selectors for light mode --- */
+    [data-testid="stSidebar"] .stMarkdown,
+    [data-testid="stSidebar"] .stText,
+    [data-testid="stSidebar"] div[class*="markdown"],
+    [data-testid="stSidebar"] div[class*="text"] {
+        color: #000000 !important; /* BLACK */
+        font-weight: 700 !important; /* BOLD */
+    }
+    
+    /* --- Force all sidebar text to be black and bold in light mode --- */
+    [data-testid="stSidebar"] * {
+        color: #000000 !important; /* BLACK */
+        font-weight: 700 !important; /* BOLD */
+    }
+    
+    /* --- But keep form input text normal weight --- */
+    [data-testid="stSidebar"] input,
+    [data-testid="stSidebar"] select,
+    [data-testid="stSidebar"] textarea {
+        font-weight: normal !important;
     }
     
     .stMarkdown, .stText, .stSelectbox, .stMultiselect, .stTextInput {
