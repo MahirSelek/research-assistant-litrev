@@ -1373,6 +1373,15 @@ button[aria-label="View source on GitHub"] {
     color: #ffffff !important;
 }
 
+/* --- Force expander summary text to be white --- */
+.stExpander summary p:contains("View and Download Retrieved Papers for this Analysis") {
+    color: #ffffff !important;
+}
+
+.stExpander summary [data-testid="stMarkdownContainer"] p {
+    color: #ffffff !important;
+}
+
 /* --- Upload Papers Section - Force White Text for All Paragraphs --- */
 [data-testid="stExpanderDetails"] p {
     color: #ffffff !important;
