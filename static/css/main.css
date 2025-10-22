@@ -165,6 +165,66 @@ div[data-testid="stTextInput"] label {
 [data-testid="stSidebar"] select,
 [data-testid="stSidebar"] textarea {
     font-weight: normal !important;
+    color: #000000 !important; /* BLACK text in input boxes */
+}
+
+/* --- Input box content - BLACK text for visibility --- */
+[data-testid="stSidebar"] .stSelectbox > div > div,
+[data-testid="stSidebar"] .stMultiselect > div > div,
+[data-testid="stSidebar"] .stTextInput > div > div > input,
+[data-testid="stSidebar"] .stSelectbox input,
+[data-testid="stSidebar"] .stMultiselect input,
+[data-testid="stSidebar"] .stTextInput input {
+    color: #000000 !important; /* BLACK text */
+    background-color: #ffffff !important; /* WHITE background */
+}
+
+/* --- Selected tags/chips in multiselect - BLACK text --- */
+[data-testid="stSidebar"] .stMultiselect > div > div > div > div[role="button"],
+[data-testid="stSidebar"] .stMultiselect > div > div > div > div[class*="chip"],
+[data-testid="stSidebar"] .stMultiselect > div > div > div > div[class*="tag"] {
+    color: #000000 !important; /* BLACK text */
+    background-color: #f0f0f0 !important; /* Light gray background */
+}
+
+/* --- Delete "x" buttons - BLACK for visibility --- */
+[data-testid="stSidebar"] button[aria-label*="remove"],
+[data-testid="stSidebar"] button[aria-label*="delete"],
+[data-testid="stSidebar"] button[title*="remove"],
+[data-testid="stSidebar"] button[title*="delete"],
+[data-testid="stSidebar"] .stButton > button:contains("×"),
+[data-testid="stSidebar"] .stButton > button:contains("✕"),
+[data-testid="stSidebar"] .stButton > button:contains("x"),
+[data-testid="stSidebar"] button[class*="remove"],
+[data-testid="stSidebar"] button[class*="delete"],
+[data-testid="stSidebar"] button[class*="close"] {
+    color: #000000 !important; /* BLACK text */
+    background-color: #ffffff !important; /* WHITE background */
+    border: 1px solid #cccccc !important; /* Light border */
+}
+
+/* --- Any button with "x" symbol --- */
+[data-testid="stSidebar"] button:has-text("×"),
+[data-testid="stSidebar"] button:has-text("✕"),
+[data-testid="stSidebar"] button:has-text("x") {
+    color: #000000 !important; /* BLACK text */
+    background-color: #ffffff !important; /* WHITE background */
+}
+
+/* --- Additional input elements for better coverage --- */
+[data-testid="stSidebar"] div[data-baseweb="select"] input,
+[data-testid="stSidebar"] div[data-baseweb="select"] div,
+[data-testid="stSidebar"] div[role="combobox"] input,
+[data-testid="stSidebar"] div[role="combobox"] div {
+    color: #000000 !important; /* BLACK text */
+    background-color: #ffffff !important; /* WHITE background */
+}
+
+/* --- Placeholder text --- */
+[data-testid="stSidebar"] input::placeholder,
+[data-testid="stSidebar"] textarea::placeholder {
+    color: #666666 !important; /* Dark gray placeholder */
+    opacity: 0.8 !important;
 }
 
 /* --- Specific styling for status messages and sections --- */
