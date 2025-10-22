@@ -58,17 +58,14 @@ header[data-testid="stHeader"] {
     border-bottom: 1px solid #2c313a !important;
 }
 
-/* --- Chat Input Styling - Full width like chatbot --- */
+/* --- Chat Input Styling - Under conversation content --- */
 [data-testid="stChatInput"] {
     background-color: #1a1e29 !important;
     border-top: 1px solid #2c313a !important;
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 1000 !important;
+    position: relative !important; /* Changed from fixed to relative */
     width: 100% !important;
     padding: 1rem !important;
+    margin-top: 2rem !important;
 }
 
 /* --- Chat input container --- */
@@ -107,9 +104,9 @@ header[data-testid="stHeader"] {
     margin-left: 8px !important;
 }
 
-/* --- Adjust main content to account for fixed chat input --- */
+/* --- Remove bottom padding since chat input is not fixed --- */
 .main .block-container {
-    padding-bottom: 120px !important; /* Space for fixed chat input */
+    padding-bottom: 1rem !important; /* Normal padding */
 }
 
 /* --- Responsive chat input --- */
@@ -123,10 +120,6 @@ header[data-testid="stHeader"] {
         font-size: 14px !important;
         padding: 10px 12px !important;
     }
-    
-    .main .block-container {
-        padding-bottom: 100px !important;
-    }
 }
 
 @media (max-width: 480px) {
@@ -138,10 +131,6 @@ header[data-testid="stHeader"] {
         min-height: 45px !important;
         font-size: 13px !important;
         padding: 8px 10px !important;
-    }
-    
-    .main .block-container {
-        padding-bottom: 80px !important;
     }
 }
 
