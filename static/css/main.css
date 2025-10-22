@@ -1351,30 +1351,10 @@ button[aria-label="View source on GitHub"] {
     color: #cdcdcd !important;
 }
 
-/* --- Download Papers Section - Dark Text for White Background --- */
-/* Paper titles in download section - dark text for visibility */
-.main .stExpander[data-testid="stExpander"] [data-testid="stExpanderDetails"] [data-testid="stMarkdownContainer"] p,
-.main .stExpander[data-testid="stExpander"] [data-testid="stExpanderDetails"] .stMarkdown [data-testid="stMarkdownContainer"] p {
-    color: #000000 !important; /* BLACK text for white background */
-    font-weight: 600 !important; /* BOLD for better visibility */
-}
-
-/* Download buttons - light styling */
-.main .stExpander[data-testid="stExpander"] [data-testid="stExpanderDetails"] .stDownloadButton button {
-    background-color: #f3f4f6 !important; /* Light gray background */
-    color: #000000 !important; /* BLACK text */
-    border: 1px solid #d1d5db !important; /* Light border */
-}
-
-.main .stExpander[data-testid="stExpander"] [data-testid="stExpanderDetails"] .stDownloadButton button:hover {
-    background-color: #e5e7eb !important; /* Darker gray on hover */
-    color: #000000 !important; /* BLACK text */
-}
-
 /* --- Upload PDF Files Section - White Text and Dark Boxes --- */
 /* Upload section title - make visible when closed */
 .stExpander[data-testid="stExpander"] summary [data-testid="stMarkdownContainer"] p {
-    color: #ffffff !important; /* WHITE text for visibility when closed */
+    color: #181717 !important; /* WHITE text for visibility */
     font-weight: 600 !important; /* BOLD for better visibility */
 }
 
@@ -1388,8 +1368,8 @@ button[aria-label="View source on GitHub"] {
 
 /* Upload area styling - dark theme */
 [data-testid="stFileUploaderDropzone"] {
-    background-color: #1a1e29 !important; /* Dark background matching screenshot */
-    border: 2px dashed #ffffff !important; /* WHITE dashed border like screenshot */
+    background-color: #262730 !important; /* Dark background */
+    border: 2px dashed #2c313a !important; /* Dashed border */
     border-radius: 8px !important;
     color: #ffffff !important; /* White text */
 }
@@ -1401,7 +1381,7 @@ button[aria-label="View source on GitHub"] {
 
 /* Browse files button */
 [data-testid="stBaseButton-secondary"] {
-    background-color: #1a1e29 !important; /* Dark background matching screenshot */
+    background-color: #262730 !important; /* Dark background */
     color: #ffffff !important; /* White text */
     border: 1px solid #2c313a !important; /* Dark border */
     border-radius: 6px !important;
@@ -1418,9 +1398,9 @@ button[aria-label="View source on GitHub"] {
     font-weight: 600 !important; /* BOLD */
 }
 
-/* Alert/info text in upload section - keep original blue alert styling */
+/* Alert/info text in upload section */
 .stAlert [data-testid="stMarkdownContainer"] p {
-    color: inherit !important; /* Keep original alert text color */
+    color: #ffffff !important; /* White text */
 }
 
 /* Light Mode Override for Upload Section */
