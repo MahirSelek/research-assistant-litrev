@@ -182,9 +182,54 @@ div[data-testid="stTextInput"] label {
 /* --- Selected tags/chips in multiselect - BLACK text --- */
 [data-testid="stSidebar"] .stMultiselect > div > div > div > div[role="button"],
 [data-testid="stSidebar"] .stMultiselect > div > div > div > div[class*="chip"],
-[data-testid="stSidebar"] .stMultiselect > div > div > div > div[class*="tag"] {
+[data-testid="stSidebar"] .stMultiselect > div > div > div > div[class*="tag"],
+[data-testid="stSidebar"] .stMultiselect > div > div > div > div[class*="option"],
+[data-testid="stSidebar"] .stMultiselect > div > div > div > div[class*="selected"],
+[data-testid="stSidebar"] .stMultiselect > div > div > div > div[class*="item"] {
     color: #000000 !important; /* BLACK text */
     background-color: #f0f0f0 !important; /* Light gray background */
+    border: 1px solid #cccccc !important; /* Light border */
+}
+
+/* --- Force ALL multiselect content to be black --- */
+[data-testid="stSidebar"] .stMultiselect > div > div > div > div {
+    color: #000000 !important; /* BLACK text */
+}
+
+/* --- Multiselect container content --- */
+[data-testid="stSidebar"] .stMultiselect > div > div > div {
+    color: #000000 !important; /* BLACK text */
+}
+
+/* --- Any selected option in multiselect --- */
+[data-testid="stSidebar"] .stMultiselect div[aria-selected="true"],
+[data-testid="stSidebar"] .stMultiselect div[data-selected="true"],
+[data-testid="stSidebar"] .stMultiselect div[class*="selected"] {
+    color: #000000 !important; /* BLACK text */
+    background-color: #f0f0f0 !important; /* Light gray background */
+}
+
+/* --- Additional multiselect selectors for maximum coverage --- */
+[data-testid="stSidebar"] div[data-baseweb="select"] div[role="option"],
+[data-testid="stSidebar"] div[data-baseweb="select"] div[aria-selected="true"],
+[data-testid="stSidebar"] div[role="combobox"] div[role="option"],
+[data-testid="stSidebar"] div[role="combobox"] div[aria-selected="true"],
+[data-testid="stSidebar"] .stMultiselect div[data-baseweb="select"] div,
+[data-testid="stSidebar"] .stMultiselect div[data-baseweb="select"] div * {
+    color: #000000 !important; /* BLACK text */
+}
+
+/* --- Force all text in multiselect to be black --- */
+[data-testid="stSidebar"] .stMultiselect * {
+    color: #000000 !important; /* BLACK text */
+}
+
+/* --- Override any white text in multiselect --- */
+[data-testid="stSidebar"] .stMultiselect span,
+[data-testid="stSidebar"] .stMultiselect p,
+[data-testid="stSidebar"] .stMultiselect div,
+[data-testid="stSidebar"] .stMultiselect button {
+    color: #000000 !important; /* BLACK text */
 }
 
 /* --- Delete "x" buttons - BLACK for visibility --- */
