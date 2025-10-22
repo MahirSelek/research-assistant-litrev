@@ -1350,3 +1350,42 @@ button[aria-label="View source on GitHub"] {
 [data-testid="stExpanderDetails"] p {
     color: #cdcdcd !important;
 }
+
+/* --- Chat Input - White Background and Dynamic --- */
+[data-testid="stChatInput"] {
+    background-color: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px !important;
+    position: relative !important;
+    margin-top: 2rem !important;
+    padding: 1rem !important;
+}
+
+[data-testid="stChatInput"] textarea {
+    background-color: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    color: #1f2937 !important;
+    border-radius: 8px !important;
+}
+
+[data-testid="stChatInput"] textarea::placeholder {
+    color: #6b7280 !important;
+}
+
+/* --- Light Mode Chat Input Override --- */
+@media (prefers-color-scheme: light) {
+    [data-testid="stChatInput"] {
+        background-color: #ffffff !important;
+        border: 1px solid #e5e7eb !important;
+    }
+    
+    [data-testid="stChatInput"] textarea {
+        background-color: #ffffff !important;
+        border: 1px solid #d1d5db !important;
+        color: #1f2937 !important;
+    }
+    
+    [data-testid="stChatInput"] textarea::placeholder {
+        color: #6b7280 !important;
+    }
+}
