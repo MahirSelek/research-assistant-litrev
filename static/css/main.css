@@ -1351,20 +1351,6 @@ button[aria-label="View source on GitHub"] {
     color: #cdcdcd !important;
 }
 
-/* --- Expandable Section Title - Make Visible When Closed --- */
-[data-testid="stMarkdownContainer"] p {
-    color: #ffffff !important; /* WHITE text for visibility */
-    font-weight: 600 !important; /* BOLD for better visibility */
-}
-
-/* --- Light Mode Override for Expandable Section Title --- */
-@media (prefers-color-scheme: light) {
-    [data-testid="stMarkdownContainer"] p {
-        color: #000000 !important; /* BLACK text for light mode */
-        font-weight: 600 !important; /* BOLD for better visibility */
-    }
-}
-
 /* --- Chat Input - White Background and Dynamic --- */
 [data-testid="stChatInput"] {
     background-color: #ffffff !important;
