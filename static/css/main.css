@@ -1351,6 +1351,11 @@ button[aria-label="View source on GitHub"] {
     color: #cdcdcd !important;
 }
 
+/* --- ONLY target the specific upload text - Make it white --- */
+[data-testid="stExpanderDetails"] p:contains("Upload PDF files to generate custom summary of your documents") {
+    color: #ffffff !important;
+}
+
 /* --- Upload Papers Section - Force White Text --- */
 [data-testid="stExpanderDetails"] p:contains("Upload PDF files to generate custom summary of your documents") {
     color: #ffffff !important;
