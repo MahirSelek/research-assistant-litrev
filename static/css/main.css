@@ -1351,11 +1351,6 @@ button[aria-label="View source on GitHub"] {
     color: #cdcdcd !important;
 }
 
-/* --- ONLY target the specific upload text - Make it white --- */
-[data-testid="stExpanderDetails"] p:contains("Upload PDF files to generate custom summary of your documents.") {
-    color: #ffffff !important;
-}
-
 
 /* --- Move alert boxes down slightly --- */
 [data-testid="stAlertContainer"] {
@@ -1373,10 +1368,10 @@ button[aria-label="View source on GitHub"] {
     color: #ffffff !important;
 }
 
-[data-testid="stAlertContentInfo"] p:contains("Upload PDF files to generate custom summary of your documents.") {
+
+[data-testid="stMarkdownContainer"] p:contains("View and Download Retrieved Papers for this Analysis") {
     color: #ffffff !important;
 }
-
 
 /* --- Upload Papers Section - Force White Text for All Paragraphs --- */
 [data-testid="stExpanderDetails"] p {
