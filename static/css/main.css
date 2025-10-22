@@ -1132,6 +1132,64 @@ button[aria-label="View source on GitHub"] {
         border: 1px solid #e5e7eb !important;
     }
     
+    /* --- Download Papers Section - LIGHT MODE --- */
+    .main div:contains("View and Download Retrieved Papers"),
+    .main div:contains("Download Retrieved Papers"),
+    .main div[class*="download"],
+    .main div[class*="papers"],
+    .main div[class*="retrieved"],
+    .main .stExpander:contains("View and Download Retrieved Papers"),
+    .main .stExpander:contains("Download Retrieved Papers") {
+        background-color: #ffffff !important; /* WHITE background */
+        color: #000000 !important; /* BLACK text */
+        border: 1px solid #e5e7eb !important; /* Light border */
+    }
+    
+    /* --- Download Papers Section Text - BLACK --- */
+    .main div:contains("View and Download Retrieved Papers") *,
+    .main div:contains("Download Retrieved Papers") *,
+    .main div[class*="download"] *,
+    .main div[class*="papers"] *,
+    .main div[class*="retrieved"] *,
+    .main .stExpander:contains("View and Download Retrieved Papers") *,
+    .main .stExpander:contains("Download Retrieved Papers") * {
+        color: #000000 !important; /* BLACK text */
+    }
+    
+    /* --- Download PDF Buttons - LIGHT MODE --- */
+    .main button:contains("Download PDF"),
+    .main button[class*="download"],
+    .main button[class*="pdf"],
+    .main .stDownloadButton,
+    .main .stDownloadButton button {
+        background-color: #f3f4f6 !important; /* Light gray background */
+        color: #000000 !important; /* BLACK text */
+        border: 1px solid #d1d5db !important; /* Light border */
+    }
+    
+    /* --- Download PDF Buttons Hover - LIGHT MODE --- */
+    .main button:contains("Download PDF"):hover,
+    .main button[class*="download"]:hover,
+    .main button[class*="pdf"]:hover,
+    .main .stDownloadButton:hover,
+    .main .stDownloadButton button:hover {
+        background-color: #e5e7eb !important; /* Darker gray on hover */
+        color: #000000 !important; /* BLACK text */
+    }
+    
+    /* --- Specific targeting for Streamlit expander content --- */
+    .main .stExpander .stMarkdown,
+    .main .stExpander .stMarkdown *,
+    .main .stExpander div,
+    .main .stExpander div *,
+    .main .stExpander span,
+    .main .stExpander span *,
+    .main .stExpander p,
+    .main .stExpander p * {
+        color: #000000 !important; /* BLACK text */
+        background-color: #ffffff !important; /* WHITE background */
+    }
+    
     /* --- Light mode form labels - BLACK AND BOLD --- */
     .stSelectbox label,
     .stMultiselect label,
