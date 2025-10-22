@@ -482,6 +482,43 @@ div[data-testid="stTextInput"] label {
     color: #ffffff !important; /* WHITE text */
 }
 
+/* --- Upload PDF Files TITLE - WHITE text --- */
+[data-testid="stSidebar"] .stExpander header,
+[data-testid="stSidebar"] .stExpander header *,
+[data-testid="stSidebar"] .stExpander .stMarkdown:contains("Upload PDF Files"),
+[data-testid="stSidebar"] .stExpander div:contains("Upload PDF Files"),
+[data-testid="stSidebar"] .stExpander span:contains("Upload PDF Files"),
+[data-testid="stSidebar"] .stExpander p:contains("Upload PDF Files"),
+[data-testid="stSidebar"] .stExpander h1:contains("Upload PDF Files"),
+[data-testid="stSidebar"] .stExpander h2:contains("Upload PDF Files"),
+[data-testid="stSidebar"] .stExpander h3:contains("Upload PDF Files"),
+[data-testid="stSidebar"] .stExpander h4:contains("Upload PDF Files"),
+[data-testid="stSidebar"] .stExpander h5:contains("Upload PDF Files"),
+[data-testid="stSidebar"] .stExpander h6:contains("Upload PDF Files") {
+    color: #ffffff !important; /* WHITE text */
+}
+
+/* --- Browse files button - DARK theme --- */
+[data-testid="stSidebar"] .stFileUploader button,
+[data-testid="stSidebar"] .stFileUploader button[type="button"],
+[data-testid="stSidebar"] .stFileUploader input[type="file"],
+[data-testid="stSidebar"] .stFileUploader input[type="file"] + button,
+[data-testid="stSidebar"] .stFileUploader div[role="button"],
+[data-testid="stSidebar"] .stFileUploader div[class*="button"] {
+    background-color: #262730 !important; /* Dark background */
+    color: #ffffff !important; /* WHITE text */
+    border: 1px solid #2c313a !important; /* Dark border */
+    border-radius: 8px !important;
+}
+
+/* --- Browse files button hover --- */
+[data-testid="stSidebar"] .stFileUploader button:hover,
+[data-testid="stSidebar"] .stFileUploader button[type="button"]:hover,
+[data-testid="stSidebar"] .stFileUploader div[role="button"]:hover {
+    background-color: #2c313a !important; /* Darker on hover */
+    color: #ffffff !important; /* WHITE text */
+}
+
 /* --- Upload PDF Files expanded content - BLACK text --- */
 [data-testid="stSidebar"] .stExpander .stMarkdown,
 [data-testid="stSidebar"] .stExpander .stMarkdown *,
