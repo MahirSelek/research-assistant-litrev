@@ -1356,6 +1356,15 @@ button[aria-label="View source on GitHub"] {
     color: #ffffff !important;
 }
 
+/* --- Force ONLY these two specific texts to be white --- */
+p:contains("Upload PDF files to generate custom summary of your documents") {
+    color: #ffffff !important;
+}
+
+p:contains("View and Download Retrieved Papers for this Analysis") {
+    color: #ffffff !important;
+}
+
 /* --- Upload Papers Section - Force White Text --- */
 [data-testid="stMarkdownContainer"] p:contains("Upload PDF files to generate custom summary of your documents") {
     color: #ffffff !important;
