@@ -1381,30 +1381,6 @@ button[aria-label="View source on GitHub"] {
     color: #ffffff !important;
 }
 
-/* --- AGGRESSIVE: Force upload text to be white with multiple selectors --- */
-.st-emotion-cache-1fwbbrh p:contains("Upload PDF files to generate custom summary of your documents.") {
-    color: #ffffff !important;
-    font-weight: 600 !important;
-}
-
-.st-emotion-cache-wmn9kq p:contains("Upload PDF files to generate custom summary of your documents.") {
-    color: #ffffff !important;
-    font-weight: 600 !important;
-}
-
-.st-emotion-cache-1xmp9w2 p:contains("Upload PDF files to generate custom summary of your documents.") {
-    color: #ffffff !important;
-    font-weight: 600 !important;
-}
-
-/* --- Force ALL text in the specific alert container to be white --- */
-.st-emotion-cache-1fwbbrh p,
-.st-emotion-cache-wmn9kq p,
-.st-emotion-cache-1xmp9w2 p {
-    color: #ffffff !important;
-    font-weight: 600 !important;
-}
-
 
 [data-testid="stMarkdownContainer"] p:contains("View and Download Retrieved Papers for this Analysis") {
     color: #ffffff !important;
