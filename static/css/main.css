@@ -203,6 +203,29 @@ div[data-testid="stTextInput"] label {
     border: 1px solid #cccccc !important; /* Light border */
 }
 
+/* --- Chat history delete buttons specifically --- */
+[data-testid="stSidebar"] div[class*="chat"] button,
+[data-testid="stSidebar"] div[class*="history"] button,
+[data-testid="stSidebar"] div[class*="analysis"] button,
+[data-testid="stSidebar"] .stButton button[style*="background-color: white"],
+[data-testid="stSidebar"] .stButton button[style*="background: white"] {
+    color: #000000 !important; /* BLACK text */
+    background-color: #ffffff !important; /* WHITE background */
+    border: 1px solid #cccccc !important; /* Light border */
+}
+
+/* --- Force ALL sidebar buttons to have black text --- */
+[data-testid="stSidebar"] button {
+    color: #000000 !important; /* BLACK text */
+}
+
+/* --- But keep main action buttons white text --- */
+[data-testid="stSidebar"] .stButton > button[style*="gradient"],
+[data-testid="stSidebar"] .stButton > button[style*="purple"],
+[data-testid="stSidebar"] .stButton > button[style*="blue"] {
+    color: #ffffff !important; /* WHITE text for gradient buttons */
+}
+
 /* --- Any button with "x" symbol --- */
 [data-testid="stSidebar"] button:has-text("×"),
 [data-testid="stSidebar"] button:has-text("✕"),
