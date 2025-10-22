@@ -79,6 +79,92 @@ h1, h2, h3, h4, h5, h6 {
     color: #D1D5DB !important;
 }
 
+/* --- Form Labels - Make them highly visible --- */
+.stSelectbox label,
+.stMultiselect label,
+.stTextInput label,
+.stSelectbox > label,
+.stMultiselect > label,
+.stTextInput > label,
+div[data-testid="stSelectbox"] label,
+div[data-testid="stMultiselect"] label,
+div[data-testid="stTextInput"] label {
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    margin-bottom: 8px !important;
+    display: block !important;
+    opacity: 1 !important;
+}
+
+/* --- Streamlit form labels specifically --- */
+.stSelectbox > div > label,
+.stMultiselect > div > label,
+.stTextInput > div > label {
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    margin-bottom: 8px !important;
+    display: block !important;
+    opacity: 1 !important;
+}
+
+/* --- Additional label selectors for better coverage --- */
+.stSelectbox .stMarkdown,
+.stMultiselect .stMarkdown,
+.stTextInput .stMarkdown {
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+}
+
+/* --- Sidebar labels specifically --- */
+[data-testid="stSidebar"] .stSelectbox label,
+[data-testid="stSidebar"] .stMultiselect label,
+[data-testid="stSidebar"] .stTextInput label,
+[data-testid="stSidebar"] .stSelectbox > label,
+[data-testid="stSidebar"] .stMultiselect > label,
+[data-testid="stSidebar"] .stTextInput > label {
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    margin-bottom: 8px !important;
+    display: block !important;
+    opacity: 1 !important;
+}
+
+/* --- Additional comprehensive label selectors --- */
+/* Catch any Streamlit label variations */
+div[data-testid*="selectbox"] label,
+div[data-testid*="multiselect"] label,
+div[data-testid*="textinput"] label,
+div[data-testid*="selectbox"] > label,
+div[data-testid*="multiselect"] > label,
+div[data-testid*="textinput"] > label,
+.stSelectbox div[class*="label"],
+.stMultiselect div[class*="label"],
+.stTextInput div[class*="label"],
+.stSelectbox span[class*="label"],
+.stMultiselect span[class*="label"],
+.stTextInput span[class*="label"] {
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    margin-bottom: 8px !important;
+    display: block !important;
+    opacity: 1 !important;
+}
+
+/* --- Force visibility for any remaining labels --- */
+[data-testid="stSidebar"] div[class*="label"],
+[data-testid="stSidebar"] span[class*="label"],
+[data-testid="stSidebar"] p[class*="label"] {
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    opacity: 1 !important;
+}
+
 /* --- Primary buttons - Modern blue gradient with enhanced styling --- */
 .stButton > button {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
@@ -204,18 +290,47 @@ button:contains("Search & Analyze"):hover {
 .stSelectbox > div > div {
     background-color: #262730 !important;
     border: 1px solid #2c313a !important;
-    color: #D1D5DB !important;
+    color: #FFFFFF !important;
 }
 
 .stMultiselect > div > div {
     background-color: #262730 !important;
     border: 1px solid #2c313a !important;
+    color: #FFFFFF !important;
 }
 
 .stTextInput > div > div > input {
     background-color: #262730 !important;
     border: 1px solid #2c313a !important;
-    color: #D1D5DB !important;
+    color: #FFFFFF !important;
+}
+
+/* --- Form element text and placeholders --- */
+.stSelectbox > div > div > div,
+.stMultiselect > div > div > div,
+.stSelectbox input,
+.stMultiselect input {
+    color: #FFFFFF !important;
+}
+
+.stSelectbox > div > div > div::placeholder,
+.stMultiselect > div > div > div::placeholder,
+.stTextInput > div > div > input::placeholder {
+    color: #B0B0B0 !important;
+    opacity: 0.8 !important;
+}
+
+/* --- Dropdown arrow visibility --- */
+.stSelectbox > div > div > div[data-baseweb="select"] > div,
+.stMultiselect > div > div > div[data-baseweb="select"] > div {
+    color: #FFFFFF !important;
+}
+
+/* --- Selected options in multiselect --- */
+.stMultiselect > div > div > div > div[role="button"] {
+    background-color: #667eea !important;
+    color: #FFFFFF !important;
+    border: 1px solid #667eea !important;
 }
 
 /* --- Expander Styling --- */
@@ -412,6 +527,80 @@ button[aria-label="View source on GitHub"] {
     [data-testid="stChatMessage"] {
         background-color: #f9fafb !important;
         border: 1px solid #e5e7eb !important;
+    }
+    
+    /* --- Light mode form labels --- */
+    .stSelectbox label,
+    .stMultiselect label,
+    .stTextInput label,
+    .stSelectbox > label,
+    .stMultiselect > label,
+    .stTextInput > label,
+    div[data-testid="stSelectbox"] label,
+    div[data-testid="stMultiselect"] label,
+    div[data-testid="stTextInput"] label,
+    .stSelectbox > div > label,
+    .stMultiselect > div > label,
+    .stTextInput > div > label,
+    .stSelectbox .stMarkdown,
+    .stMultiselect .stMarkdown,
+    .stTextInput .stMarkdown,
+    [data-testid="stSidebar"] .stSelectbox label,
+    [data-testid="stSidebar"] .stMultiselect label,
+    [data-testid="stSidebar"] .stTextInput label,
+    [data-testid="stSidebar"] .stSelectbox > label,
+    [data-testid="stSidebar"] .stMultiselect > label,
+    [data-testid="stSidebar"] .stTextInput > label {
+        color: #1f2937 !important;
+        font-weight: 600 !important;
+        font-size: 14px !important;
+        margin-bottom: 8px !important;
+        display: block !important;
+        opacity: 1 !important;
+    }
+    
+    /* --- Light mode form elements --- */
+    .stSelectbox > div > div {
+        background-color: #ffffff !important;
+        border: 1px solid #d1d5db !important;
+        color: #1f2937 !important;
+    }
+    
+    .stMultiselect > div > div {
+        background-color: #ffffff !important;
+        border: 1px solid #d1d5db !important;
+        color: #1f2937 !important;
+    }
+    
+    .stTextInput > div > div > input {
+        background-color: #ffffff !important;
+        border: 1px solid #d1d5db !important;
+        color: #1f2937 !important;
+    }
+    
+    .stSelectbox > div > div > div,
+    .stMultiselect > div > div > div,
+    .stSelectbox input,
+    .stMultiselect input {
+        color: #1f2937 !important;
+    }
+    
+    .stSelectbox > div > div > div::placeholder,
+    .stMultiselect > div > div > div::placeholder,
+    .stTextInput > div > div > input::placeholder {
+        color: #6b7280 !important;
+        opacity: 0.8 !important;
+    }
+    
+    .stSelectbox > div > div > div[data-baseweb="select"] > div,
+    .stMultiselect > div > div > div[data-baseweb="select"] > div {
+        color: #1f2937 !important;
+    }
+    
+    .stMultiselect > div > div > div > div[role="button"] {
+        background-color: #667eea !important;
+        color: #ffffff !important;
+        border: 1px solid #667eea !important;
     }
 }
 
