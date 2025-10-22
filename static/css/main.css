@@ -1352,18 +1352,10 @@ button[aria-label="View source on GitHub"] {
 }
 
 /* --- ONLY target the specific upload text - Make it white --- */
-[data-testid="stExpanderDetails"] p:contains("Upload PDF files to generate custom summary of your documents") {
+[data-testid="stExpanderDetails"] p:contains("Upload PDF files to generate custom summary of your documents.") {
     color: #ffffff !important;
 }
 
-/* --- Force ONLY these two specific texts to be white --- */
-p:contains("Upload PDF files to generate custom summary of your documents") {
-    color: #ffffff !important;
-}
-
-p:contains("View and Download Retrieved Papers for this Analysis") {
-    color: #ffffff !important;
-}
 
 /* --- Move alert boxes down slightly --- */
 [data-testid="stAlertContainer"] {
@@ -1377,11 +1369,11 @@ p:contains("View and Download Retrieved Papers for this Analysis") {
 }
 
 /* --- Upload Papers Section - Force White Text --- */
-[data-testid="stMarkdownContainer"] p:contains("Upload PDF files to generate custom summary of your documents") {
+[data-testid="stMarkdownContainer"] p:contains("Upload PDF files to generate custom summary of your documents.") {
     color: #ffffff !important;
 }
 
-[data-testid="stAlertContentInfo"] p:contains("Upload PDF files to generate custom summary of your documents") {
+[data-testid="stAlertContentInfo"] p:contains("Upload PDF files to generate custom summary of your documents.") {
     color: #ffffff !important;
 }
 
