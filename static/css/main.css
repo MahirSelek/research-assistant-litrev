@@ -227,14 +227,26 @@ div[data-testid="stTextInput"] label {
     color: #ffffff !important; /* WHITE text for gradient buttons */
 }
 
-/* --- Override for small white delete buttons specifically --- */
+/* --- Delete buttons - DARK background with WHITE text --- */
 [data-testid="stSidebar"] button[style*="background-color: white"],
 [data-testid="stSidebar"] button[style*="background: white"],
 [data-testid="stSidebar"] button[style*="background-color: #ffffff"],
-[data-testid="stSidebar"] button[style*="background: #ffffff"] {
-    color: #000000 !important; /* BLACK text */
-    background-color: #ffffff !important; /* WHITE background */
-    border: 1px solid #cccccc !important; /* Light border */
+[data-testid="stSidebar"] button[style*="background: #ffffff"],
+[data-testid="stSidebar"] .stButton > button[style*="background-color: white"],
+[data-testid="stSidebar"] .stButton > button[style*="background: white"] {
+    color: #ffffff !important; /* WHITE text */
+    background-color: #333333 !important; /* DARK background */
+    border: 1px solid #555555 !important; /* Dark border */
+}
+
+/* --- Small square delete buttons specifically --- */
+[data-testid="stSidebar"] button[style*="width: 28px"],
+[data-testid="stSidebar"] button[style*="height: 28px"],
+[data-testid="stSidebar"] button[style*="min-width: 28px"],
+[data-testid="stSidebar"] button[style*="min-height: 28px"] {
+    color: #ffffff !important; /* WHITE text */
+    background-color: #333333 !important; /* DARK background */
+    border: 1px solid #555555 !important; /* Dark border */
 }
 
 /* --- File upload section - BLACK text on white background --- */
@@ -283,6 +295,27 @@ div[data-testid="stTextInput"] label {
 [data-testid="stSidebar"] div[style*="background: white"] *,
 [data-testid="stSidebar"] div[style*="background-color: #ffffff"] *,
 [data-testid="stSidebar"] div[style*="background: #ffffff"] * {
+    color: #000000 !important; /* BLACK text */
+}
+
+/* --- Upload PDF Files expanded content - BLACK text --- */
+[data-testid="stSidebar"] .stExpander .stMarkdown,
+[data-testid="stSidebar"] .stExpander .stMarkdown *,
+[data-testid="stSidebar"] .stExpander div,
+[data-testid="stSidebar"] .stExpander div *,
+[data-testid="stSidebar"] .stExpander span,
+[data-testid="stSidebar"] .stExpander span *,
+[data-testid="stSidebar"] .stExpander p,
+[data-testid="stSidebar"] .stExpander p * {
+    color: #000000 !important; /* BLACK text */
+}
+
+/* --- Specific upload text elements --- */
+[data-testid="stSidebar"] .stExpander div:contains("Upload PDF files to generate"),
+[data-testid="stSidebar"] .stExpander div:contains("Choose PDF files"),
+[data-testid="stSidebar"] .stExpander div:contains("No file chosen"),
+[data-testid="stSidebar"] .stExpander div:contains("Drag and drop files here"),
+[data-testid="stSidebar"] .stExpander div:contains("Limit 200MB per file") {
     color: #000000 !important; /* BLACK text */
 }
 
