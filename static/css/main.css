@@ -48,6 +48,44 @@ html, body {
     max-width: 21rem !important;
 }
 
+/* --- Hide sidebar collapse/close button --- */
+[data-testid="stSidebar"] button[aria-label*="Close"],
+[data-testid="stSidebar"] button[aria-label*="close"],
+[data-testid="stSidebar"] button[aria-label*="Collapse"],
+[data-testid="stSidebar"] button[aria-label*="collapse"],
+[data-testid="stSidebar"] button[title*="Close"],
+[data-testid="stSidebar"] button[title*="close"],
+[data-testid="stSidebar"] button[title*="Collapse"],
+[data-testid="stSidebar"] button[title*="collapse"],
+[data-testid="stSidebar"] button[class*="close"],
+[data-testid="stSidebar"] button[class*="collapse"],
+[data-testid="stSidebar"] button[class*="hide"],
+[data-testid="stSidebar"] button[class*="toggle"],
+/* Hide any button with double left arrow icon */
+[data-testid="stSidebar"] button:has(svg[class*="chevron"]),
+[data-testid="stSidebar"] button:has(svg[class*="arrow"]),
+[data-testid="stSidebar"] button:has(svg[class*="collapse"]),
+/* Hide sidebar toggle buttons */
+[data-testid="stSidebarToggle"],
+[data-testid="stSidebarToggle"] button,
+button[data-testid="stSidebarToggle"],
+/* Additional sidebar toggle selectors */
+.stSidebarToggle,
+.stSidebarToggle button,
+button.stSidebarToggle,
+/* Hide any element that might toggle sidebar */
+div[class*="sidebar-toggle"],
+div[class*="sidebar-close"],
+div[class*="sidebar-collapse"],
+button[class*="sidebar-toggle"],
+button[class*="sidebar-close"],
+button[class*="sidebar-collapse"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
 [data-testid="stSidebar"] > div {
     background-color: #1a1e29 !important;
 }
