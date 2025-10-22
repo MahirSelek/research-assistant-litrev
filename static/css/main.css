@@ -1351,6 +1351,26 @@ button[aria-label="View source on GitHub"] {
     color: #cdcdcd !important;
 }
 
+/* --- Download Papers Section - Dark Text for White Background --- */
+/* Paper titles in download section - dark text for visibility */
+.main .stExpander[data-testid="stExpander"] [data-testid="stExpanderDetails"] [data-testid="stMarkdownContainer"] p,
+.main .stExpander[data-testid="stExpander"] [data-testid="stExpanderDetails"] .stMarkdown [data-testid="stMarkdownContainer"] p {
+    color: #000000 !important; /* BLACK text for white background */
+    font-weight: 600 !important; /* BOLD for better visibility */
+}
+
+/* Download buttons - light styling */
+.main .stExpander[data-testid="stExpander"] [data-testid="stExpanderDetails"] .stDownloadButton button {
+    background-color: #f3f4f6 !important; /* Light gray background */
+    color: #000000 !important; /* BLACK text */
+    border: 1px solid #d1d5db !important; /* Light border */
+}
+
+.main .stExpander[data-testid="stExpander"] [data-testid="stExpanderDetails"] .stDownloadButton button:hover {
+    background-color: #e5e7eb !important; /* Darker gray on hover */
+    color: #000000 !important; /* BLACK text */
+}
+
 /* --- Upload PDF Files Section - White Text and Dark Boxes --- */
 /* Upload section title - make visible when closed */
 .stExpander[data-testid="stExpander"] summary [data-testid="stMarkdownContainer"] p {
