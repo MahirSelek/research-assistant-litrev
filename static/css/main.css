@@ -1357,7 +1357,7 @@ button[aria-label="View source on GitHub"] {
 }
 
 /* --- Upload Papers Section - Force White Text --- */
-[data-testid="stExpanderDetails"] p:contains("Upload PDF files to generate custom summary of your documents") {
+[data-testid="stMarkdownContainer"] p:contains("Upload PDF files to generate custom summary of your documents") {
     color: #ffffff !important;
     font-weight: 600 !important;
 }
