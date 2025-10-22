@@ -1361,6 +1361,11 @@ button[aria-label="View source on GitHub"] {
     color: #ffffff !important;
 }
 
+[data-testid="stAlertContentInfo"] p:contains("Upload PDF files to generate custom summary of your documents") {
+    color: #ffffff !important;
+}
+
+
 /* --- Upload Papers Section - Force White Text for All Paragraphs --- */
 [data-testid="stExpanderDetails"] p {
     color: #ffffff !important;
