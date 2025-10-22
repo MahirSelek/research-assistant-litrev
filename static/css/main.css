@@ -1368,6 +1368,19 @@ button[aria-label="View source on GitHub"] {
     color: #ffffff !important;
 }
 
+/* --- Force alert content in expander to be white --- */
+[data-testid="stExpanderDetails"] [data-testid="stAlert"] p:contains("Upload PDF files to generate custom summary of your documents.") {
+    color: #ffffff !important;
+}
+
+[data-testid="stExpanderDetails"] [data-testid="stAlertContentInfo"] p {
+    color: #ffffff !important;
+}
+
+[data-testid="stExpanderDetails"] [data-testid="stAlert"] [data-testid="stMarkdownContainer"] p {
+    color: #ffffff !important;
+}
+
 
 [data-testid="stMarkdownContainer"] p:contains("View and Download Retrieved Papers for this Analysis") {
     color: #ffffff !important;
