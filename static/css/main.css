@@ -112,6 +112,76 @@ button[class*="sidebar-collapse"] {
     padding: 0 !important;
 }
 
+/* --- AGGRESSIVE: Hide ALL sidebar collapse elements by class --- */
+.st-emotion-cache-qmp9ai,
+.st-emotion-cache-qmp9ai *,
+.st-emotion-cache-1aplgmp,
+.st-emotion-cache-1aplgmp *,
+.st-emotion-cache-189uypx,
+.st-emotion-cache-189uypx *,
+.st-emotion-cache-pd6qx2,
+.st-emotion-cache-pd6qx2 *,
+.e6f82ta8,
+.e6f82ta8 *,
+.e8vg11g15,
+.e8vg11g15 *,
+.e1t4gh342,
+.e1t4gh342 *,
+.ejhh0er0,
+.ejhh0er0 * {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+}
+
+/* --- Hide any element containing keyboard_double_arrow_left --- */
+*:has-text("keyboard_double_arrow_left"),
+*[data-testid*="stIconMaterial"]:has-text("keyboard_double_arrow_left"),
+span:has-text("keyboard_double_arrow_left"),
+div:has-text("keyboard_double_arrow_left") {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* --- FINAL: Hide everything in sidebar header area --- */
+[data-testid="stSidebarHeader"] *,
+[data-testid="stSidebarHeader"] div,
+[data-testid="stSidebarHeader"] button,
+[data-testid="stSidebarHeader"] span {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    border: none !important;
+    background: transparent !important;
+}
+
+/* --- Hide any button with double arrow icon --- */
+button:has(span[data-testid="stIconMaterial"]),
+button:has(span:contains("keyboard_double_arrow_left")),
+button[aria-label=""],
+button[aria-label=""] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
 [data-testid="stSidebar"] > div {
     background-color: #1a1e29 !important;
 }
