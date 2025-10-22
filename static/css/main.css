@@ -1360,7 +1360,7 @@ button[aria-label="View source on GitHub"] {
 /* --- Light Mode Override for Expandable Section Title --- */
 @media (prefers-color-scheme: light) {
     [data-testid="stMarkdownContainer"] p {
-        color: #000000 !important; /* BLACK text for light mode */
+        color: #f0e9e9 !important; /* BLACK text for light mode */
         font-weight: 600 !important; /* BOLD for better visibility */
     }
 }
