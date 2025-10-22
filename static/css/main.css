@@ -460,6 +460,28 @@ div[data-testid="stTextInput"] label {
     color: #ffffff !important; /* WHITE text */
 }
 
+/* --- FORCE ALL upload section text to be WHITE --- */
+[data-testid="stSidebar"] .stExpander .stFileUploader,
+[data-testid="stSidebar"] .stExpander .stFileUploader *,
+[data-testid="stSidebar"] .stExpander .stFileUploader div,
+[data-testid="stSidebar"] .stExpander .stFileUploader span,
+[data-testid="stSidebar"] .stExpander .stFileUploader p,
+[data-testid="stSidebar"] .stExpander .stFileUploader label,
+[data-testid="stSidebar"] .stExpander .stFileUploader text,
+[data-testid="stSidebar"] .stExpander .stFileUploader h1,
+[data-testid="stSidebar"] .stExpander .stFileUploader h2,
+[data-testid="stSidebar"] .stExpander .stFileUploader h3,
+[data-testid="stSidebar"] .stExpander .stFileUploader h4,
+[data-testid="stSidebar"] .stExpander .stFileUploader h5,
+[data-testid="stSidebar"] .stExpander .stFileUploader h6 {
+    color: #ffffff !important; /* WHITE text */
+}
+
+/* --- Override ALL text colors in upload section --- */
+[data-testid="stSidebar"] .stExpander .stFileUploader * {
+    color: #ffffff !important; /* WHITE text */
+}
+
 /* --- Upload PDF Files expanded content - BLACK text --- */
 [data-testid="stSidebar"] .stExpander .stMarkdown,
 [data-testid="stSidebar"] .stExpander .stMarkdown *,
