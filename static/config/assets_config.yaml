@@ -1,0 +1,34 @@
+# static/config/assets_config.yaml
+# Configuration for static assets
+# This file defines which assets to load and their order
+
+# Core assets that are always loaded
+core_assets:
+  css:
+    - main.css
+  js:
+    - main.js
+
+# Optional assets that can be loaded conditionally
+optional_assets:
+  css:
+    - themes/dark.css
+    - components/buttons.css
+    - components/forms.css
+  js:
+    - utils/helpers.js
+    - components/loading.js
+
+# Asset loading settings
+settings:
+  # Whether to load assets from external files or inline them
+  load_external: true
+  
+  # Fallback behavior if assets fail to load
+  fallback_to_inline: true
+  
+  # Cache assets in memory for performance
+  cache_assets: true
+  
+  # Development mode - shows asset loading status
+  debug_mode: false
