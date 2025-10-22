@@ -1354,7 +1354,7 @@ button[aria-label="View source on GitHub"] {
 /* --- Upload PDF Files Section - White Text and Dark Boxes --- */
 /* Upload section title - make visible when closed */
 .stExpander[data-testid="stExpander"] summary [data-testid="stMarkdownContainer"] p {
-    color: #2a2828 !important; /* WHITE text for visibility */
+    color: #ffffff !important; /* WHITE text for visibility when closed */
     font-weight: 600 !important; /* BOLD for better visibility */
 }
 
@@ -1368,20 +1368,20 @@ button[aria-label="View source on GitHub"] {
 
 /* Upload area styling - dark theme */
 [data-testid="stFileUploaderDropzone"] {
-    background-color: #262730 !important; /* Dark background */
-    border: 2px dashed #2c313a !important; /* Dashed border */
+    background-color: #1a1e29 !important; /* Dark background matching screenshot */
+    border: 2px dashed #ffffff !important; /* WHITE dashed border like screenshot */
     border-radius: 8px !important;
     color: #ffffff !important; /* White text */
 }
 
 /* Upload area text */
 [data-testid="stFileUploaderDropzoneInstructions"] span {
-    color: #1d1b1b !important; /* White text */
+    color: #ffffff !important; /* White text */
 }
 
 /* Browse files button */
 [data-testid="stBaseButton-secondary"] {
-    background-color: #262730 !important; /* Dark background */
+    background-color: #1a1e29 !important; /* Dark background matching screenshot */
     color: #ffffff !important; /* White text */
     border: 1px solid #2c313a !important; /* Dark border */
     border-radius: 6px !important;
@@ -1398,9 +1398,9 @@ button[aria-label="View source on GitHub"] {
     font-weight: 600 !important; /* BOLD */
 }
 
-/* Alert/info text in upload section */
+/* Alert/info text in upload section - keep original blue alert styling */
 .stAlert [data-testid="stMarkdownContainer"] p {
-    color: #ffffff !important; /* White text */
+    color: inherit !important; /* Keep original alert text color */
 }
 
 /* Light Mode Override for Upload Section */
