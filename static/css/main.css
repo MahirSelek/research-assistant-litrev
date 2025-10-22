@@ -1365,6 +1365,17 @@ p:contains("View and Download Retrieved Papers for this Analysis") {
     color: #ffffff !important;
 }
 
+/* --- Move alert boxes down slightly --- */
+[data-testid="stAlertContainer"] {
+    margin-top: 0.5rem !important;
+}
+
+/* --- Move specific analysis status alerts down --- */
+[data-testid="stAlertContentSuccess"],
+[data-testid="stAlertContentInfo"] {
+    margin-top: 0.5rem !important;
+}
+
 /* --- Upload Papers Section - Force White Text --- */
 [data-testid="stMarkdownContainer"] p:contains("Upload PDF files to generate custom summary of your documents") {
     color: #ffffff !important;
