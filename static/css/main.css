@@ -512,7 +512,44 @@ button[aria-label="View source on GitHub"] {
     }
     
     h1, h2, h3, h4, h5, h6 {
-        color: #1f2937 !important;
+        color: #000000 !important; /* BLACK */
+        font-weight: 700 !important; /* BOLD */
+    }
+    
+    /* --- Chat History heading specifically --- */
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] h4,
+    [data-testid="stSidebar"] h5,
+    [data-testid="stSidebar"] h6,
+    [data-testid="stSidebar"] .stMarkdown h3,
+    [data-testid="stSidebar"] .stMarkdown h4,
+    [data-testid="stSidebar"] .stMarkdown h5,
+    [data-testid="stSidebar"] .stMarkdown h6 {
+        color: #000000 !important; /* BLACK */
+        font-weight: 700 !important; /* BOLD */
+        font-size: 16px !important;
+    }
+    
+    /* --- Additional heading selectors for light mode --- */
+    [data-testid="stSidebar"] .stMarkdown,
+    [data-testid="stSidebar"] .stText,
+    [data-testid="stSidebar"] div[class*="markdown"],
+    [data-testid="stSidebar"] div[class*="text"] {
+        color: #000000 !important; /* BLACK */
+        font-weight: 700 !important; /* BOLD */
+    }
+    
+    /* --- Force all sidebar text to be black and bold in light mode --- */
+    [data-testid="stSidebar"] * {
+        color: #000000 !important; /* BLACK */
+        font-weight: 700 !important; /* BOLD */
+    }
+    
+    /* --- But keep form input text normal weight --- */
+    [data-testid="stSidebar"] input,
+    [data-testid="stSidebar"] select,
+    [data-testid="stSidebar"] textarea {
+        font-weight: normal !important;
     }
     
     .stMarkdown, .stText, .stSelectbox, .stMultiselect, .stTextInput {
@@ -529,7 +566,7 @@ button[aria-label="View source on GitHub"] {
         border: 1px solid #e5e7eb !important;
     }
     
-    /* --- Light mode form labels --- */
+    /* --- Light mode form labels - BLACK AND BOLD --- */
     .stSelectbox label,
     .stMultiselect label,
     .stTextInput label,
@@ -550,9 +587,25 @@ button[aria-label="View source on GitHub"] {
     [data-testid="stSidebar"] .stTextInput label,
     [data-testid="stSidebar"] .stSelectbox > label,
     [data-testid="stSidebar"] .stMultiselect > label,
-    [data-testid="stSidebar"] .stTextInput > label {
-        color: #1f2937 !important;
-        font-weight: 600 !important;
+    [data-testid="stSidebar"] .stTextInput > label,
+    /* Additional comprehensive selectors for light mode */
+    div[data-testid*="selectbox"] label,
+    div[data-testid*="multiselect"] label,
+    div[data-testid*="textinput"] label,
+    div[data-testid*="selectbox"] > label,
+    div[data-testid*="multiselect"] > label,
+    div[data-testid*="textinput"] > label,
+    .stSelectbox div[class*="label"],
+    .stMultiselect div[class*="label"],
+    .stTextInput div[class*="label"],
+    .stSelectbox span[class*="label"],
+    .stMultiselect span[class*="label"],
+    .stTextInput span[class*="label"],
+    [data-testid="stSidebar"] div[class*="label"],
+    [data-testid="stSidebar"] span[class*="label"],
+    [data-testid="stSidebar"] p[class*="label"] {
+        color: #000000 !important; /* BLACK */
+        font-weight: 700 !important; /* BOLD */
         font-size: 14px !important;
         margin-bottom: 8px !important;
         display: block !important;
