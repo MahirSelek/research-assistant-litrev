@@ -1354,7 +1354,7 @@ button[aria-label="View source on GitHub"] {
 /* --- Upload PDF Files Section - White Text and Dark Boxes --- */
 /* Upload section title - make visible when closed */
 .stExpander[data-testid="stExpander"] summary [data-testid="stMarkdownContainer"] p {
-    color: #ffffff !important; /* WHITE text for visibility */
+    color: #2a2828 !important; /* WHITE text for visibility */
     font-weight: 600 !important; /* BOLD for better visibility */
 }
 
