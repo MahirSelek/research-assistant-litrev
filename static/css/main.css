@@ -1359,7 +1359,6 @@ button[aria-label="View source on GitHub"] {
 /* --- Upload Papers Section - Force White Text --- */
 [data-testid="stMarkdownContainer"] p:contains("Upload PDF files to generate custom summary of your documents") {
     color: #ffffff !important;
-    font-weight: 600 !important;
 }
 
 /* --- Upload Papers Section - Force White Text for All Paragraphs --- */
