@@ -310,7 +310,7 @@ def show_login_page():
     st.markdown("---")
     st.markdown("""
     <div style="text-align: center; color: #666; font-size: 0.9rem;">
-        <p>© 2024 Polo GGB - Research and Services that create value</p>
+        <p>© 2025 Polo GGB - Research and Services that create value</p>
         <p>Genomics, Genetics, Biology</p>
     </div>
     """, unsafe_allow_html=True)
