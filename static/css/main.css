@@ -1447,6 +1447,51 @@ button[aria-label="View source on GitHub"] {
     color: #ffffff !important;
 }
 
+/* --- Download PDF Buttons - Black Background with White Text --- */
+[data-testid="stBaseButton-secondary"] {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+    border: 1px solid #333333 !important;
+    border-radius: 6px !important;
+}
+
+[data-testid="stBaseButton-secondary"]:hover {
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+    border: 1px solid #444444 !important;
+}
+
+[data-testid="stBaseButton-secondary"]:focus {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+    border: 1px solid #333333 !important;
+}
+
+[data-testid="stBaseButton-secondary"]:active {
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+}
+
+/* --- Force Download PDF button text to be white --- */
+[data-testid="stBaseButton-secondary"] p {
+    color: #ffffff !important;
+}
+
+[data-testid="stBaseButton-secondary"] div {
+    color: #ffffff !important;
+}
+
+/* --- Target specific emotion cache classes for Download PDF buttons --- */
+.st-emotion-cache-5qfegl {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+    border: 1px solid #333333 !important;
+}
+
+.st-emotion-cache-12j140x p {
+    color: #ffffff !important;
+}
+
 /* --- Upload Papers Section - Force White Text for All Paragraphs --- */
 [data-testid="stExpanderDetails"] p {
     color: #ffffff !important;
