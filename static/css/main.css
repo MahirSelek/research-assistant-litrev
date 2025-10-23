@@ -1395,6 +1395,58 @@ button[aria-label="View source on GitHub"] {
     color: #ffffff !important;
 }
 
+/* --- Force expander summary to stay dark when clicked/opened --- */
+.stExpander summary {
+    background-color: #1a1e29 !important;
+    color: #ffffff !important;
+}
+
+.stExpander summary:hover {
+    background-color: #1a1e29 !important;
+    color: #ffffff !important;
+}
+
+.stExpander summary:focus {
+    background-color: #1a1e29 !important;
+    color: #ffffff !important;
+}
+
+.stExpander summary:active {
+    background-color: #1a1e29 !important;
+    color: #ffffff !important;
+}
+
+/* --- Force expander summary text to stay white --- */
+.stExpander summary p {
+    color: #ffffff !important;
+}
+
+.stExpander summary span {
+    color: #ffffff !important;
+}
+
+.stExpander summary div {
+    color: #ffffff !important;
+}
+
+/* --- Target specific emotion cache classes for expander summary --- */
+.st-emotion-cache-1lsfsc6 {
+    background-color: #1a1e29 !important;
+    color: #ffffff !important;
+}
+
+.st-emotion-cache-19iic4h {
+    color: #ffffff !important;
+}
+
+.st-emotion-cache-11fa8fd {
+    color: #ffffff !important;
+}
+
+.st-emotion-cache-17k2yau p {
+    color: #ffffff !important;
+}
+
 /* --- Upload Papers Section - Force White Text for All Paragraphs --- */
 [data-testid="stExpanderDetails"] p {
     color: #ffffff !important;
