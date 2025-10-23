@@ -656,11 +656,24 @@ Assistant Response:"""
                                 
                                 title = improved_title
                     
+                    # Extract and format the date from conversation ID
+                    try:
+                        if conv_id.startswith('custom_summary_'):
+                            timestamp_str = conv_id.split('_', 2)[2]
+                        else:
+                            timestamp_str = conv_id.split('_')[1]
+                        timestamp = float(timestamp_str)
+                        date_str = datetime.datetime.fromtimestamp(timestamp).strftime("%b %d, %Y")
+                    except (IndexError, ValueError):
+                        date_str = "Unknown date"
+                    
                     # Create columns for chat title and delete button
                     col1, col2 = st.columns([4, 1])
                     
                     with col1:
-                        if st.button(title, key=f"chat_{conv_id}", use_container_width=True):
+                        # Display title and date in a more compact format
+                        display_text = f"{title}\n{date_str}"
+                        if st.button(display_text, key=f"chat_{conv_id}", use_container_width=True):
                             self.set_user_session('active_conversation_id', conv_id)
                             self.set_user_session('analysis_locked', True)  # Lock when viewing past analysis
                             st.rerun()
