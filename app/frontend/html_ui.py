@@ -267,26 +267,7 @@ class HTMLResearchAssistantUI:
             # Handle follow-up responses
             if active_conversation_id and conversations[active_conversation_id]["messages"][-1]["role"] == "user":
                 active_conv = conversations[active_conversation_id]
-                
-                # Show persistent thinking indicator
-                thinking_placeholder = st.empty()
-                with thinking_placeholder.container():
-                    st.markdown("""
-                    <div style="display: flex; align-items: center; justify-content: center; padding: 20px; background-color: #1a1e29; border-radius: 8px; margin: 10px 0;">
-                        <div style="margin-right: 10px;">
-                            <div style="width: 20px; height: 20px; border: 2px solid #667eea; border-top: 2px solid transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                        </div>
-                        <div style="color: #ffffff; font-size: 16px; font-weight: 500;">Thinking...</div>
-                    </div>
-                    <style>
-                    @keyframes spin {
-                        0% { transform: rotate(0deg); }
-                        100% { transform: rotate(360deg); }
-                    }
-                    </style>
-                    """, unsafe_allow_html=True)
-                
-                try:
+                with st.spinner("Thinking..."):
                     chat_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in active_conv["messages"]])
                     full_context = ""
                     if active_conv.get("retrieved_papers"):
@@ -314,39 +295,22 @@ Your task is to answer the user's last message based on the chat history and the
 Assistant Response:"""
                     
                     response_text = self.api.generate_ai_response(full_prompt)
-                    
-                    # Clear the thinking indicator
-                    thinking_placeholder.empty()
-                    
                     if response_text:
                         retrieved_papers = active_conv.get("retrieved_papers", [])
                         search_mode = active_conv.get("search_mode", "all_keywords")
                         
                         # For follow-up responses, use all retrieved papers to make citations clickable but don't include references section
                         response_text = self.api._display_citations_separately(response_text, retrieved_papers, retrieved_papers, search_mode, include_references=False)
-                        
-                        # Add assistant response to conversation
                         active_conv["messages"].append({"role": "assistant", "content": response_text})
                         active_conv['last_interaction_time'] = time.time()
-                        conversations[active_conversation_id] = active_conv
                         self.set_user_session('conversations', conversations)
                         
-                        # Save to backend
+                        # Save conversation to backend
                         username = st.session_state.get('username')
                         if username:
                             self.api.save_conversation(username, active_conversation_id, active_conv)
                         
                         st.rerun()
-                    else:
-                        # Clear the thinking indicator even if no response
-                        thinking_placeholder.empty()
-                        st.error("Sorry, I couldn't generate a response. Please try again.")
-                        
-                except Exception as e:
-                    # Clear the thinking indicator on error
-                    thinking_placeholder.empty()
-                    st.error(f"An error occurred while processing your question: {str(e)}")
-                    print(f"Error in follow-up response: {e}")
     
     def render_sidebar(self):
         """Sidebar is now part of the main HTML interface"""
