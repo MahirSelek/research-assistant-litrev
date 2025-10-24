@@ -31,7 +31,7 @@ html, body {
 /* --- Main Content Area --- */
 .main .block-container {
     padding-top: 1rem;
-    padding-bottom: 1rem;
+    padding-bottom: 6rem !important; /* Add space for fixed chat input */
     padding-left: 1rem;
     padding-right: 1rem;
     max-width: 100%;
@@ -1540,13 +1540,19 @@ button[aria-label="View source on GitHub"] {
     color: #ffffff !important;
 }
 
-/* --- Chat Input - Remove Outer Rectangle and Center Button --- */
+/* --- Chat Input - Dynamic/Fixed Position --- */
 [data-testid="stChatInput"] {
     background-color: transparent !important; /* Remove background */
     border: none !important; /* Remove outer border */
-    position: relative !important;
-    margin-top: 2rem !important;
-    padding: 0 !important; /* Remove padding */
+    position: fixed !important; /* Fixed position at bottom */
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1000 !important;
+    margin-top: 0 !important;
+    padding: 1rem !important;
+    background-color: #0E1117 !important; /* Dark background */
+    border-top: 1px solid #2c313a !important;
 }
 
 /* --- Chat Input Container - White Background Only for Input Area --- */
