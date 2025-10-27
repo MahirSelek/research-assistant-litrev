@@ -878,164 +878,73 @@ Assistant Response:"""
                 conv_id = f"custom_summary_{time.time()}"
                 
                 def generate_custom_summary_title(papers, summary_text):
-                    """Generate detailed custom summary title with specific information"""
+                    """Generate concise title matching the pattern used in regular analyses"""
                     paper_count = len(papers)
+                    
+                    # First, extract key information from the actual uploaded papers (similar to how regular analyses work)
+                    paper_titles = [paper.get('metadata', {}).get('title', '') for paper in papers]
+                    
+                    # Extract meaningful keywords from paper titles (like regular analysis does)
+                    all_keywords = []
+                    for paper_title in paper_titles:
+                        if paper_title and paper_title != 'Unknown title':
+                            # Split and clean the title
+                            words = paper_title.split()
+                            # Extract meaningful words (longer words are usually keywords)
+                            for w in words:
+                                # Clean word of special characters
+                                clean_word = w.strip('.,();:[]{}"\'-_')
+                                if len(clean_word) > 4 and clean_word.lower() not in [
+                                    'the', 'and', 'for', 'with', 'this', 'that', 'from', 'into', 'upon', 'about', 'under', 
+                                    'study', 'analysis', 'research', 'investigation', 'review', 'effect', 'effects',
+                                    'clinical', 'patients', 'patient', 'using', 'based', 'approach', 'approach',
+                                    'novel', 'new', 'novel', 'et', 'al', 'application', 'applications'
+                                ]:
+                                    all_keywords.append(clean_word)
+                    
+                    # Also look at paper content metadata for additional context
                     summary_lower = summary_text.lower()
                     
-                    # Extract detailed information from papers and summary
-                    diseases = []
-                    methodologies = []
-                    specific_topics = []
-                    therapeutic_approaches = []
-                    drug_names = []
-                    gene_names = []
-                    
-                    # Enhanced disease detection (multiple diseases can be present)
+                    # Detect main disease/topic from summary
+                    disease_detected = None
                     disease_keywords = [
-                        ('lung cancer', 'nsclc', 'non-small cell lung cancer'), ('breast cancer', 'mammary carcinoma'), 
-                        ('prostate cancer', 'prostate carcinoma'), ('colorectal cancer', 'colon cancer', 'rectal cancer'),
-                        ('coronary artery disease', 'cad', 'heart disease', 'myocardial infarction'), 
-                        ('diabetes', 'diabetic', 'type 2 diabetes', 't2d'), 
-                        ('alzheimer', 'dementia', 'alzheimer\'s disease'), 
-                        ('cancer', 'oncology', 'tumor', 'carcinoma'), 
-                        ('cardiovascular', 'heart', 'cardiac', 'cvd'), ('obesity', 'obese'),
-                        ('parkinson', 'pd'), ('schizophrenia', 'bipolar'), ('asthma', 'copd'),
-                        ('rheumatoid arthritis', 'ra'), ('multiple sclerosis', 'ms'), ('ibd', 'inflammatory bowel disease')
+                        ('lung cancer', 'nsclc'), ('breast cancer',), 
+                        ('prostate cancer',), ('colorectal cancer', 'colon cancer'),
+                        ('coronary', 'cad'), ('diabetes', 'diabetic', 't2d'), 
+                        ('alzheimer', 'dementia'), ('cancer', 'oncology'),
+                        ('cardiovascular', 'cardiac', 'cvd'), ('parkinson',),
+                        ('kras',)
                     ]
                     
                     for disease_group in disease_keywords:
                         if any(word in summary_lower for word in disease_group):
-                            diseases.append(disease_group[0].title())
-                            break  # Only add the first match
+                            disease_detected = disease_group[0].title()
+                            break
                     
-                    # Enhanced methodology and topic detection (can have multiple)
-                    if any(word in summary_lower for word in ['polygenic risk score', 'prs', 'polygenic score']):
-                        specific_topics.append('Polygenic Risk Scoring')
-                    if any(word in summary_lower for word in ['gwas', 'genome-wide association study', 'genome-wide']):
-                        specific_topics.append('GWAS Analysis')
-                    if any(word in summary_lower for word in ['machine learning', 'ai', 'artificial intelligence', 'ml', 'deep learning', 'neural network']):
-                        methodologies.append('AI/ML')
-                    if any(word in summary_lower for word in ['ctdna', 'circulating tumor dna', 'liquid biopsy']):
-                        specific_topics.append('Liquid Biopsy')
-                    if any(word in summary_lower for word in ['biomarker', 'biomarkers', 'biomarker discovery']):
-                        therapeutic_approaches.append('Biomarker Discovery')
-                    if any(word in summary_lower for word in ['transcriptomic', 'transcriptome', 'rna-seq', 'gene expression']):
-                        therapeutic_approaches.append('Transcriptomics')
-                    if any(word in summary_lower for word in ['genomic', 'genome', 'genomics']):
-                        therapeutic_approaches.append('Genomics')
-                    if any(word in summary_lower for word in ['pharmacogenomics', 'drug response', 'pharmacogenetics']):
-                        specific_topics.append('Pharmacogenomics')
-                    if any(word in summary_lower for word in ['clinical trial', 'clinical study', 'randomized']):
-                        methodologies.append('Clinical Research')
-                    if any(word in summary_lower for word in ['therapeutic', 'therapy', 'treatment', 'intervention']):
-                        therapeutic_approaches.append('Therapeutic')
-                    if any(word in summary_lower for word in ['precision medicine', 'personalized medicine']):
-                        specific_topics.append('Precision Medicine')
-                    if any(word in summary_lower for word in ['drug resistance', 'resistance mechanisms']):
-                        specific_topics.append('Drug Resistance')
-                    if any(word in summary_lower for word in ['kras', 'krasg12c', 'sotorasib', 'amgen']):
-                        specific_topics.append('KRAS Targeting')
-                        drug_names.append('Sotorasib')
-                    if any(word in summary_lower for word in ['immunotherapy', 'immune', 'pembrolizumab', 'nivolumab']):
-                        therapeutic_approaches.append('Immunotherapy')
-                        if any(word in summary_lower for word in ['pembrolizumab']):
-                            drug_names.append('Pembrolizumab')
-                        if any(word in summary_lower for word in ['nivolumab']):
-                            drug_names.append('Nivolumab')
-                    
-                    # Extract gene names
-                    import re
-                    gene_patterns = [r'\b[A-Z]{2,}\d*\b', r'\b[A-Z]{1,2}[a-z]+\d*\b']
-                    for pattern in gene_patterns:
-                        genes = re.findall(pattern, summary_text)
-                        gene_names.extend([g for g in genes if len(g) > 2 and g not in ['DNA', 'RNA', 'PCR', 'GWAS', 'PRS', 'AI', 'ML', 'USA', 'NIH']])
-                    
-                    # Extract meaningful words from paper titles for better context
-                    paper_titles = [paper.get('metadata', {}).get('title', '') for paper in papers]
-                    paper_keywords = []
-                    if paper_titles:
-                        for pt in paper_titles:
-                            if pt:
-                                words = pt.split()
-                                paper_keywords.extend([w for w in words if len(w) > 4 and w.lower() not in 
-                                                     ['the', 'and', 'for', 'with', 'this', 'that', 'analysis', 'study', 
-                                                      'research', 'investigation', 'using', 'based', 'approach', 'general',
-                                                      'effettuato', 'trattamento', 'dati', 'personali', 'per', 'scopi',
-                                                      'scientifica', 'autorizzazione', 'N.', '2016', '2017', '2018', '2019',
-                                                      '2020', '2021', '2022', '2023', '2024', '2025']])
-                    
-                    # Create comprehensive, descriptive title
-                    
-                    # Priority 1: Therapeutic approach + Disease + Drug
-                    if therapeutic_approaches and diseases and drug_names:
-                        title = f"{therapeutic_approaches[0]}: {diseases[0]} ({drug_names[0]})"
-                    # Priority 2: Therapeutic approach + Disease + Gene
-                    elif therapeutic_approaches and diseases and gene_names[:2]:
-                        title = f"{therapeutic_approaches[0]}: {diseases[0]} ({', '.join(gene_names[:2])})"
-                    # Priority 3: Therapeutic approach + Disease
-                    elif therapeutic_approaches and diseases:
-                        title = f"{therapeutic_approaches[0]}: {diseases[0]}"
-                    # Priority 4: Specific topic + Disease
-                    elif specific_topics and diseases:
-                        title = f"{specific_topics[0]}: {diseases[0]}"
-                    # Priority 5: Disease + Methodology + Gene
-                    elif diseases and methodologies and gene_names[:2]:
-                        title = f"{methodologies[0]} Analysis: {diseases[0]} ({', '.join(gene_names[:2])})"
-                    # Priority 6: Disease + Methodology
-                    elif diseases and methodologies:
-                        title = f"{methodologies[0]} Analysis: {diseases[0]}"
-                    # Priority 7: Therapeutic approach + Methodology
-                    elif therapeutic_approaches and methodologies:
-                        title = f"{therapeutic_approaches[0]}: {methodologies[0]} Analysis"
-                    # Priority 8: Use paper keywords if available (avoid generic titles)
-                    elif paper_keywords and len(paper_keywords) >= 2:
-                        unique_keywords = list(dict.fromkeys(paper_keywords))
-                        # Combine methodology/topic with paper keywords if available
-                        if methodologies:
-                            title = f"{methodologies[0]} Analysis: {' '.join(unique_keywords[:3])}"
-                        elif specific_topics:
-                            title = f"{specific_topics[0]}: {' '.join(unique_keywords[:3])}"
-                        elif therapeutic_approaches:
-                            title = f"{therapeutic_approaches[0]}: {' '.join(unique_keywords[:3])}"
+                    # Build title using keywords from papers (prioritize paper title keywords like regular analysis)
+                    if len(all_keywords) >= 3:
+                        # Create a concise title similar to regular analysis format
+                        keyword_str = ', '.join(all_keywords[:5])  # Use top 5 keywords like regular analysis
+                        
+                        if disease_detected:
+                            # Format: keyword1, keyword2, keyword3: Disease Analysis
+                            title = f"{keyword_str}: {disease_detected} Analysis"
                         else:
-                            title = ' '.join(unique_keywords[:5])
-                    # Priority 9: Specific topic only
-                    elif specific_topics:
-                        title = specific_topics[0]
-                    # Priority 10: Disease only
-                    elif diseases:
-                        title = f"{diseases[0]} Research"
-                    # Priority 11: Methodology only
-                    elif methodologies:
-                        title = f"{methodologies[0]} Analysis"
-                    # Priority 12: Therapeutic approach only
-                    elif therapeutic_approaches:
-                        title = therapeutic_approaches[0]
-                    # Priority 13: Fallback - use paper titles or summary
+                            # Format: keyword1, keyword2, keyword3 Analysis
+                            title = f"{keyword_str} Analysis"
+                    elif len(all_keywords) >= 1:
+                        keyword_str = ', '.join(all_keywords[:3])
+                        title = f"{keyword_str} Analysis"
+                    elif disease_detected:
+                        title = f"{disease_detected} Analysis"
+                    elif paper_titles and paper_titles[0]:
+                        # Fallback to using paper title words
+                        words = paper_titles[0].split()[:4]
+                        title = ' '.join(words) + ' Analysis'
                     else:
-                        if paper_titles and paper_titles[0]:
-                            # Extract key meaningful words from paper title
-                            words = paper_titles[0].split()
-                            meaningful_words = [w for w in words if len(w) > 4 and w.lower() not in 
-                                             ['the', 'and', 'for', 'with', 'this', 'that', 'analysis', 'study', 
-                                              'research', 'investigation', 'using', 'based', 'approach', 'general',
-                                              'effettuato', 'trattamento', 'dati', 'personali', 'per', 'scopi',
-                                              'scientifica', 'autorizzazione', 'N.', '2016', '2017', '2018', '2019',
-                                              '2020', '2021', '2022', '2023', '2024', '2025']]
-                            if meaningful_words:
-                                # Create a concise title from meaningful words (max 6 words)
-                                title = ' '.join(meaningful_words[:6])
-                            else:
-                                # If no meaningful words, use first significant words
-                                title = ' '.join(w for w in words[:5] if w)
-                        else:
-                            # Try to extract first meaningful phrase from summary
-                            first_sentence = summary_text.split('.')[0] if '.' in summary_text else summary_text[:100]
-                            words = first_sentence.split()
-                            meaningful_words = [w for w in words[:4] if len(w) > 4 and w[0].isupper()]
-                            title = ' '.join(meaningful_words) if meaningful_words else "Research Summary"
+                        title = "Custom Summary Analysis"
                     
-                    # Add paper count
+                    # Return in format similar to regular analysis: "Keywords: Disease Analysis (N papers)"
                     return f"{title} ({paper_count} paper{'s' if paper_count > 1 else ''})"
                 
                 title = generate_custom_summary_title(uploaded_papers, summary)
