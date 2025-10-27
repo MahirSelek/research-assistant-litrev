@@ -247,13 +247,13 @@ class GCSUserStorage:
             if failed_conversations:
                 print(f"Failed to load {len(failed_conversations)} conversations: {failed_conversations}")
             
+            # Removed 'active_conversation_id' from result - never persist this, always show New Analysis page on login
             result = {
                 'conversations': conversations,
                 'selected_keywords': user_preferences.get('selected_keywords', []),
                 'search_mode': user_preferences.get('search_mode', 'all_keywords'),
                 'uploaded_papers': user_preferences.get('uploaded_papers', []),
-                'custom_summary_chat': user_preferences.get('custom_summary_chat', []),
-                'active_conversation_id': user_preferences.get('active_conversation_id')
+                'custom_summary_chat': user_preferences.get('custom_summary_chat', [])
             }
             
             print(f"Successfully loaded user data for {username}: {len(conversations)} conversations")

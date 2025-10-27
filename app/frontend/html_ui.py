@@ -877,68 +877,30 @@ Assistant Response:"""
                 conv_id = f"custom_summary_{time.time()}"
                 
                 def generate_custom_summary_title(papers, summary_text):
-                    """Generate concise title matching the pattern used in regular analyses"""
+                    """Generate simple title using paper filenames"""
                     paper_count = len(papers)
                     
-                    # Extract keywords from paper content itself (not just titles which might be filenames)
-                    summary_lower = summary_text.lower()
+                    # Get paper ID (which is the filename without extension)
+                    paper_ids = []
+                    for paper in papers:
+                        paper_id = paper.get('paper_id', '')
+                        if paper_id and paper_id.startswith('uploaded_'):
+                            # Remove 'uploaded_' prefix to get the actual filename
+                            filename = paper_id.replace('uploaded_', '')
+                            paper_ids.append(filename)
                     
-                    # Extract important keywords from the summary text (this reflects actual paper content)
-                    import re
-                    all_keywords = []
-                    
-                    # Extract capitalized multi-word phrases and important terms
-                    # Look for common scientific terms and disease names
-                    important_phrases = re.findall(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b', summary_text)
-                    for phrase in important_phrases[:10]:  # Limit to avoid too many
-                        if len(phrase.split()) >= 2 and len(phrase.split()) <= 3:  # 2-3 word phrases
-                            all_keywords.append(phrase.title())
-                    
-                    # Extract single important capitalized words (genes, diseases, methods)
-                    capitalized_words = re.findall(r'\b([A-Z][a-z]{3,})\b', summary_text)
-                    for word in capitalized_words:
-                        if word not in ['This', 'That', 'With', 'From', 'Using', 'Based', 'Clinical', 'Patients']:
-                            if word not in all_keywords:
-                                all_keywords.append(word)
-                    
-                    # Detect main disease/topic from summary
-                    disease_detected = None
-                    disease_keywords = [
-                        ('lung cancer', 'nsclc'), ('breast cancer', 'mammary carcinoma'), 
-                        ('prostate cancer',), ('colorectal cancer', 'colon cancer'),
-                        ('coronary artery disease', 'coronary', 'cad'), ('diabetes', 'diabetic', 't2d'), 
-                        ('alzheimer', 'dementia'), ('cancer', 'oncology', 'tumor'),
-                        ('cardiovascular', 'cardiac', 'cvd'), ('obesity', 'obese'),
-                        ('parkinson',), ('rheumatoid arthritis', 'ra'), 
-                        ('multiple sclerosis', 'ms'), ('ibd', 'inflammatory bowel disease'),
-                        ('kras',)
-                    ]
-                    
-                    for disease_group in disease_keywords:
-                        if any(word in summary_lower for word in disease_group):
-                            disease_detected = disease_group[0].title()
-                            break
-                    
-                    # Build title similar to regular analysis format
-                    if len(all_keywords) >= 3:
-                        # Create a concise title with top keywords
-                        keyword_str = ', '.join(all_keywords[:4])  # Use top 4 keywords
-                        
-                        if disease_detected:
-                            # Format: keyword1, keyword2: Disease Analysis
-                            title = f"{keyword_str}: {disease_detected} Analysis"
-                        else:
-                            # Format: keyword1, keyword2 Analysis
-                            title = f"{keyword_str} Analysis"
-                    elif len(all_keywords) >= 1:
-                        keyword_str = ', '.join(all_keywords[:2])
-                        title = f"{keyword_str} Analysis"
-                    elif disease_detected:
-                        title = f"{disease_detected} Analysis"
+                    # Build title based on number of papers
+                    if len(paper_ids) == 1:
+                        # Single paper: "Custom Summary of [filename]"
+                        title = f"Custom Summary of {paper_ids[0]}"
+                    elif len(paper_ids) > 1:
+                        # Multiple papers: "Custom Summary of these papers"
+                        title = "Custom Summary of these papers"
                     else:
-                        title = "Research Summary Analysis"
+                        # Fallback
+                        title = "Custom Summary"
                     
-                    return f"{title} ({paper_count} paper{'s' if paper_count > 1 else ''})"
+                    return title
                 
                 title = generate_custom_summary_title(uploaded_papers, summary)
                 
