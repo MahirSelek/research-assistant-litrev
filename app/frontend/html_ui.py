@@ -130,8 +130,8 @@ class HTMLResearchAssistantUI:
         user_key = self.get_user_key(key)
         st.session_state[user_key] = value
         
-        # Auto-sync to backend for important data
-        if key in ['conversations', 'selected_keywords', 'search_mode', 'uploaded_papers', 'custom_summary_chat', 'active_conversation_id', 'time_filter']:
+        # Auto-sync to backend for important data (EXCLUDE active_conversation_id - it should never be persisted)
+        if key in ['conversations', 'selected_keywords', 'search_mode', 'uploaded_papers', 'custom_summary_chat', 'time_filter']:
             username = st.session_state.get('username')
             if username and username != 'default':
                 try:
@@ -146,8 +146,7 @@ class HTMLResearchAssistantUI:
                             'selected_keywords': self.get_user_session('selected_keywords', []),
                             'search_mode': self.get_user_session('search_mode', 'all_keywords'),
                             'uploaded_papers': self.get_user_session('uploaded_papers', []),
-                            'custom_summary_chat': self.get_user_session('custom_summary_chat', []),
-                            'active_conversation_id': self.get_user_session('active_conversation_id')
+                            'custom_summary_chat': self.get_user_session('custom_summary_chat', [])
                         }
                         self.api.save_user_data(username, user_data)
                         st.session_state[rate_key] = now_ts
@@ -881,38 +880,37 @@ Assistant Response:"""
                     """Generate concise title matching the pattern used in regular analyses"""
                     paper_count = len(papers)
                     
-                    # First, extract key information from the actual uploaded papers (similar to how regular analyses work)
-                    paper_titles = [paper.get('metadata', {}).get('title', '') for paper in papers]
-                    
-                    # Extract meaningful keywords from paper titles (like regular analysis does)
-                    all_keywords = []
-                    for paper_title in paper_titles:
-                        if paper_title and paper_title != 'Unknown title':
-                            # Split and clean the title
-                            words = paper_title.split()
-                            # Extract meaningful words (longer words are usually keywords)
-                            for w in words:
-                                # Clean word of special characters
-                                clean_word = w.strip('.,();:[]{}"\'-_')
-                                if len(clean_word) > 4 and clean_word.lower() not in [
-                                    'the', 'and', 'for', 'with', 'this', 'that', 'from', 'into', 'upon', 'about', 'under', 
-                                    'study', 'analysis', 'research', 'investigation', 'review', 'effect', 'effects',
-                                    'clinical', 'patients', 'patient', 'using', 'based', 'approach', 'approach',
-                                    'novel', 'new', 'novel', 'et', 'al', 'application', 'applications'
-                                ]:
-                                    all_keywords.append(clean_word)
-                    
-                    # Also look at paper content metadata for additional context
+                    # Extract keywords from paper content itself (not just titles which might be filenames)
                     summary_lower = summary_text.lower()
+                    
+                    # Extract important keywords from the summary text (this reflects actual paper content)
+                    import re
+                    all_keywords = []
+                    
+                    # Extract capitalized multi-word phrases and important terms
+                    # Look for common scientific terms and disease names
+                    important_phrases = re.findall(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b', summary_text)
+                    for phrase in important_phrases[:10]:  # Limit to avoid too many
+                        if len(phrase.split()) >= 2 and len(phrase.split()) <= 3:  # 2-3 word phrases
+                            all_keywords.append(phrase.title())
+                    
+                    # Extract single important capitalized words (genes, diseases, methods)
+                    capitalized_words = re.findall(r'\b([A-Z][a-z]{3,})\b', summary_text)
+                    for word in capitalized_words:
+                        if word not in ['This', 'That', 'With', 'From', 'Using', 'Based', 'Clinical', 'Patients']:
+                            if word not in all_keywords:
+                                all_keywords.append(word)
                     
                     # Detect main disease/topic from summary
                     disease_detected = None
                     disease_keywords = [
-                        ('lung cancer', 'nsclc'), ('breast cancer',), 
+                        ('lung cancer', 'nsclc'), ('breast cancer', 'mammary carcinoma'), 
                         ('prostate cancer',), ('colorectal cancer', 'colon cancer'),
-                        ('coronary', 'cad'), ('diabetes', 'diabetic', 't2d'), 
-                        ('alzheimer', 'dementia'), ('cancer', 'oncology'),
-                        ('cardiovascular', 'cardiac', 'cvd'), ('parkinson',),
+                        ('coronary artery disease', 'coronary', 'cad'), ('diabetes', 'diabetic', 't2d'), 
+                        ('alzheimer', 'dementia'), ('cancer', 'oncology', 'tumor'),
+                        ('cardiovascular', 'cardiac', 'cvd'), ('obesity', 'obese'),
+                        ('parkinson',), ('rheumatoid arthritis', 'ra'), 
+                        ('multiple sclerosis', 'ms'), ('ibd', 'inflammatory bowel disease'),
                         ('kras',)
                     ]
                     
@@ -921,30 +919,25 @@ Assistant Response:"""
                             disease_detected = disease_group[0].title()
                             break
                     
-                    # Build title using keywords from papers (prioritize paper title keywords like regular analysis)
+                    # Build title similar to regular analysis format
                     if len(all_keywords) >= 3:
-                        # Create a concise title similar to regular analysis format
-                        keyword_str = ', '.join(all_keywords[:5])  # Use top 5 keywords like regular analysis
+                        # Create a concise title with top keywords
+                        keyword_str = ', '.join(all_keywords[:4])  # Use top 4 keywords
                         
                         if disease_detected:
-                            # Format: keyword1, keyword2, keyword3: Disease Analysis
+                            # Format: keyword1, keyword2: Disease Analysis
                             title = f"{keyword_str}: {disease_detected} Analysis"
                         else:
-                            # Format: keyword1, keyword2, keyword3 Analysis
+                            # Format: keyword1, keyword2 Analysis
                             title = f"{keyword_str} Analysis"
                     elif len(all_keywords) >= 1:
-                        keyword_str = ', '.join(all_keywords[:3])
+                        keyword_str = ', '.join(all_keywords[:2])
                         title = f"{keyword_str} Analysis"
                     elif disease_detected:
                         title = f"{disease_detected} Analysis"
-                    elif paper_titles and paper_titles[0]:
-                        # Fallback to using paper title words
-                        words = paper_titles[0].split()[:4]
-                        title = ' '.join(words) + ' Analysis'
                     else:
-                        title = "Custom Summary Analysis"
+                        title = "Research Summary Analysis"
                     
-                    # Return in format similar to regular analysis: "Keywords: Disease Analysis (N papers)"
                     return f"{title} ({paper_count} paper{'s' if paper_count > 1 else ''})"
                 
                 title = generate_custom_summary_title(uploaded_papers, summary)
