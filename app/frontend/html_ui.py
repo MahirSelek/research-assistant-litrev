@@ -742,7 +742,8 @@ Assistant Response:"""
                 with st.expander("View uploaded papers"):
                     for i, paper in enumerate(uploaded_papers):
                         title = paper['metadata'].get('title', 'Unknown title')
-                        st.write(f"{i+1}. {title}")
+                        # Use markdown with white color to ensure visibility
+                        st.markdown(f"<span style='color: white;'>{i+1}. {title}</span>", unsafe_allow_html=True)
                 
                 # Custom summary button
                 # Get analysis lock status for button disable state
@@ -936,6 +937,20 @@ Assistant Response:"""
                         genes = re.findall(pattern, summary_text)
                         gene_names.extend([g for g in genes if len(g) > 2 and g not in ['DNA', 'RNA', 'PCR', 'GWAS', 'PRS', 'AI', 'ML', 'USA', 'NIH']])
                     
+                    # Extract meaningful words from paper titles for better context
+                    paper_titles = [paper.get('metadata', {}).get('title', '') for paper in papers]
+                    paper_keywords = []
+                    if paper_titles:
+                        for pt in paper_titles:
+                            if pt:
+                                words = pt.split()
+                                paper_keywords.extend([w for w in words if len(w) > 4 and w.lower() not in 
+                                                     ['the', 'and', 'for', 'with', 'this', 'that', 'analysis', 'study', 
+                                                      'research', 'investigation', 'using', 'based', 'approach', 'general',
+                                                      'effettuato', 'trattamento', 'dati', 'personali', 'per', 'scopi',
+                                                      'scientifica', 'autorizzazione', 'N.', '2016', '2017', '2018', '2019',
+                                                      '2020', '2021', '2022', '2023', '2024', '2025']])
+                    
                     # Create comprehensive, descriptive title
                     
                     # Priority 1: Therapeutic approach + Disease + Drug
@@ -959,28 +974,47 @@ Assistant Response:"""
                     # Priority 7: Therapeutic approach + Methodology
                     elif therapeutic_approaches and methodologies:
                         title = f"{therapeutic_approaches[0]}: {methodologies[0]} Analysis"
-                    # Priority 8: Specific topic only
+                    # Priority 8: Use paper keywords if available (avoid generic titles)
+                    elif paper_keywords and len(paper_keywords) >= 2:
+                        unique_keywords = list(dict.fromkeys(paper_keywords))
+                        # Combine methodology/topic with paper keywords if available
+                        if methodologies:
+                            title = f"{methodologies[0]} Analysis: {' '.join(unique_keywords[:3])}"
+                        elif specific_topics:
+                            title = f"{specific_topics[0]}: {' '.join(unique_keywords[:3])}"
+                        elif therapeutic_approaches:
+                            title = f"{therapeutic_approaches[0]}: {' '.join(unique_keywords[:3])}"
+                        else:
+                            title = ' '.join(unique_keywords[:5])
+                    # Priority 9: Specific topic only
                     elif specific_topics:
                         title = specific_topics[0]
-                    # Priority 9: Disease only
+                    # Priority 10: Disease only
                     elif diseases:
                         title = f"{diseases[0]} Research"
-                    # Priority 10: Methodology only
+                    # Priority 11: Methodology only
                     elif methodologies:
                         title = f"{methodologies[0]} Analysis"
-                    # Priority 11: Therapeutic approach only
+                    # Priority 12: Therapeutic approach only
                     elif therapeutic_approaches:
                         title = therapeutic_approaches[0]
-                    # Fallback: Extract meaningful phrase from paper titles or first sentence
+                    # Priority 13: Fallback - use paper titles or summary
                     else:
-                        paper_titles = [paper.get('metadata', {}).get('title', '') for paper in papers]
                         if paper_titles and paper_titles[0]:
-                            # Extract meaningful words from paper title (get key nouns and adjectives)
+                            # Extract key meaningful words from paper title
                             words = paper_titles[0].split()
-                            meaningful_words = [w for w in words[:6] if len(w) > 4 and w.lower() not in 
+                            meaningful_words = [w for w in words if len(w) > 4 and w.lower() not in 
                                              ['the', 'and', 'for', 'with', 'this', 'that', 'analysis', 'study', 
-                                              'research', 'investigation', 'using', 'based', 'approach']]
-                            title = ' '.join(meaningful_words[:4]) if meaningful_words else "Research Summary"
+                                              'research', 'investigation', 'using', 'based', 'approach', 'general',
+                                              'effettuato', 'trattamento', 'dati', 'personali', 'per', 'scopi',
+                                              'scientifica', 'autorizzazione', 'N.', '2016', '2017', '2018', '2019',
+                                              '2020', '2021', '2022', '2023', '2024', '2025']]
+                            if meaningful_words:
+                                # Create a concise title from meaningful words (max 6 words)
+                                title = ' '.join(meaningful_words[:6])
+                            else:
+                                # If no meaningful words, use first significant words
+                                title = ' '.join(w for w in words[:5] if w)
                         else:
                             # Try to extract first meaningful phrase from summary
                             first_sentence = summary_text.split('.')[0] if '.' in summary_text else summary_text[:100]
