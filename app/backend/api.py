@@ -486,8 +486,7 @@ Identify the top 3-5 most impactful papers from the sources and provide a detail
         citations_section = "\n\n---\n\n### References\n\n"
         
         if search_mode == "any_keyword" and analysis_papers:
-            citations_section += "#### References Used in Analysis\n\n"
-            
+            # For any_keyword mode, only show the 15 papers used in analysis (no additional references)
             for i, paper in enumerate(analysis_papers):
                 meta = paper.get('metadata', {})
                 title = meta.get('title', 'N/A')
@@ -497,21 +496,6 @@ Identify the top 3-5 most impactful papers from the sources and provide a detail
                     citations_section += f"**[{i+1}]** [{title}]({link})\n\n"
                 else:
                     citations_section += f"**[{i+1}]** {title}\n\n"
-            
-            additional_papers = [p for p in papers if p not in analysis_papers]
-            if additional_papers:
-                citations_section += "#### Additional References Found\n\n"
-                start_num = len(analysis_papers) + 1
-                
-                for i, paper in enumerate(additional_papers):
-                    meta = paper.get('metadata', {})
-                    title = meta.get('title', 'N/A')
-                    link = self._get_paper_link(meta)
-                    
-                    if link != "Not available":
-                        citations_section += f"**[{start_num + i}]** [{title}]({link})\n\n"
-                    else:
-                        citations_section += f"**[{start_num + i}]** {title}\n\n"
         else:
             for i, paper in enumerate(papers):
                 meta = paper.get('metadata', {})
