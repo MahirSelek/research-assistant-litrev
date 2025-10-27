@@ -238,12 +238,8 @@ class HTMLResearchAssistantUI:
                 st.session_state['do_custom_summary'] = False
                 
                 if success:
-                    # Clear uploaded papers IMMEDIATELY after successful generation (before rerun)
+                    # Clear uploaded papers after successful generation
                     self.set_user_session('uploaded_papers', [])
-                    # Also clear from session state directly to ensure it's gone
-                    user_key = self.get_user_key('uploaded_papers')
-                    if user_key in st.session_state:
-                        st.session_state[user_key] = []
                     st.rerun()
                 else:
                     self.set_user_session('analysis_locked', False)
@@ -547,12 +543,8 @@ Assistant Response:"""
             
             st.markdown("---")
             
-            # Get is_loading status to disable buttons during any operation
-            is_loading = st.session_state.get('is_loading', False)
-            is_any_blocked = analysis_locked or is_loading
-            
             # New Analysis button
-            if st.button("➕ New Analysis", type="primary", use_container_width=True, disabled=is_any_blocked):
+            if st.button("➕ New Analysis", type="primary", use_container_width=True):
                 # Clear ALL session state for fresh start
                 self.set_user_session('active_conversation_id', None)
                 self.set_user_session('selected_keywords', [])
@@ -580,8 +572,8 @@ Assistant Response:"""
                 "Select Keywords",
                 self.GENETICS_KEYWORDS,
                 key="html_keywords",
-                help="Select keywords for your research analysis" if not is_any_blocked else "Keywords are locked for current analysis.",
-                disabled=is_any_blocked
+                help="Select keywords for your research analysis" if not analysis_locked else "Keywords are locked for current analysis. Click 'New Analysis' to modify.",
+                disabled=analysis_locked
             )
             
             # Update session state with selected keywords
@@ -597,7 +589,7 @@ Assistant Response:"""
                 ["all_keywords", "any_keyword"],
                 format_func=lambda x: "Find papers containing ALL keywords" if x == "all_keywords" else "Find papers containing AT LEAST ONE keyword",
                 key="html_search_mode",
-                disabled=is_any_blocked
+                disabled=analysis_locked
             )
             
             # Update session state with search mode
@@ -612,14 +604,14 @@ Assistant Response:"""
                 "Filter by Time Window",
                 ["Current year", "Last 3 months", "Last 6 months", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
                 key="html_time_filter",
-                disabled=is_any_blocked
+                disabled=analysis_locked
             )
             
             # Update session state with time filter
             self.set_user_session('time_filter', time_filter)
             
             # Search button
-            if st.button("Search & Analyze", type="primary", use_container_width=True, disabled=is_any_blocked):
+            if st.button("Search & Analyze", type="primary", use_container_width=True, disabled=analysis_locked):
                 if selected_keywords:
                     # Set loading state and lock immediately, then schedule analysis and rerun
                     st.session_state['is_loading'] = True
@@ -707,13 +699,13 @@ Assistant Response:"""
                     with col1:
                         # Display title and date in a more compact format
                         display_text = f"{title}\n{date_str}"
-                        if st.button(display_text, key=f"chat_{conv_id}", use_container_width=True, disabled=is_any_blocked):
+                        if st.button(display_text, key=f"chat_{conv_id}", use_container_width=True):
                             self.set_user_session('active_conversation_id', conv_id)
                             self.set_user_session('analysis_locked', True)  # Lock when viewing past analysis
                             st.rerun()
                     
                     with col2:
-                        if st.button("×", key=f"delete_{conv_id}", help="Delete this analysis", type="secondary", disabled=is_any_blocked):
+                        if st.button("×", key=f"delete_{conv_id}", help="Delete this analysis", type="secondary"):
                             # Delete conversation from session
                             del conversations[conv_id]
                             self.set_user_session('conversations', conversations)
@@ -746,13 +738,11 @@ Assistant Response:"""
                         title = paper['metadata'].get('title', 'Unknown title')
                         st.write(f"{i+1}. {title}")
                 
+                # Custom summary button
                 # Get analysis lock status for button disable state
                 analysis_locked = self.get_user_session('analysis_locked', False)
-                is_loading = st.session_state.get('is_loading', False)
-                is_blocked = analysis_locked or is_loading
                 
-                # Custom summary button
-                if st.button("Generate Custom Summary", type="primary", use_container_width=True, disabled=is_blocked):
+                if st.button("Generate Custom Summary", type="primary", use_container_width=True, disabled=analysis_locked):
                     # Set loading state and lock immediately, then schedule custom summary generation
                     st.session_state['is_loading'] = True
                     st.session_state['loading_message'] = "Generating Custom Summary"
@@ -766,7 +756,7 @@ Assistant Response:"""
                     st.rerun()
                 
                 # Clear uploaded papers button
-                if st.button("Clear uploaded papers", type="secondary", use_container_width=True, disabled=is_blocked):
+                if st.button("Clear uploaded papers", type="secondary", use_container_width=True):
                     self.set_user_session('uploaded_papers', [])
                     st.rerun()
             else:
@@ -776,18 +766,14 @@ Assistant Response:"""
             with st.expander("Upload PDF Files"):
                 st.info("Upload PDF files to generate custom summary of your documents.")
                 
-                # Check if blocked for file uploader (need to get the status from parent scope)
-                is_blocked_upload = st.session_state.get('is_loading', False) or self.get_user_session('analysis_locked', False)
-                
                 uploaded_pdfs = st.file_uploader(
                     "Choose PDF files", 
                     accept_multiple_files=True, 
                     type=['pdf'], 
-                    key="pdf_uploader_html",
-                    disabled=is_blocked_upload
+                    key="pdf_uploader_html"
                 )
                 
-                if uploaded_pdfs and st.button("Add PDFs", type="primary", disabled=is_blocked_upload):
+                if uploaded_pdfs and st.button("Add PDFs", type="primary"):
                     # Show full-screen loading overlay for PDF processing
                     st.markdown("""
                     <script>
