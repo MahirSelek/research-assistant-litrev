@@ -555,9 +555,9 @@ Assistant Response:"""
                 self.set_user_session('custom_summary_chat', [])
                 self.set_user_session('analysis_locked', False)  # Unlock for new analysis
                 
-                # Clear uploaded papers and file uploader
+                # Clear uploaded papers and reset file uploader
                 self.set_user_session('uploaded_papers', [])
-                st.session_state['pdf_uploader_html'] = []
+                st.session_state['pdf_uploader_reset'] = st.session_state.get('pdf_uploader_reset', 0) + 1
                 
                 # Force clear the multiselect by updating session state
                 if 'html_keywords' in st.session_state:
@@ -759,16 +759,16 @@ Assistant Response:"""
                     # Stash pending action parameter to run on next script run
                     st.session_state['do_custom_summary'] = True
                     
-                    # Clear file uploader after submitting for generation
-                    st.session_state['pdf_uploader_html'] = []
+                    # Reset file uploader after submitting for generation
+                    st.session_state['pdf_uploader_reset'] = st.session_state.get('pdf_uploader_reset', 0) + 1
                     
                     st.rerun()
                 
                 # Clear uploaded papers button
                 if st.button("Clear uploaded papers", type="secondary", use_container_width=True):
                     self.set_user_session('uploaded_papers', [])
-                    # Clear the file uploader as well
-                    st.session_state['pdf_uploader_html'] = []
+                    # Reset the file uploader as well
+                    st.session_state['pdf_uploader_reset'] = st.session_state.get('pdf_uploader_reset', 0) + 1
                     st.rerun()
             else:
                 st.caption("No papers uploaded yet")
@@ -777,11 +777,15 @@ Assistant Response:"""
             with st.expander("Upload PDF Files"):
                 st.info("Upload PDF files to generate custom summary of your documents.")
                 
+                # Use a reset counter to force file uploader to reset when needed
+                if 'pdf_uploader_reset' not in st.session_state:
+                    st.session_state['pdf_uploader_reset'] = 0
+                
                 uploaded_pdfs = st.file_uploader(
                     "Choose PDF files", 
                     accept_multiple_files=True, 
                     type=['pdf'], 
-                    key="pdf_uploader_html",
+                    key=f"pdf_uploader_html_{st.session_state['pdf_uploader_reset']}",
                     disabled=analysis_locked,
                     help="Upload is disabled while analysis is in progress" if analysis_locked else "Choose PDF files to upload"
                 )
@@ -817,8 +821,8 @@ Assistant Response:"""
                     </script>
                     """, unsafe_allow_html=True)
                     
-                    # Clear the file uploader
-                    st.session_state['pdf_uploader_html'] = []
+                    # Reset the file uploader by incrementing the counter
+                    st.session_state['pdf_uploader_reset'] += 1
                     
                     st.rerun()
             
