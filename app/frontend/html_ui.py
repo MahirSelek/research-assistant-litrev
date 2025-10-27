@@ -822,7 +822,7 @@ Assistant Response:"""
                     """, unsafe_allow_html=True)
                     
                     # Reset the file uploader by incrementing the counter
-                    st.session_state['pdf_uploader_reset'] += 1
+                    st.session_state['pdf_uploader_reset'] = st.session_state.get('pdf_uploader_reset', 0) + 1
                     
                     st.rerun()
             
