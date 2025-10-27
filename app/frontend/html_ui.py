@@ -740,10 +740,23 @@ Assistant Response:"""
             if uploaded_papers:
                 st.info(f"{len(uploaded_papers)} papers uploaded")
                 with st.expander("View uploaded papers"):
+                    # Inject CSS to make all text white in this expander
+                    st.markdown("""
+                    <style>
+                    div[data-testid="stExpanderDetails"] li {
+                        color: white !important;
+                        -webkit-text-fill-color: white !important;
+                    }
+                    div[data-testid="stExpanderDetails"] span {
+                        color: white !important;
+                        -webkit-text-fill-color: white !important;
+                    }
+                    </style>
+                    """, unsafe_allow_html=True)
                     for i, paper in enumerate(uploaded_papers):
                         title = paper['metadata'].get('title', 'Unknown title')
-                        # Use markdown with white color to ensure visibility
-                        st.markdown(f"<span style='color: white;'>{i+1}. {title}</span>", unsafe_allow_html=True)
+                        # Use plain HTML div with white color
+                        st.markdown(f"<div style='color: white !important; -webkit-text-fill-color: white !important; margin-bottom: 5px;'>{i+1}. {title}</div>", unsafe_allow_html=True)
                 
                 # Custom summary button
                 # Get analysis lock status for button disable state
