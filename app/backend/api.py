@@ -116,7 +116,7 @@ class ResearchAssistantAPI:
         # Prepare papers for analysis
         if search_mode == "any_keyword":
             top_papers_for_analysis = all_papers[:15]
-            papers_for_references = all_papers
+            papers_for_references = all_papers[:15]  # Only show 15 papers used in analysis
         else:
             top_papers_for_analysis = all_papers
             papers_for_references = all_papers

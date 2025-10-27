@@ -226,6 +226,32 @@ class HTMLResearchAssistantUI:
                 st.error(f"An error occurred: {e}")
                 st.rerun()
         
+        # If a custom summary was scheduled on previous click, run it now while overlay is visible
+        if st.session_state.get('do_custom_summary'):
+            try:
+                uploaded_papers = self.get_user_session('uploaded_papers', [])
+                
+                success = self.generate_custom_summary(uploaded_papers)
+                
+                # Clear loading and flags
+                st.session_state['is_loading'] = False
+                st.session_state['do_custom_summary'] = False
+                
+                if success:
+                    # Clear uploaded papers after successful generation
+                    self.set_user_session('uploaded_papers', [])
+                    st.rerun()
+                else:
+                    self.set_user_session('analysis_locked', False)
+                    st.error("Custom summary generation failed. Please try again.")
+                    st.rerun()
+            except Exception as e:
+                st.session_state['is_loading'] = False
+                st.session_state['do_custom_summary'] = False
+                self.set_user_session('analysis_locked', False)
+                st.error(f"An error occurred: {e}")
+                st.rerun()
+        
         # Show default message if no active conversation
         if active_conversation_id is None:
             st.info("Select keywords and click 'Search & Analyze' to start a new report, or choose a past report from the sidebar.")
@@ -713,33 +739,21 @@ Assistant Response:"""
                         st.write(f"{i+1}. {title}")
                 
                 # Custom summary button
-                if st.button("Generate Custom Summary", type="primary", use_container_width=True):
-                    # Show full-screen overlay immediately via JS (no pre-rerun)
-                    st.markdown(
-                        """
-                        <script>
-                        showLoadingOverlay("📄 Generating Custom Summary", "Analyzing your uploaded papers and creating comprehensive summary...", "Processing PDF content and generating AI summary...");
-                        </script>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-
-                    success = self.generate_custom_summary(uploaded_papers)
-
-                    # Hide overlay and refresh UI
-                    st.markdown(
-                        """
-                        <script>
-                        hideLoadingOverlay();
-                        </script>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-
-                    if success:
-                        st.rerun()
-                    else:
-                        st.error("Custom summary generation failed. Please try again.")
+                # Get analysis lock status for button disable state
+                analysis_locked = self.get_user_session('analysis_locked', False)
+                
+                if st.button("Generate Custom Summary", type="primary", use_container_width=True, disabled=analysis_locked):
+                    # Set loading state and lock immediately, then schedule custom summary generation
+                    st.session_state['is_loading'] = True
+                    st.session_state['loading_message'] = "Generating Custom Summary"
+                    st.session_state['loading_subtext'] = "Analyzing your uploaded papers and creating comprehensive summary..."
+                    st.session_state['loading_progress'] = "Processing PDF content and generating AI summary..."
+                    self.set_user_session('analysis_locked', True)
+                    
+                    # Stash pending action parameter to run on next script run
+                    st.session_state['do_custom_summary'] = True
+                    
+                    st.rerun()
                 
                 # Clear uploaded papers button
                 if st.button("Clear uploaded papers", type="secondary", use_container_width=True):
