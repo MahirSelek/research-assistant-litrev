@@ -240,6 +240,8 @@ class HTMLResearchAssistantUI:
                 if success:
                     # Clear uploaded papers after successful generation
                     self.set_user_session('uploaded_papers', [])
+                    # Unlock analysis after successful generation
+                    self.set_user_session('analysis_locked', False)
                     st.rerun()
                 else:
                     self.set_user_session('analysis_locked', False)
@@ -553,6 +555,10 @@ Assistant Response:"""
                 self.set_user_session('custom_summary_chat', [])
                 self.set_user_session('analysis_locked', False)  # Unlock for new analysis
                 
+                # Clear uploaded papers and file uploader
+                self.set_user_session('uploaded_papers', [])
+                st.session_state['pdf_uploader_html'] = []
+                
                 # Force clear the multiselect by updating session state
                 if 'html_keywords' in st.session_state:
                     st.session_state['html_keywords'] = []
@@ -753,11 +759,16 @@ Assistant Response:"""
                     # Stash pending action parameter to run on next script run
                     st.session_state['do_custom_summary'] = True
                     
+                    # Clear file uploader after submitting for generation
+                    st.session_state['pdf_uploader_html'] = []
+                    
                     st.rerun()
                 
                 # Clear uploaded papers button
                 if st.button("Clear uploaded papers", type="secondary", use_container_width=True):
                     self.set_user_session('uploaded_papers', [])
+                    # Clear the file uploader as well
+                    st.session_state['pdf_uploader_html'] = []
                     st.rerun()
             else:
                 st.caption("No papers uploaded yet")
@@ -770,16 +781,21 @@ Assistant Response:"""
                     "Choose PDF files", 
                     accept_multiple_files=True, 
                     type=['pdf'], 
-                    key="pdf_uploader_html"
+                    key="pdf_uploader_html",
+                    disabled=analysis_locked,
+                    help="Upload is disabled while analysis is in progress" if analysis_locked else "Choose PDF files to upload"
                 )
                 
-                if uploaded_pdfs and st.button("Add PDFs", type="primary"):
+                if uploaded_pdfs and st.button("Add PDFs", type="primary", disabled=analysis_locked):
                     # Show full-screen loading overlay for PDF processing
                     st.markdown("""
                     <script>
                     showLoadingOverlay("📄 Processing PDF Files", "Extracting text and metadata from uploaded papers...", "Reading PDF content and generating summaries...");
                     </script>
                     """, unsafe_allow_html=True)
+                    
+                    # Clear previous papers when uploading new ones for a new custom summary
+                    self.set_user_session('uploaded_papers', [])
                     
                     for uploaded_file in uploaded_pdfs:
                         # Process PDF using backend API
@@ -800,6 +816,9 @@ Assistant Response:"""
                     hideLoadingOverlay();
                     </script>
                     """, unsafe_allow_html=True)
+                    
+                    # Clear the file uploader
+                    st.session_state['pdf_uploader_html'] = []
                     
                     st.rerun()
             
