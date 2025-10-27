@@ -872,100 +872,124 @@ Assistant Response:"""
                     diseases = []
                     methodologies = []
                     specific_topics = []
+                    therapeutic_approaches = []
                     drug_names = []
                     gene_names = []
                     
-                    # Enhanced disease detection
-                    if any(word in summary_lower for word in ['lung cancer', 'nsclc', 'non-small cell lung cancer']):
-                        diseases.append('Lung Cancer')
-                    elif any(word in summary_lower for word in ['breast cancer', 'mammary carcinoma']):
-                        diseases.append('Breast Cancer')
-                    elif any(word in summary_lower for word in ['prostate cancer', 'prostate carcinoma']):
-                        diseases.append('Prostate Cancer')
-                    elif any(word in summary_lower for word in ['colorectal cancer', 'colon cancer', 'rectal cancer']):
-                        diseases.append('Colorectal Cancer')
-                    elif any(word in summary_lower for word in ['coronary artery disease', 'cad', 'heart disease', 'myocardial infarction']):
-                        diseases.append('Coronary Artery Disease')
-                    elif any(word in summary_lower for word in ['diabetes', 'diabetic', 'type 2 diabetes', 't2d']):
-                        diseases.append('Diabetes')
-                    elif any(word in summary_lower for word in ['alzheimer', 'dementia', 'alzheimer\'s disease']):
-                        diseases.append('Alzheimer\'s Disease')
-                    elif any(word in summary_lower for word in ['cancer', 'oncology', 'tumor', 'carcinoma']):
-                        diseases.append('Cancer')
-                    elif any(word in summary_lower for word in ['cardiovascular', 'heart', 'cardiac', 'cvd']):
-                        diseases.append('Cardiovascular Disease')
-                    elif any(word in summary_lower for word in ['obesity', 'obese']):
-                        diseases.append('Obesity')
+                    # Enhanced disease detection (multiple diseases can be present)
+                    disease_keywords = [
+                        ('lung cancer', 'nsclc', 'non-small cell lung cancer'), ('breast cancer', 'mammary carcinoma'), 
+                        ('prostate cancer', 'prostate carcinoma'), ('colorectal cancer', 'colon cancer', 'rectal cancer'),
+                        ('coronary artery disease', 'cad', 'heart disease', 'myocardial infarction'), 
+                        ('diabetes', 'diabetic', 'type 2 diabetes', 't2d'), 
+                        ('alzheimer', 'dementia', 'alzheimer\'s disease'), 
+                        ('cancer', 'oncology', 'tumor', 'carcinoma'), 
+                        ('cardiovascular', 'heart', 'cardiac', 'cvd'), ('obesity', 'obese'),
+                        ('parkinson', 'pd'), ('schizophrenia', 'bipolar'), ('asthma', 'copd'),
+                        ('rheumatoid arthritis', 'ra'), ('multiple sclerosis', 'ms'), ('ibd', 'inflammatory bowel disease')
+                    ]
                     
-                    # Enhanced methodology and topic detection
-                    if any(word in summary_lower for word in ['kras', 'krasg12c', 'sotorasib']):
-                        specific_topics.append('KRAS Inhibition')
-                        drug_names.append('Sotorasib')
-                    elif any(word in summary_lower for word in ['polygenic risk score', 'prs', 'polygenic score']):
+                    for disease_group in disease_keywords:
+                        if any(word in summary_lower for word in disease_group):
+                            diseases.append(disease_group[0].title())
+                            break  # Only add the first match
+                    
+                    # Enhanced methodology and topic detection (can have multiple)
+                    if any(word in summary_lower for word in ['polygenic risk score', 'prs', 'polygenic score']):
                         specific_topics.append('Polygenic Risk Scoring')
-                    elif any(word in summary_lower for word in ['gwas', 'genome-wide association study']):
+                    if any(word in summary_lower for word in ['gwas', 'genome-wide association study', 'genome-wide']):
                         specific_topics.append('GWAS Analysis')
-                    elif any(word in summary_lower for word in ['machine learning', 'ai', 'artificial intelligence', 'ml', 'deep learning']):
+                    if any(word in summary_lower for word in ['machine learning', 'ai', 'artificial intelligence', 'ml', 'deep learning', 'neural network']):
                         methodologies.append('AI/ML')
-                    elif any(word in summary_lower for word in ['ctdna', 'circulating tumor dna', 'liquid biopsy']):
-                        specific_topics.append('ctDNA Analysis')
-                    elif any(word in summary_lower for word in ['biomarker', 'biomarkers', 'biomarker discovery']):
-                        specific_topics.append('Biomarker Discovery')
-                    elif any(word in summary_lower for word in ['transcriptomic', 'transcriptome', 'rna-seq']):
-                        specific_topics.append('Transcriptomics')
-                    elif any(word in summary_lower for word in ['genomic', 'genome', 'genomics']):
-                        specific_topics.append('Genomics')
-                    elif any(word in summary_lower for word in ['pharmacogenomics', 'drug response', 'pharmacogenetics']):
+                    if any(word in summary_lower for word in ['ctdna', 'circulating tumor dna', 'liquid biopsy']):
+                        specific_topics.append('Liquid Biopsy')
+                    if any(word in summary_lower for word in ['biomarker', 'biomarkers', 'biomarker discovery']):
+                        therapeutic_approaches.append('Biomarker Discovery')
+                    if any(word in summary_lower for word in ['transcriptomic', 'transcriptome', 'rna-seq', 'gene expression']):
+                        therapeutic_approaches.append('Transcriptomics')
+                    if any(word in summary_lower for word in ['genomic', 'genome', 'genomics']):
+                        therapeutic_approaches.append('Genomics')
+                    if any(word in summary_lower for word in ['pharmacogenomics', 'drug response', 'pharmacogenetics']):
                         specific_topics.append('Pharmacogenomics')
-                    elif any(word in summary_lower for word in ['clinical trial', 'clinical study']):
-                        methodologies.append('Clinical Trial')
-                    elif any(word in summary_lower for word in ['therapeutic', 'therapy', 'treatment']):
-                        methodologies.append('Therapeutic')
+                    if any(word in summary_lower for word in ['clinical trial', 'clinical study', 'randomized']):
+                        methodologies.append('Clinical Research')
+                    if any(word in summary_lower for word in ['therapeutic', 'therapy', 'treatment', 'intervention']):
+                        therapeutic_approaches.append('Therapeutic')
+                    if any(word in summary_lower for word in ['precision medicine', 'personalized medicine']):
+                        specific_topics.append('Precision Medicine')
+                    if any(word in summary_lower for word in ['drug resistance', 'resistance mechanisms']):
+                        specific_topics.append('Drug Resistance')
+                    if any(word in summary_lower for word in ['kras', 'krasg12c', 'sotorasib', 'amgen']):
+                        specific_topics.append('KRAS Targeting')
+                        drug_names.append('Sotorasib')
+                    if any(word in summary_lower for word in ['immunotherapy', 'immune', 'pembrolizumab', 'nivolumab']):
+                        therapeutic_approaches.append('Immunotherapy')
+                        if any(word in summary_lower for word in ['pembrolizumab']):
+                            drug_names.append('Pembrolizumab')
+                        if any(word in summary_lower for word in ['nivolumab']):
+                            drug_names.append('Nivolumab')
                     
                     # Extract gene names
                     import re
                     gene_patterns = [r'\b[A-Z]{2,}\d*\b', r'\b[A-Z]{1,2}[a-z]+\d*\b']
                     for pattern in gene_patterns:
                         genes = re.findall(pattern, summary_text)
-                        gene_names.extend([g for g in genes if len(g) > 2 and g not in ['DNA', 'RNA', 'PCR', 'GWAS', 'PRS']])
+                        gene_names.extend([g for g in genes if len(g) > 2 and g not in ['DNA', 'RNA', 'PCR', 'GWAS', 'PRS', 'AI', 'ML', 'USA', 'NIH']])
                     
-                    # Create detailed title
-                    title_parts = []
+                    # Create comprehensive, descriptive title
                     
-                    # Priority 1: Specific topic + Disease + Drug/Gene
-                    if specific_topics and diseases:
-                        base_title = f"{specific_topics[0]}: {diseases[0]}"
-                        if drug_names:
-                            base_title += f" ({drug_names[0]})"
-                        elif gene_names[:2]:  # Take first 2 genes
-                            base_title += f" ({', '.join(gene_names[:2])})"
-                        title = base_title
-                    # Priority 2: Disease + Methodology
+                    # Priority 1: Therapeutic approach + Disease + Drug
+                    if therapeutic_approaches and diseases and drug_names:
+                        title = f"{therapeutic_approaches[0]}: {diseases[0]} ({drug_names[0]})"
+                    # Priority 2: Therapeutic approach + Disease + Gene
+                    elif therapeutic_approaches and diseases and gene_names[:2]:
+                        title = f"{therapeutic_approaches[0]}: {diseases[0]} ({', '.join(gene_names[:2])})"
+                    # Priority 3: Therapeutic approach + Disease
+                    elif therapeutic_approaches and diseases:
+                        title = f"{therapeutic_approaches[0]}: {diseases[0]}"
+                    # Priority 4: Specific topic + Disease
+                    elif specific_topics and diseases:
+                        title = f"{specific_topics[0]}: {diseases[0]}"
+                    # Priority 5: Disease + Methodology + Gene
+                    elif diseases and methodologies and gene_names[:2]:
+                        title = f"{methodologies[0]} Analysis: {diseases[0]} ({', '.join(gene_names[:2])})"
+                    # Priority 6: Disease + Methodology
                     elif diseases and methodologies:
-                        title = f"{diseases[0]}: {methodologies[0]} Analysis"
-                    # Priority 3: Specific topic only
+                        title = f"{methodologies[0]} Analysis: {diseases[0]}"
+                    # Priority 7: Therapeutic approach + Methodology
+                    elif therapeutic_approaches and methodologies:
+                        title = f"{therapeutic_approaches[0]}: {methodologies[0]} Analysis"
+                    # Priority 8: Specific topic only
                     elif specific_topics:
                         title = specific_topics[0]
-                    # Priority 4: Disease only
+                    # Priority 9: Disease only
                     elif diseases:
-                        title = diseases[0]
-                    # Priority 5: Methodology only
+                        title = f"{diseases[0]} Research"
+                    # Priority 10: Methodology only
                     elif methodologies:
                         title = f"{methodologies[0]} Analysis"
-                    # Fallback: Extract from paper titles
+                    # Priority 11: Therapeutic approach only
+                    elif therapeutic_approaches:
+                        title = therapeutic_approaches[0]
+                    # Fallback: Extract meaningful phrase from paper titles or first sentence
                     else:
                         paper_titles = [paper.get('metadata', {}).get('title', '') for paper in papers]
                         if paper_titles and paper_titles[0]:
-                            # Extract meaningful words from paper title
+                            # Extract meaningful words from paper title (get key nouns and adjectives)
                             words = paper_titles[0].split()
-                            meaningful_words = [w for w in words[:5] if len(w) > 3 and w.lower() not in 
-                                             ['the', 'and', 'for', 'with', 'this', 'that', 'analysis', 'study', 'research', 'investigation']]
-                            title = ' '.join(meaningful_words[:4]) if meaningful_words else "Research Analysis"
+                            meaningful_words = [w for w in words[:6] if len(w) > 4 and w.lower() not in 
+                                             ['the', 'and', 'for', 'with', 'this', 'that', 'analysis', 'study', 
+                                              'research', 'investigation', 'using', 'based', 'approach']]
+                            title = ' '.join(meaningful_words[:4]) if meaningful_words else "Research Summary"
                         else:
-                            title = "Research Analysis"
+                            # Try to extract first meaningful phrase from summary
+                            first_sentence = summary_text.split('.')[0] if '.' in summary_text else summary_text[:100]
+                            words = first_sentence.split()
+                            meaningful_words = [w for w in words[:4] if len(w) > 4 and w[0].isupper()]
+                            title = ' '.join(meaningful_words) if meaningful_words else "Research Summary"
                     
                     # Add paper count
-                    return f"{title} ({paper_count} papers)"
+                    return f"{title} ({paper_count} paper{'s' if paper_count > 1 else ''})"
                 
                 title = generate_custom_summary_title(uploaded_papers, summary)
                 
