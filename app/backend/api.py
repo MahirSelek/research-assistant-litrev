@@ -33,9 +33,11 @@ class ResearchAssistantAPI:
         # Initialize services
         self.gcs_storage = GCSUserStorage(config['gcs_bucket_name'])
         self.es_manager = get_es_manager(
-            cloud_id=config['elastic_cloud_id'],
-            username=config['elastic_username'],
-            password=config['elastic_password']
+            cloud_id=config.get('elastic_cloud_id'),
+            hosts=config.get('elastic_hosts'),
+            username=config.get('elastic_username'),
+            password=config.get('elastic_password'),
+            api_key=config.get('elastic_api_key')
         )
         
         # Initialize Vertex AI

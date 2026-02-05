@@ -14,3 +14,35 @@ users.json
 USER_CREDENTIALS.md
 get_credentials.py
 
+
+# Environment and secrets
+.env
+gcp_credentials.json
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+
+# Flask session (runtime)
+flask_session/*
+!flask_session/.gitkeep
+
+# IDE and OS
+.idea/
+.vscode/
+.DS_Store
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+

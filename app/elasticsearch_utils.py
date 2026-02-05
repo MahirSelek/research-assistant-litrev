@@ -9,19 +9,38 @@ class ElasticsearchManager:
     """
     Manages all interactions with the Elasticsearch cluster, including
     indexing documents and performing searches.
+    Supports both Serverless (hosts + api_key) and Hosted (cloud_id + username/password) deployments.
     """
-    def __init__(self, cloud_id: str, username: str, password: str):
+    def __init__(self, cloud_id: str = None, hosts: list = None, username: str = None, password: str = None, api_key: str = None):
         try:
-            self.es_client = Elasticsearch(
-                cloud_id=cloud_id,
-                basic_auth=(username, password),
-                request_timeout=30
-            )
+            # Support both Serverless (hosts + api_key) and Hosted (cloud_id + username/password)
+            if hosts and api_key:
+                # Serverless: Use endpoint URL with API key
+                print(f"Connecting to Serverless Elasticsearch at: {hosts[0]}")
+                self.es_client = Elasticsearch(
+                    hosts=hosts,
+                    api_key=api_key,
+                    request_timeout=30
+                )
+            elif cloud_id and username and password:
+                # Hosted: Use Cloud ID with username/password
+                print(f"Connecting to Hosted Elasticsearch with Cloud ID")
+                self.es_client = Elasticsearch(
+                    cloud_id=cloud_id,
+                    basic_auth=(username, password),
+                    request_timeout=30
+                )
+            else:
+                raise ValueError("Must provide either (hosts + api_key) for Serverless or (cloud_id + username + password) for Hosted")
+            
             if not self.es_client.ping():
                 raise ConnectionError("Failed to connect to Elasticsearch.")
+            print("✓ Successfully connected to Elasticsearch")
             self.create_index_if_not_exists("papers")
         except Exception as e:
-            st.error(f"Could not connect to Elasticsearch: {e}")
+            error_msg = f"Could not connect to Elasticsearch: {e}"
+            print(f"✗ {error_msg}")
+            st.error(error_msg)
             st.stop()
 
     def create_index_if_not_exists(self, index_name: str):
@@ -95,9 +114,16 @@ class ElasticsearchManager:
             return []
 
 @st.cache_resource
-def get_es_manager(cloud_id: str, username: str, password: str) -> ElasticsearchManager:
+def get_es_manager(cloud_id: str = None, hosts: list = None, username: str = None, password: str = None, api_key: str = None) -> ElasticsearchManager:
     """
     A cached factory function to get an instance of the ElasticsearchManager.
+    Supports both Serverless (hosts + api_key) and Hosted (cloud_id + username + password).
     """
-    es_manager = ElasticsearchManager(cloud_id=cloud_id, username=username, password=password)
+    es_manager = ElasticsearchManager(
+        cloud_id=cloud_id, 
+        hosts=hosts, 
+        username=username, 
+        password=password, 
+        api_key=api_key
+    )
     return es_manager
